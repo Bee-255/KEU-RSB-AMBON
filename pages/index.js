@@ -2,6 +2,13 @@ import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { useRouter } from "next/router";
 
+// Perbaikan: Tambahkan gaya untuk menghapus margin dan padding bawaan browser
+const fullScreenWrapperStyle = {
+  margin: '0px',
+  padding: '0px',
+  minHeight: '100%',
+};
+
 export default function Home() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -91,57 +98,60 @@ export default function Home() {
   };
 
   return (
-    <div style={containerStyle}>
-      {/* Bagian Kiri: Logo dan Deskripsi */}
-      <div style={leftPanelStyle}>
-        <div style={contentStyle}>
-          <img src="/logo.svg" alt="Logo" style={logoStyle} />
-          <h2 style={titleStyle}>Aplikasi Keuangan</h2>
-          <p style={subtitleStyle}>Kelola keuanganmu dengan mudah</p>
-        </div>
-      </div>
-
-      {/* Bagian Kanan: Form Login/Register */}
-      <div style={rightPanelStyle}>
-        <h1 style={greetingStyle}>Selamat datang</h1>
-        <p style={subGreetingStyle}>Silakan {isRegisterMode ? "daftar" : "login"} untuk melanjutkan.</p>
-
-        <form onSubmit={handleAuth} style={formStyle}>
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={inputStyle}
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={inputStyle}
-          />
-          <button type="submit" disabled={loading} style={buttonStyle}>
-            {loading ? "Memuat..." : (isRegisterMode ? "Daftar" : "Login")}
-          </button>
-        </form>
-
-        {message && (
-          <div style={{ ...messageStyle, backgroundColor: msgType === "error" ? "#fee2e2" : "#dcfce7", color: msgType === "error" ? "#b91c1c" : "#166534" }}>
-            {message}
+    // Perbaikan: Tambahkan div pembungkus untuk menghilangkan margin bawaan
+    <div style={fullScreenWrapperStyle}>
+      <div style={containerStyle}>
+        {/* Bagian Kiri: Logo dan Deskripsi */}
+        <div style={leftPanelStyle}>
+          <div style={contentStyle}>
+            <img src="/logo.svg" alt="Logo" style={logoStyle} />
+            <h2 style={titleStyle}>Aplikasi Keuangan</h2>
+            <p style={subtitleStyle}>Kelola keuanganmu dengan mudah</p>
           </div>
-        )}
+        </div>
 
-        <p style={switchModeStyle}>
-          {isRegisterMode ? "Sudah punya akun?" : "Belum punya akun?"}{" "}
-          <button
-            onClick={() => setIsRegisterMode(!isRegisterMode)}
-            style={switchButtonStyle}
-            disabled={loading}
-          >
-            {isRegisterMode ? "Login" : "Daftar"}
-          </button>
-        </p>
+        {/* Bagian Kanan: Form Login/Register */}
+        <div style={rightPanelStyle}>
+          <h1 style={greetingStyle}>Selamat datang</h1>
+          <p style={subGreetingStyle}>Silakan {isRegisterMode ? "daftar" : "login"} untuk melanjutkan.</p>
+
+          <form onSubmit={handleAuth} style={formStyle}>
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              style={inputStyle}
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              style={inputStyle}
+            />
+            <button type="submit" disabled={loading} style={buttonStyle}>
+              {loading ? "Memuat..." : (isRegisterMode ? "Daftar" : "Login")}
+            </button>
+          </form>
+
+          {message && (
+            <div style={{ ...messageStyle, backgroundColor: msgType === "error" ? "#fee2e2" : "#dcfce7", color: msgType === "error" ? "#b91c1c" : "#166534" }}>
+              {message}
+            </div>
+          )}
+
+          <p style={switchModeStyle}>
+            {isRegisterMode ? "Sudah punya akun?" : "Belum punya akun?"}{" "}
+            <button
+              onClick={() => setIsRegisterMode(!isRegisterMode)}
+              style={switchButtonStyle}
+              disabled={loading}
+            >
+              {isRegisterMode ? "Login" : "Daftar"}
+            </button>
+          </p>
+        </div>
       </div>
     </div>
   );
