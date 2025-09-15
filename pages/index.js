@@ -25,7 +25,7 @@ export default function Home() {
         if (!profile || !profile.nama_lengkap) {
           router.push("/profile");
         } else {
-          router.push("/PencatatanPasien");
+          router.push("/pencatatanpasien");
         }
       }
     };
@@ -84,7 +84,7 @@ export default function Home() {
         if (!profile || !profile.nama_lengkap) {
           router.push("/profile");
         } else {
-          router.push("/PencatatanPasien");
+          router.push("/pencatatanpasien");
         }
       }
     }

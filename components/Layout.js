@@ -200,8 +200,8 @@ export default function Layout({ children, fullName }) {
               Pegawai
             </button>
             <button
-              onClick={() => router.push("/pencatatan-pasien")}
-              style={router.pathname === "/pencatatan-pasien" ? activeStyle : inactiveStyle}
+              onClick={() => router.push("/pencatatanpasien")}
+              style={router.pathname === "/pencatatanpasien" ? activeStyle : inactiveStyle}
             >
               Pencatatan Pasien
             </button>
