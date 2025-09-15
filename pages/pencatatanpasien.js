@@ -9,40 +9,38 @@ import jsPDF from "jspdf";
 import "jspdf-autotable";
 
 // Komponen Modal Pop-up
-const Modal = ({ children, onClose }) => {
-  return (
+const Modal = ({ children, onClose }) => (
+  <div
+    style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 1000,
+    }}
+    onClick={onClose}
+  >
     <div
       style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        width: "100%",
-        height: "100%",
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        zIndex: 1000,
+        backgroundColor: "white",
+        padding: "2rem",
+        borderRadius: "8px",
+        position: "relative",
+        maxWidth: "90%",
+        maxHeight: "90vh",
+        overflowY: "auto",
       }}
-      onClick={onClose}
+      onClick={(e) => e.stopPropagation()}
     >
-      <div
-        style={{
-          backgroundColor: "white",
-          padding: "2rem",
-          borderRadius: "8px",
-          position: "relative",
-          maxWidth: "90%",
-          maxHeight: "90vh",
-          overflowY: "auto",
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {children}
-      </div>
+      {children}
     </div>
-  );
-};
+  </div>
+);
 
 const formatDate = (dateString) => {
   if (!dateString) return "-";
@@ -193,6 +191,7 @@ export default function PencatatanPasien() {
   const [selectedPasien, setSelectedPasien] = useState(null);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [selectedRekapIds, setSelectedRekapIds] = useState([]); // Multi select
 
   const [pasienData, setPasienData] = useState({
     klasifikasi: "", nomor_rm: "", nama_pasien: "", jenis_rawat: "",
@@ -223,13 +222,13 @@ export default function PencatatanPasien() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUserId(user.id);
-        const { data: profiles, error } = await supabase
+        const { data: profiles } = await supabase
           .from("profiles")
-          .select("nama")
+          .select("nama_lengkap")
           .eq("id", user.id)
           .single();
         if (profiles) {
-          setUserName(profiles.nama);
+          setUserName(profiles.nama_lengkap);
         }
         fetchRekapitulasi(user.id);
       } else {
@@ -267,6 +266,20 @@ export default function PencatatanPasien() {
     return data;
   };
 
+  // Ambil pasien dari banyak rekap
+  const fetchPasienByRekapIds = async (rekapIds) => {
+    if (!rekapIds.length) return [];
+    const { data, error } = await supabase
+      .from("pasien_harian")
+      .select("*")
+      .in("rekaman_harian_id", rekapIds);
+    if (error) {
+      Swal.fire("Error", error.message, "error");
+      return [];
+    }
+    return data;
+  };
+
   const handleRekapFormSubmit = async (e) => {
     e.preventDefault();
     if (!newRekapDate) {
@@ -281,7 +294,7 @@ export default function PencatatanPasien() {
         user_id: userId,
         nama_user: userName,
         total_pembayaran: 0,
-        status: "KASIR", // Set status awal ke KASIR
+        status: "KASIR",
       }])
       .select();
 
@@ -334,15 +347,11 @@ export default function PencatatanPasien() {
 
   const updateRekapitulasiTotals = async (rekapId) => {
     const pasienData = await fetchPasienByRekapId(rekapId);
-    
     const totalPasien = pasienData.length;
     const totalTagihan = pasienData.reduce((sum, item) => sum + item.jumlah_tagihan, 0);
     const totalTunai = pasienData.reduce((sum, item) => sum + item.bayar_tunai, 0);
     const totalTransfer = pasienData.reduce((sum, item) => sum + item.bayar_transfer, 0);
     const totalPembayaran = totalTunai + totalTransfer;
-
-    // Status sekarang tidak dihitung, jadi tidak perlu diupdate
-    // const statusRekap = totalPembayaran >= totalTagihan ? "Lunas" : "Kurang Bayar";
 
     await supabase
       .from('rekaman_harian')
@@ -352,7 +361,6 @@ export default function PencatatanPasien() {
           total_tunai: totalTunai,
           total_transfer: totalTransfer,
           total_pembayaran: totalPembayaran,
-          // status: statusRekap,
       })
       .eq('id', rekapId);
     fetchRekapitulasi(userId);
@@ -542,13 +550,22 @@ export default function PencatatanPasien() {
     resetPasienForm();
     setShowPasienModal(true);
   };
-  
+
+  // Checkbox multi rekap
+  const handleRekapCheckbox = (rekapId) => {
+    setSelectedRekapIds((prev) =>
+      prev.includes(rekapId)
+        ? prev.filter((id) => id !== rekapId)
+        : [...prev, rekapId]
+    );
+  };
+
+  // Download Multi Rekap
   const handleDownloadClick = async () => {
-    if (!selectedRekapId) {
-      Swal.fire("Info", "Pilih rekapitulasi harian terlebih dahulu.", "info");
+    if (selectedRekapIds.length === 0) {
+      Swal.fire("Info", "Pilih minimal satu rekapitulasi harian.", "info");
       return;
     }
-
     const { value: format } = await Swal.fire({
       title: 'Pilih format unduhan',
       input: 'radio',
@@ -563,19 +580,20 @@ export default function PencatatanPasien() {
     });
 
     if (format === 'excel') {
-      handleDownloadExcel();
+      handleDownloadExcelMulti();
     } else if (format === 'pdf') {
-      handleDownloadPDF();
+      handleDownloadPDFMulti();
     }
   };
 
-  const handleDownloadExcel = () => {
-    if (!pasienList || pasienList.length === 0) {
+  const handleDownloadExcelMulti = async () => {
+    const pasienMulti = await fetchPasienByRekapIds(selectedRekapIds);
+    if (!pasienMulti.length) {
       Swal.fire("Info", "Tidak ada data pasien untuk diunduh.", "info");
       return;
     }
-    
-    const dataForExcel = pasienList.map(p => ({
+    const dataForExcel = pasienMulti.map(p => ({
+      'Tanggal': formatDate(p.created_at),
       'Nama Pasien': p.nama_pasien,
       'Nomor RM': p.nomor_rm,
       'Klasifikasi': p.klasifikasi,
@@ -590,27 +608,26 @@ export default function PencatatanPasien() {
       'Total Pembayaran': p.total_pembayaran,
       'Status': getStatus(p.jumlah_bersih, p.total_pembayaran),
     }));
-
     const worksheet = XLSX.utils.json_to_sheet(dataForExcel);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Data Pasien");
     const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
     const data = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8" });
-    saveAs(data, `Data Pasien ${formatDate(selectedRekapDate)}.xlsx`);
+    saveAs(data, `Data Pasien Multi Hari.xlsx`);
   };
 
-  const handleDownloadPDF = () => {
-    if (!pasienList || pasienList.length === 0) {
+  const handleDownloadPDFMulti = async () => {
+    const pasienMulti = await fetchPasienByRekapIds(selectedRekapIds);
+    if (!pasienMulti.length) {
       Swal.fire("Info", "Tidak ada data pasien untuk diunduh.", "info");
       return;
     }
-
     const doc = new jsPDF('p', 'mm', 'a4');
-    doc.text(`Data Pasien Tanggal ${formatDate(selectedRekapDate)}`, 14, 20);
-
-    const headers = [['No.', 'Nama Pasien', 'No. RM', 'Unit Layanan', 'Jml Bersih', 'Total Bayar', 'Status']];
-    const data = pasienList.map((p, index) => [
+    doc.text(`Data Pasien Multi Hari`, 14, 20);
+    const headers = [['No.', 'Tanggal', 'Nama Pasien', 'No. RM', 'Unit Layanan', 'Jml Bersih', 'Total Bayar', 'Status']];
+    const data = pasienMulti.map((p, index) => [
       index + 1,
+      formatDate(p.created_at),
       p.nama_pasien,
       p.nomor_rm,
       p.unit_layanan,
@@ -618,7 +635,6 @@ export default function PencatatanPasien() {
       formatRupiah(p.total_pembayaran),
       getStatus(p.jumlah_bersih, p.total_pembayaran)
     ]);
-    
     doc.autoTable({
       head: headers,
       body: data,
@@ -628,8 +644,7 @@ export default function PencatatanPasien() {
         doc.text("Halaman " + doc.internal.getNumberOfPages(), doc.internal.pageSize.width - 20, doc.internal.pageSize.height - 10, { align: "right" });
       }
     });
-
-    doc.save(`Data Pasien ${formatDate(selectedRekapDate)}.pdf`);
+    doc.save(`Data Pasien Multi Hari.pdf`);
   };
 
   const handleClearFilter = () => {
@@ -773,10 +788,7 @@ export default function PencatatanPasien() {
                     <label>Jumlah Bersih:</label>
                     <input type="text" name="jumlah_bersih" value={formatRupiah(pasienData.jumlah_bersih)} readOnly style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px", backgroundColor: "#f3f4f6" }} />
                 </div>
-
-                {/* Garis Pemisah Tambahan */}
                 <hr style={{ gridColumn: "1 / -1", margin: "0.5rem 0", border: "1", borderTop: "1px solid #d6d3d3ff" }} />
-                
                 <div>
                     <label>Bayar Tunai:</label>
                     <input type="text" name="bayar_tunai" value={pasienData.bayar_tunai} onChange={handlePasienFormChange} style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }} />
@@ -809,9 +821,10 @@ export default function PencatatanPasien() {
       <table border="1" cellPadding="4" style={{ borderCollapse: "collapse", width: "100%", marginTop: "20px", fontSize: "12px" }}>
         <thead>
           <tr style={{ background: "#DDD" }}>
+            <th></th>
             <th style={{ padding: "8px", textAlign: "left" }}>Tanggal</th>
             <th style={{ padding: "8px", textAlign: "left" }}>Nama User</th>
-            <th style={{ padding: "8px", textAlign: "left" }}>Total Pasien</th>
+            <th style={{ padding: "8px", textAlign: "center" }}>Total Pasien</th>
             <th style={{ padding: "8px", textAlign: "left" }}>Total Tagihan</th>
             <th style={{ padding: "8px", textAlign: "left" }}>Bayar Tunai</th>
             <th style={{ padding: "8px", textAlign: "left" }}>Bayar Transfer</th>
@@ -827,21 +840,29 @@ export default function PencatatanPasien() {
                 onClick={() => handleRekapRowClick(rekap)} 
                 style={{ backgroundColor: selectedRekapId === rekap.id ? "#e0e7ff" : "white", cursor: "pointer" }}
               >
+                <td>
+                  <input
+                    type="checkbox"
+                    checked={selectedRekapIds.includes(rekap.id)}
+                    onChange={() => handleRekapCheckbox(rekap.id)}
+                    onClick={e => e.stopPropagation()}
+                  />
+                </td>
                 <td style={{ padding: "8px", fontWeight: "bold" }}>
                   {formatDate(rekap.tanggal)}
                 </td>
                 <td style={{ padding: "8px" }}>{rekap.nama_user}</td>
-                <td style={{ padding: "8px" }}>{rekap.total_pasien}</td>
-                <td style={{ padding: "8px" }}>{formatRupiah(rekap.total_tagihan)}</td>
-                <td style={{ padding: "8px" }}>{formatRupiah(rekap.total_tunai)}</td>
-                <td style={{ padding: "8px" }}>{formatRupiah(rekap.total_transfer)}</td>
-                <td style={{ padding: "8px" }}>{formatRupiah(rekap.total_pembayaran)}</td>
+                <td style={{ padding: "8px", textAlign: "center" }}>{rekap.total_pasien}</td>
+                <td style={{ padding: "8px", textAlign: "right" }}>{formatRupiah(rekap.total_tagihan)}</td>
+                <td style={{ padding: "8px", textAlign: "right" }}>{formatRupiah(rekap.total_tunai)}</td>
+                <td style={{ padding: "8px", textAlign: "right"}}>{formatRupiah(rekap.total_transfer)}</td>
+                <td style={{ padding: "8px", textAlign: "right"}}>{formatRupiah(rekap.total_pembayaran)}</td>
                 <td style={{ padding: "8px" }}>{rekap.status}</td>
               </tr>
             ))
           ) : (
             <tr>
-              <td colSpan="8" style={{ textAlign: "center", padding: "1rem" }}>
+              <td colSpan="9" style={{ textAlign: "center", padding: "1rem" }}>
                 Tidak ada data rekapitulasi yang ditemukan.
               </td>
             </tr>
@@ -893,15 +914,15 @@ export default function PencatatanPasien() {
             </button>
             <button
             onClick={handleDownloadClick}
-            disabled={!selectedRekapId}
+            disabled={selectedRekapIds.length === 0}
             style={{ 
               background: "#2563eb", 
               color: "white", 
               padding: "10px 20px", 
               border: "none", 
               borderRadius: "6px", 
-              cursor: !selectedRekapId ? "not-allowed" : "pointer", 
-              opacity: !selectedRekapId ? 0.5 : 1
+              cursor: selectedRekapIds.length === 0 ? "not-allowed" : "pointer", 
+              opacity: selectedRekapIds.length === 0 ? 0.5 : 1
             }}
           >
             Download
