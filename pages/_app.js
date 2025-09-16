@@ -61,8 +61,36 @@ function MyApp({ Component, pageProps }) {
   const showLayout = session && !noLayoutRoutes.includes(router.pathname);
 
   if (loading) {
-    return <div>Loading...</div>;
-  }
+  return (
+    <div style={{
+      position: "fixed",
+      inset: 0,
+      background: "rgba(255,255,255,0.85)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 9999,
+      flexDirection: "column"
+    }}>
+      <div style={{
+        width: 48,
+        height: 48,
+        border: "5px solid #2563eb",
+        borderTop: "5px solid #e0e7ef",
+        borderRadius: "50%",
+        animation: "spin 1s linear infinite",
+        marginBottom: "1rem"
+      }} />
+      <span style={{ color: "#2563eb", fontWeight: 600, fontSize: "1.1rem", letterSpacing: 1 }}>Loading...</span>
+      <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg);}
+          100% { transform: rotate(360deg);}
+        }
+      `}</style>
+    </div>
+  );
+}
 
   if (showLayout) {
     return (

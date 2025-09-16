@@ -1,3 +1,5 @@
+// components/Layout.js
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Swal from "sweetalert2";
@@ -7,6 +9,8 @@ export default function Layout({ children, fullName }) {
   const router = useRouter();
   const [currentTime, setCurrentTime] = useState("");
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
+  
+  // State untuk melacak folder yang terbuka
   const [openFolder, setOpenFolder] = useState(null);
 
   const handleLogout = async () => {
@@ -50,9 +54,12 @@ export default function Layout({ children, fullName }) {
     return () => clearInterval(timerId);
   }, []);
 
-  // Hanya satu menu aktif: beranda atau rekam
-  const isHomeActive = openFolder === null && router.pathname === '/dashboard';
-  const isRekamOpen = openFolder === 'rekam';
+  // Logika untuk menentukan folder mana yang harus terbuka saat halaman di-load
+  useEffect(() => {
+    if (router.pathname.startsWith('/pegawai') || router.pathname.startsWith('/pencatatanpasien')) {
+      setOpenFolder('rekam');
+    }
+  }, [router.pathname]);
 
   const activeStyle = {
     backgroundColor: "rgba(255, 255, 255, 0.5)",
@@ -83,6 +90,20 @@ export default function Layout({ children, fullName }) {
     </svg>
   );
 
+  // Ikon SVG tunggal (panah ke bawah)
+  const arrowIcon = (
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
+      <polyline points="6 9 12 15 18 9"></polyline>
+    </svg>
+  );
+
+  const handleDashboardClick = () => {
+    router.push("/dashboard");
+    setOpenFolder(null);
+  };
+  
+  const isRekamOpen = openFolder === 'rekam';
+
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", fontFamily: "sf pro" }}>
       <header
@@ -106,8 +127,17 @@ export default function Layout({ children, fullName }) {
             width: "200px", 
             flexShrink: 0,
             boxSizing: "border-box",
+            cursor: "pointer",
+          }}
+          onClick={handleDashboardClick}
+        >
+          <h1 style={{ 
+            margin: 0, 
+            fontSize: "1.5rem", 
+            fontWeight: "600", 
+            color: "#fff",
+            cursor: "pointer"
           }}>
-          <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: "600", color: "#fff" }}>
             Dashboard
           </h1>
         </div>
@@ -200,7 +230,7 @@ export default function Layout({ children, fullName }) {
       >
         <aside
           style={{
-            width: "200px",
+            width: isSidebarVisible ? "200px" : "0",
             backgroundColor: "#E1E7EF",
             color: "#000",
             display: "flex",
@@ -208,7 +238,7 @@ export default function Layout({ children, fullName }) {
             transition: "width 0.3s ease",
             overflow: "hidden",
             flexShrink: 0,
-            padding: "1rem",
+            padding: isSidebarVisible ? "1rem" : "0",
             boxSizing: "border-box",
             position: "relative",
             zIndex: 2,
@@ -221,24 +251,14 @@ export default function Layout({ children, fullName }) {
               gap: "0rem",
             }}
           >
-            {/* Beranda */}
-            <button
-              onClick={() => {
-                router.push("/dashboard");
-                setOpenFolder(null); // Hanya beranda yang aktif
-              }}
-              style={isHomeActive ? activeStyle : inactiveStyle}
-            >
-              Beranda
-            </button>
 
             {/* Rekam (Folder) */}
             <div
               onClick={() => {
-                setOpenFolder(isRekamOpen ? null : 'rekam'); // Hanya rekam yang aktif
+                setOpenFolder(isRekamOpen ? null : 'rekam');
               }}
               style={{
-                ...(isRekamOpen ? activeStyle : inactiveStyle),
+                ... (isRekamOpen ? activeStyle : inactiveStyle),
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
@@ -249,14 +269,14 @@ export default function Layout({ children, fullName }) {
                 <span style={{ fontSize: "0.9rem" }}>{folderIcon}</span> Rekam
               </span>
               <span style={{
-                fontSize: "1.2rem",
+                display: 'inline-block',
                 marginLeft: "auto",
-                paddingRight: "0.5rem",
-                fontWeight: "600",
-                color: "#2563eb",
-                userSelect: "none",
+                width: "1em",
+                height: "1em",
+                transform: isRekamOpen ? 'rotate(-180deg)' : 'rotate(0deg)',
+                transition: 'transform 0.3s ease-in-out',
               }}>
-                {isRekamOpen ? "−" : "+"}
+                {arrowIcon}
               </span>
             </div>
 
@@ -282,10 +302,10 @@ export default function Layout({ children, fullName }) {
         <main 
           style={{ 
             flex: 1, 
-            padding: "2rem", 
+            padding: "1rem 2rem", 
             backgroundColor: "#F3F4F6",
             overflowY: "auto",
-            marginLeft: isSidebarVisible ? "0" : "-200px",
+            marginLeft: isSidebarVisible ? "0" : "0px",
             transition: "margin-left 0.3s cubic-bezier(.4,0,.2,1)",
             zIndex: 3,
           }}
