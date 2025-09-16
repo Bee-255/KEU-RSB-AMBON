@@ -1,5 +1,3 @@
-// components/Layout.js
-
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Swal from "sweetalert2";
@@ -9,6 +7,7 @@ export default function Layout({ children, fullName }) {
   const router = useRouter();
   const [currentTime, setCurrentTime] = useState("");
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
+  const [openFolder, setOpenFolder] = useState(null);
 
   const handleLogout = async () => {
     const result = await Swal.fire({
@@ -22,12 +21,9 @@ export default function Layout({ children, fullName }) {
     if (result.isConfirmed) {
       const { error } = await supabase.auth.signOut();
       if (error) {
-        // Tampilkan pesan error jika terjadi kesalahan saat logout
         console.error("Error signing out:", error.message);
         Swal.fire("Gagal Logout", "Terjadi kesalahan saat mencoba keluar.", "error");
       } else {
-        // Jika logout berhasil, hapus token atau state login jika ada
-        // Redirect ke halaman utama atau halaman login
         router.push("/");
       }
     }
@@ -54,6 +50,10 @@ export default function Layout({ children, fullName }) {
     return () => clearInterval(timerId);
   }, []);
 
+  // Hanya satu menu aktif: beranda atau rekam
+  const isHomeActive = openFolder === null && router.pathname === '/dashboard';
+  const isRekamOpen = openFolder === 'rekam';
+
   const activeStyle = {
     backgroundColor: "rgba(255, 255, 255, 0.5)",
     border: "none",
@@ -76,6 +76,12 @@ export default function Layout({ children, fullName }) {
     padding: "0.3rem 0.8rem",
     margin: "0 -1rem",
   };
+
+  const folderIcon = (
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M22 6c0-1.103-.897-2-2-2h-7.164a2 2 0 0 1-1.517-.703L11 2.375A2 2 0 0 0 9.483 2H4c-1.103 0-2 .897-2 2v16c0 1.103.897 2 2 2h18c1.103 0 2-.897 2-2V8c0-1.103-.897-2-2-2z"></path>
+    </svg>
+  );
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", fontFamily: "sf pro" }}>
@@ -215,24 +221,62 @@ export default function Layout({ children, fullName }) {
               gap: "0rem",
             }}
           >
+            {/* Beranda */}
             <button
-              onClick={() => router.push("/dashboard")}
-              style={router.pathname === "/dashboard" ? activeStyle : inactiveStyle}
+              onClick={() => {
+                router.push("/dashboard");
+                setOpenFolder(null); // Hanya beranda yang aktif
+              }}
+              style={isHomeActive ? activeStyle : inactiveStyle}
             >
               Beranda
             </button>
-            <button
-              onClick={() => router.push("/pegawai")}
-              style={router.pathname === "/pegawai" ? activeStyle : inactiveStyle}
+
+            {/* Rekam (Folder) */}
+            <div
+              onClick={() => {
+                setOpenFolder(isRekamOpen ? null : 'rekam'); // Hanya rekam yang aktif
+              }}
+              style={{
+                ...(isRekamOpen ? activeStyle : inactiveStyle),
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                cursor: "pointer",
+              }}
             >
-              Pegawai
-            </button>
-            <button
-              onClick={() => router.push("/pencatatanpasien")}
-              style={router.pathname === "/pencatatanpasien" ? activeStyle : inactiveStyle}
-            >
-              Pencatatan Pasien
-            </button>
+              <span style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <span style={{ fontSize: "0.9rem" }}>{folderIcon}</span> Rekam
+              </span>
+              <span style={{
+                fontSize: "1.2rem",
+                marginLeft: "auto",
+                paddingRight: "0.5rem",
+                fontWeight: "600",
+                color: "#2563eb",
+                userSelect: "none",
+              }}>
+                {isRekamOpen ? "−" : "+"}
+              </span>
+            </div>
+
+            {/* Sub-menu (Pegawai & Pencatatan Pasien) */}
+            {isRekamOpen && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "0rem", paddingLeft: "1.5rem" }}>
+                <button
+                  onClick={() => router.push("/pegawai")}
+                  style={router.pathname === "/pegawai" ? activeStyle : inactiveStyle}
+                >
+                  Pegawai
+                </button>
+                <button
+                  onClick={() => router.push("/pencatatanpasien")}
+                  style={router.pathname === "/pencatatanpasien" ? activeStyle : inactiveStyle}
+                >
+                  Pencatatan Pasien
+                </button>
+              </div>
+            )}
           </nav>
         </aside>
         <main 
