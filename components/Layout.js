@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Swal from "sweetalert2";
+import { supabase } from "@/utils/supabaseClient";
 
 export default function Layout({ children, fullName }) {
   const router = useRouter();
@@ -17,8 +18,13 @@ export default function Layout({ children, fullName }) {
     });
 
     if (result.isConfirmed) {
-      await supabase.auth.signOut();
-      router.push("/");
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error("Error signing out:", error.message);
+        Swal.fire("Gagal Logout", "Terjadi kesalahan saat mencoba keluar.", "error");
+      } else {
+        router.push("/");
+      }
     }
   };
 
