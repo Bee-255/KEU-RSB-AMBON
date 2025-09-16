@@ -239,8 +239,8 @@ export default function PencatatanPasien() {
   }, [router, startDate, endDate]);
 
   const fetchRekapitulasi = async (id) => {
+    console.log("Mengambil semua rekapitulasi harian...");
     let query = supabase.from("rekaman_harian").select("*");
-    query = query.eq("user_id", id);
     if (startDate && endDate) {
       query = query.gte("tanggal", startDate).lte("tanggal", endDate);
     }
@@ -249,8 +249,9 @@ export default function PencatatanPasien() {
       console.error("Error fetching rekapitulasi:", error.message);
       return;
     }
+    console.log("Rekapitulasi yang diterima:", data);
     setRekapitulasiList(data);
-  };
+};
   
   const fetchPasienByRekapId = async (rekapId) => {
     const { data, error } = await supabase
