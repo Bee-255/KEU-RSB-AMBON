@@ -1,7 +1,7 @@
+import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { useRouter } from "next/router";
 import Swal from "sweetalert2";
-import { useState, useEffect } from "react";
 
 export default function Layout({ children, fullName }) {
   const router = useRouter();
@@ -44,7 +44,6 @@ export default function Layout({ children, fullName }) {
     return () => clearInterval(timerId);
   }, []);
 
-  // Mendefinisikan style untuk tombol navigasi aktif
   const activeStyle = {
     backgroundColor: "rgba(255, 255, 255, 0.5)",
     border: "none",
@@ -57,7 +56,6 @@ export default function Layout({ children, fullName }) {
     margin: "0 -1rem",
   };
 
-  // Mendefinisikan style untuk tombol navigasi tidak aktif
   const inactiveStyle = {
     background: "none",
     border: "none",
@@ -70,9 +68,7 @@ export default function Layout({ children, fullName }) {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", fontFamily: "Arial, sans-serif" }}>
-      
-      {/* Header Utama dengan dua warna yang berbeda */}
+    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", fontFamily: "sf pro" }}>
       <header
         style={{
           display: "flex",
@@ -80,9 +76,9 @@ export default function Layout({ children, fullName }) {
           alignItems: "stretch",
           flexShrink: 0,
           position: "relative",
+          zIndex: 10,
         }}
       >
-        {/* Bagian Kiri Header: Dashboard */}
         <div 
           style={{
             backgroundColor: "#113372",
@@ -99,8 +95,6 @@ export default function Layout({ children, fullName }) {
             Dashboard
           </h1>
         </div>
-        
-        {/* Tombol Toggle */}
         <div 
             style={{
                 position: "absolute",
@@ -121,20 +115,34 @@ export default function Layout({ children, fullName }) {
             <button
                 onClick={() => setIsSidebarVisible(!isSidebarVisible)}
                 style={{
-                background: "none",
-                border: "none",
-                color: "#000",
-                fontSize: "2rem",
-                cursor: "pointer",
-                padding: 0,
-                transform: "translateY(-1px)",
+                  background: "none",
+                  border: "none",
+                  fontFamily: "Arial Rounded MT Bold, Arial Rounded, sans-serif",
+                  fontSize: "1.5rem",
+                  cursor: "pointer",
+                  padding: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "100%", 
+                  height: "100%",
                 }}
             >
-                {isSidebarVisible ? "‹" : "›"}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "100%",
+                  height: "100%",
+                  transform: isSidebarVisible ? "rotate(45deg)" : "rotate(160deg)",
+                  transition: "transform 0.3s ease",
+                }}
+              >
+                {isSidebarVisible ? "×" : "+"}
+              </div>
             </button>
         </div>
-        
-        {/* Bagian Kanan Header: Selamat Datang, Waktu, dan Logout */}
         <div 
           style={{
             backgroundColor: "#2563eb",
@@ -167,14 +175,17 @@ export default function Layout({ children, fullName }) {
           </button>
         </div>
       </header>
-
-      {/* Bagian Bawah Header */}
-      <div style={{ flex: 1, display: "flex" }}>
-        
-        {/* Sidebar */}
+      <div 
+        style={{ 
+          flex: 1, 
+          display: "flex",
+          overflowY: "hidden",
+        }}
+      >
+        {/* Sidebar tetap diam, hanya area main yang menutup sidebar */}
         <aside
           style={{
-            width: isSidebarVisible ? "200px" : "0",
+            width: "200px",
             backgroundColor: "#E1E7EF",
             color: "#000",
             display: "flex",
@@ -184,9 +195,17 @@ export default function Layout({ children, fullName }) {
             flexShrink: 0,
             padding: "1rem",
             boxSizing: "border-box",
+            position: "relative",
+            zIndex: 2,
           }}
         >
-          <nav style={{ display: "flex", flexDirection: "column", gap: "0rem" }}>
+          <nav
+            style={{
+              display: isSidebarVisible ? "flex" : "none",
+              flexDirection: "column",
+              gap: "0rem",
+            }}
+          >
             <button
               onClick={() => router.push("/dashboard")}
               style={router.pathname === "/dashboard" ? activeStyle : inactiveStyle}
@@ -207,9 +226,17 @@ export default function Layout({ children, fullName }) {
             </button>
           </nav>
         </aside>
-
-        {/* Konten Utama */}
-        <main style={{ flex: 1, padding: "2rem", backgroundColor: "#F3F4F6" }}>
+        <main 
+          style={{ 
+            flex: 1, 
+            padding: "2rem", 
+            backgroundColor: "#F3F4F6",
+            overflowY: "auto",
+            marginLeft: isSidebarVisible ? "0" : "-200px",
+            transition: "margin-left 0.3s cubic-bezier(.4,0,.2,1)",
+            zIndex: 3,
+          }}
+        >
           {children}
         </main>
       </div>

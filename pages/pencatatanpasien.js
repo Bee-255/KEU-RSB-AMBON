@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/router";
 import { supabase } from "../lib/supabaseClient";
 import Swal from "sweetalert2";
@@ -62,9 +62,7 @@ const formatRupiah = (number) => {
 };
 
 const unitLayananOptions = [
-  "IGD", "POLI UMUM", "POLI JIWA", "POLI GIGI", "POLI PENYAKIT DALAM",
-  "POLI BEDAH GIGI DAN MULUT", "POLI ORTHOPEDI", "POLI KEBIDANAN/OBGYN",
-  "POLI EKG", "POLI MATA", "POLI PARU", "POLI THT", "POLI JANTUNG",
+  "IGD", "POLI UMUM", "POLI JIWA", "POLI GIGI", "POLI PENYAKIT DALAM","POLI BEDAH GIGI DAN MULUT", "POLI ORTHOPEDI", "POLI KEBIDANAN/OBGYN","POLI EKG", "POLI MATA", "POLI PARU", "POLI THT", "POLI JANTUNG",
   "POLI ANAK", "POLI SARAF", "POLI KULIT DAN KELAMIN", "POLI BEDAH",
   "VVIP", "VIP", "ANGGREK KELAS 1", "ANGGREK KELAS 2", "MELATI KELAS 1",
   "MELATI KELAS 2", "MELATI KELAS 3", "MUTIARA KELAS 1", "MUTIARA KELAS 2",
@@ -218,6 +216,9 @@ export default function PencatatanPasien() {
   const paginatedPasien = pasienList.slice(pasienStartIndex, pasienEndIndex);
   const totalPasienPages = Math.ceil(pasienList.length / pasienPerPage);
 
+  const [isAllRekapSelected, setIsAllRekapSelected] = useState(false);
+  const selectAllRef = useRef(null);
+
   useEffect(() => {
     const fetchUserAndData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -251,6 +252,15 @@ export default function PencatatanPasien() {
     };
     fetchAllSelectedPasien();
   }, [selectedRekapIds]);
+  
+  // Efek untuk mengontrol status "Pilih Semua" (termasuk indeterminate)
+  useEffect(() => {
+    if (selectAllRef.current) {
+      const isIndeterminate = selectedRekapIds.length > 0 && selectedRekapIds.length < paginatedRekap.length;
+      selectAllRef.current.indeterminate = isIndeterminate;
+      setIsAllRekapSelected(selectedRekapIds.length === paginatedRekap.length && paginatedRekap.length > 0);
+    }
+  }, [selectedRekapIds, paginatedRekap]);
 
   const fetchRekapitulasi = async (id) => {
     console.log("Mengambil semua rekapitulasi harian...");
@@ -502,7 +512,7 @@ export default function PencatatanPasien() {
       }
     }
   };
-
+  
   const handleDeleteRekap = async () => {
     if (selectedRekapIds.length === 0) {
       Swal.fire("Info", "Pilih rekapitulasi yang ingin dihapus.", "info");
@@ -542,6 +552,15 @@ export default function PencatatanPasien() {
         ? prev.filter((id) => id !== rekapId)
         : [...prev, rekapId]
     );
+  };
+
+  const handleSelectAllRekap = () => {
+    if (isAllRekapSelected) {
+      setSelectedRekapIds([]);
+    } else {
+      const allIds = paginatedRekap.map(rekap => rekap.id);
+      setSelectedRekapIds(allIds);
+    }
   };
   
   const handlePasienRowClick = (pasien) => {
@@ -664,7 +683,7 @@ export default function PencatatanPasien() {
   
   return (
     <Layout>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", flexWrap: "wrap", gap: "10px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0rem", flexWrap: "wrap", gap: "10px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", fontFamily: "Arial, sans-serif" }}>
           <h2>Rekapitulasi Harian</h2>
           <button
@@ -672,7 +691,7 @@ export default function PencatatanPasien() {
               setNewRekapDate("");
               setShowRekapModal(true);
             }}
-            style={{ background: "#16a34a", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "14px" }}
+            style={{ background: "#16a34a", color: "white", padding: "6px 10px", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "12px" }}
           >
             Tambah Rekap
           </button>
@@ -682,12 +701,12 @@ export default function PencatatanPasien() {
             style={{ 
               background: "#16a34a", 
               color: "white", 
-              padding: "8px 16px", 
+              padding: "6px 10px", 
               border: "none", 
               borderRadius: "6px", 
               cursor: selectedRekapIds.length === 0 ? "not-allowed" : "pointer", 
               opacity: selectedRekapIds.length === 0 ? 0.5 : 1,
-              fontSize: "14px"
+              fontSize: "12px"
             }}
           >
             Tambah Pasien
@@ -698,12 +717,12 @@ export default function PencatatanPasien() {
             style={{ 
               background: "#dc2626", 
               color: "white", 
-              padding: "8px 16px", 
+              padding: "6px 10px", 
               border: "none", 
               borderRadius: "6px", 
               cursor: selectedRekapIds.length === 0 ? "not-allowed" : "pointer", 
               opacity: selectedRekapIds.length === 0 ? 0.5 : 1,
-              fontSize: "14px"
+              fontSize: "12px"
             }}
           >
             Hapus Rekap
@@ -714,17 +733,17 @@ export default function PencatatanPasien() {
             style={{ 
               background: "#2563eb", 
               color: "white", 
-              padding: "8px 16px", 
+              padding: "6px 10px", 
               border: "none", 
               borderRadius: "6px", 
               cursor: selectedRekapIds.length === 0 ? "not-allowed" : "pointer", 
               opacity: selectedRekapIds.length === 0 ? 0.5 : 1,
-              fontSize: "14px"
+              fontSize: "12px"
             }}
           >
             Download
           </button>
-          <div style={{ display: "flex", flexDirection: "column" }}>
+          <div style={{ display: "flex", flexDirection: "column", marginTop: "-25px" }}>
             <label style={{ fontSize: "12px", marginBottom: "4px" }}>Tanggal Awal</label>
             <input
               type="date"
@@ -733,7 +752,7 @@ export default function PencatatanPasien() {
               style={{ padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
             />
           </div>
-          <div style={{ display: "flex", flexDirection: "column" }}>
+          <div style={{ display: "flex", flexDirection: "column", marginTop: "-25px" }}>
             <label style={{ fontSize: "12px", marginBottom: "4px" }}>Tanggal Akhir</label>
             <input
               type="date"
@@ -744,9 +763,9 @@ export default function PencatatanPasien() {
           </div>
           <button
             onClick={handleClearFilter}
-            style={{ background: "#3b82f6", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer", alignSelf: "flex-end", fontSize: "14px" }}
+            style={{ background: "#3b82f6", color: "white", padding: "6px 10px", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "12px" }}
           >
-            Clear Filter
+            Clear
           </button>
         </div>
       </div>
@@ -846,18 +865,29 @@ export default function PencatatanPasien() {
         </Modal>
       )}
 
-      <table border="1" cellPadding="4" style={{ borderCollapse: "collapse", width: "100%", marginTop: "20px", fontSize: "12px" }}>
+      <table border="1" cellPadding="4" style={{ borderCollapse: "collapse", width: "100%", marginTop: "0px", fontSize: "12px" }}>
         <thead>
           <tr style={{ background: "#f3f4f6" }}>
-            <th style={{ padding: "8px", textAlign: "left", width: "30px" }}></th>
+            <th style={{ padding: "8px", textAlign: "left", width: "30px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                <input
+                  type="checkbox"
+                  ref={selectAllRef}
+                  checked={isAllRekapSelected}
+                  onChange={handleSelectAllRekap}
+                  style={{ transform: "scale(1.3)" }}
+                />
+                <span style={{ fontSize: "12px" }}>Check</span>
+              </div>
+            </th>
             <th style={{ padding: "8px", textAlign: "left" }}>Tanggal</th>
             <th style={{ padding: "8px", textAlign: "left" }}>Nama User</th>
             <th style={{ padding: "8px", textAlign: "center" }}>Total Pasien</th>
-            <th style={{ padding: "8px", textAlign: "left" }}>Total Tagihan</th>
-            <th style={{ padding: "8px", textAlign: "left" }}>Bayar Tunai</th>
-            <th style={{ padding: "8px", textAlign: "left" }}>Bayar Transfer</th>
-            <th style={{ padding: "8px", textAlign: "left" }}>Total Pembayaran</th>
-            <th style={{ padding: "8px", textAlign: "left" }}>Status</th>
+            <th style={{ padding: "8px", textAlign: "center" }}>Total Tagihan</th>
+            <th style={{ padding: "8px", textAlign: "center" }}>Bayar Tunai</th>
+            <th style={{ padding: "8px", textAlign: "center" }}>Bayar Transfer</th>
+            <th style={{ padding: "8px", textAlign: "center" }}>Total Pembayaran</th>
+            <th style={{ padding: "8px", textAlign: "center" }}>Status</th>
           </tr>
         </thead>
         <tbody>
@@ -868,12 +898,15 @@ export default function PencatatanPasien() {
                 style={{ backgroundColor: selectedRekapIds.includes(rekap.id) ? "#e0e7ff" : "white", cursor: "pointer" }}
               >
                 <td>
-                  <input
-                    type="checkbox"
-                    checked={selectedRekapIds.includes(rekap.id)}
-                    onChange={() => handleRekapCheckbox(rekap.id)}
-                  />
-                </td>
+                  <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+                      <input
+                          type="checkbox"
+                          checked={selectedRekapIds.includes(rekap.id)}
+                          onChange={() => handleRekapCheckbox(rekap.id)}
+                          style={{ transform: "scale(1.3)" }}
+                      />
+                  </div>
+              </td>
                 <td style={{ padding: "8px", fontWeight: "bold" }}>
                   {formatDate(rekap.tanggal)}
                 </td>
@@ -905,7 +938,7 @@ export default function PencatatanPasien() {
       )}
 
       {/* Kontrol Download Data Pasien */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "2rem", marginBottom: "1rem" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "1rem", marginBottom: "0rem" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <h2>Data Pasien</h2>
             <button
@@ -914,12 +947,12 @@ export default function PencatatanPasien() {
                 style={{ 
                     background: "#f59e0b", 
                     color: "white", 
-                    padding: "8px 16px", 
+                    padding: "6px 10px", 
                     border: "none", 
                     borderRadius: "6px", 
                     cursor: !selectedPasienId ? "not-allowed" : "pointer", 
                     opacity: !selectedPasienId ? 0.5 : 1,
-                    fontSize: "14px"
+                    fontSize: "12px"
                 }}
             >
                 Edit
@@ -930,12 +963,12 @@ export default function PencatatanPasien() {
                 style={{ 
                     background: "#dc2626", 
                     color: "white", 
-                    padding: "8px 16px", 
+                    padding: "6px 16px", 
                     border: "none", 
                     borderRadius: "6px", 
                     cursor: !selectedPasienId ? "not-allowed" : "pointer", 
                     opacity: !selectedPasienId ? 0.5 : 1,
-                    fontSize: "14px"
+                    fontSize: "12px"
                 }}
             >
                 Hapus
@@ -944,7 +977,7 @@ export default function PencatatanPasien() {
       </div>
       
       {/* Tabel Data Pasien */}
-      <table border="1" cellPadding="4" style={{ borderCollapse: "collapse", width: "100%", marginTop: "10px", fontSize: "12px" }}>
+      <table border="1" cellPadding="4" style={{ borderCollapse: "collapse", width: "100%", marginTop: "0px", fontSize: "12px" }}>
         <thead>
           <tr style={{ background: "#f3f4f6" }}>
             <th style={{ padding: "8px", textAlign: "left" }}>Tanggal</th>
