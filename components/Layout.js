@@ -1,3 +1,5 @@
+// components/Layout.js
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Swal from "sweetalert2";
@@ -20,9 +22,12 @@ export default function Layout({ children, fullName }) {
     if (result.isConfirmed) {
       const { error } = await supabase.auth.signOut();
       if (error) {
+        // Tampilkan pesan error jika terjadi kesalahan saat logout
         console.error("Error signing out:", error.message);
         Swal.fire("Gagal Logout", "Terjadi kesalahan saat mencoba keluar.", "error");
       } else {
+        // Jika logout berhasil, hapus token atau state login jika ada
+        // Redirect ke halaman utama atau halaman login
         router.push("/");
       }
     }
