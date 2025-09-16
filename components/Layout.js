@@ -84,15 +84,16 @@ export default function Layout({ children, fullName }) {
     margin: "0 -1rem",
   };
 
+  // Ikon folder dengan warna biru abu-abu
   const folderIcon = (
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="#4A5568"> {/* Warna biru abu-abu */}
       <path d="M22 6c0-1.103-.897-2-2-2h-7.164a2 2 0 0 1-1.517-.703L11 2.375A2 2 0 0 0 9.483 2H4c-1.103 0-2 .897-2 2v16c0 1.103.897 2 2 2h18c1.103 0 2-.897 2-2V8c0-1.103-.897-2-2-2z"></path>
     </svg>
   );
 
-  // Ikon SVG tunggal (panah ke bawah)
+  // Ikon panah dengan warna biru dan stroke lebih tebal
   const arrowIcon = (
-    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}> {/* Warna biru dan stroke lebih tebal */}
       <polyline points="6 9 12 15 18 9"></polyline>
     </svg>
   );
