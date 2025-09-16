@@ -63,16 +63,17 @@ export default function Home() {
     const { data, error } = authResponse;
 
     if (error) {
-      setMsgType("error");
-      // ✅ Perbaikan: Tangani pesan error spesifik dari Supabase
-      if (error.message.includes("User already registered")) {
-        setMessage("Email ini sudah terdaftar. Silakan login.");
-      } else {
-        setMessage(error.message || "Terjadi kesalahan!");
-      }
+    setMsgType("error");
+    if (error.message.includes("User already registered")) {
+      setMessage("Email ini sudah terdaftar. Silakan login.");
     } else {
+      // ✅ Perubahan di sini: Mengganti pesan error menjadi pesan kustom
+      setMessage("Email atau password yang Anda masukkan salah.");
+    }
+  }
+ else {
       setMsgType("success");
-      setMessage(isRegisterMode ? "Registrasi berhasil! Silakan lengkapi profil Anda." : "Login berhasil! 🎉");
+      setMessage(isRegisterMode ? "Registrasi berhasil! Silakan lengkapi profil Anda." : "Login berhasil!");
 
       if (isRegisterMode) {
         // Jika registrasi, buat profil kosong
@@ -112,6 +113,9 @@ export default function Home() {
 
         {/* Bagian Kanan: Form Login/Register */}
         <div style={rightPanelStyle}>
+          {/* Logo iconkeu.png di atas tulisan "Selamat datang" */}
+          <img src="/iconkeu.png" alt="Icon Keuangan" style={smallLogoStyle} />
+
           <h1 style={greetingStyle}>Selamat datang</h1>
           <p style={subGreetingStyle}>Silakan {isRegisterMode ? "daftar" : "login"} untuk melanjutkan.</p>
 
@@ -130,7 +134,17 @@ export default function Home() {
               onChange={(e) => setPassword(e.target.value)}
               style={inputStyle}
             />
-            <button type="submit" disabled={loading} style={buttonStyle}>
+            <button
+              type="submit"
+              disabled={loading}
+              // Mengganti warna tombol berdasarkan isRegisterMode
+              style={{
+                ...buttonStyle,
+                backgroundColor: isRegisterMode ? "#10b981" : "#2563eb", // Hijau untuk Daftar, Biru untuk Login
+                opacity: loading ? 0.7 : 1, // Opasitas saat loading
+                cursor: loading ? "not-allowed" : "pointer",
+              }}
+            >
               {loading ? "Memuat..." : (isRegisterMode ? "Daftar" : "Login")}
             </button>
           </form>
@@ -205,6 +219,14 @@ const rightPanelStyle = {
   backgroundColor: "#f9fafb",
 };
 
+// Gaya baru untuk logo kecil di atas "Selamat datang"
+const smallLogoStyle = {
+  width: "80px", // Sesuaikan ukuran sesuai keinginan
+  height: "auto",
+  marginBottom: "15px", // Beri sedikit jarak dengan teks di bawahnya
+};
+
+
 const greetingStyle = {
   fontSize: "2rem",
   marginBottom: "1rem",
@@ -231,13 +253,12 @@ const inputStyle = {
 const buttonStyle = {
   width: "100%",
   padding: "12px",
-  backgroundColor: "#2563eb",
-  color: "white",
   border: "none",
   borderRadius: "8px",
   cursor: "pointer",
   fontWeight: "600",
   transition: "background-color 0.3s",
+  color: "white", // Pastikan warna teks tombol selalu putih
 };
 
 const messageStyle = {
