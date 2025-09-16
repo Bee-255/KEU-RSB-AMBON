@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { useRouter } from "next/router";
 import Swal from "sweetalert2";
-import Layout from "../components/Layout";
 
 // Komponen Modal Pop-up (Tetap sama)
 const Modal = ({ children, onClose }) => {
@@ -117,7 +116,7 @@ export default function Pegawai() {
   const [editId, setEditId] = useState(null);
   const [selectedPegawai, setSelectedPegawai] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [searchTerm, setSearchTerm] = useState(""); // State baru untuk pencarian
+  const [searchTerm, setSearchTerm] = useState("");
 
   // State untuk paginasi
   const [currentPage, setCurrentPage] = useState(1);
@@ -144,18 +143,10 @@ export default function Pegawai() {
   const [pangkatOptions, setPangkatOptions] = useState([]);
   const [golonganOptions, setGolonganOptions] = useState([]);
 
-  // Ambil data pegawai dengan paginasi dan pencarian
+  // Efek untuk mengambil data pegawai dengan paginasi dan pencarian
   useEffect(() => {
-    const fetchData = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        fetchPegawai();
-      } else {
-        router.push("/");
-      }
-    };
-    fetchData();
-  }, [router, currentPage, itemsPerPage, searchTerm]); // Tambahkan searchTerm ke dependency array
+    fetchPegawai();
+  }, [currentPage, itemsPerPage, searchTerm]);
 
   // Efek untuk memperbarui opsi pangkat dan golongan
   useEffect(() => {
@@ -351,129 +342,92 @@ export default function Pegawai() {
   };
 
   return (
-  <Layout>
-    <h2>Data Pegawai</h2>
+    <>
+      <h2>Data Pegawai</h2>
 
-    {/* Tombol Aksi dan Input Pencarian dalam satu baris */}
-    <div style={{ marginBottom: "1rem", display: "flex", gap: "10px", alignItems: "center" }}>
-      <button
-        onClick={() => {
-          resetForm();
-          setShowModal(true);
-        }}
-        style={{ background: "#16a34a", color: "white", padding: "10px 20px", border: "none", borderRadius: "6px", cursor: "pointer" }}
-      >
-        Rekam Pegawai
-      </button>
-      <button
-        onClick={handleEdit}
-        disabled={!selectedPegawai}
-        style={{ background: "#f59e0b", color: "white", padding: "10px 20px", border: "none", borderRadius: "6px", cursor: selectedPegawai ? "pointer" : "not-allowed", opacity: selectedPegawai ? 1 : 0.5 }}
-      >
-        Edit
-      </button>
-      <button
-        onClick={handleDelete}
-        disabled={!selectedPegawai}
-        style={{ background: "#dc2626", color: "white", padding: "10px 20px", border: "none", borderRadius: "6px", cursor: selectedPegawai ? "pointer" : "not-allowed", opacity: selectedPegawai ? 1 : 0.5 }}
-      >
-        Hapus
-      </button>
-
-      {/* Input Pencarian dengan tombol clear, posisinya di kanan */}
-      <div style={{ position: "relative", maxWidth: "300px" }}>
-        <input
-          type="text"
-          placeholder="Cari pegawai..."
-          value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
-            setCurrentPage(1);
+      {/* Tombol Aksi dan Input Pencarian dalam satu baris */}
+      <div style={{ marginBottom: "1rem", display: "flex", gap: "10px", alignItems: "center" }}>
+        <button
+          onClick={() => {
+            resetForm();
+            setShowModal(true);
           }}
-          style={{ width: "100%", padding: "8px", paddingRight: "30px", border: "1px solid #ccc", borderRadius: "4px" }}
-        />
-        {searchTerm && (
-          <button
-            onClick={() => setSearchTerm("")}
-            style={{
-              position: "absolute",
-              right: "1px",
-              top: "50%",
-              transform: "translateY(-50%)",
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              fontSize: "0.9rem",
-              color: "#6b7280",
-              padding: "5px",
+          style={{ background: "#16a34a", color: "white", padding: "10px 20px", border: "none", borderRadius: "6px", cursor: "pointer" }}
+        >
+          Rekam Pegawai
+        </button>
+        <button
+          onClick={handleEdit}
+          disabled={!selectedPegawai}
+          style={{ background: "#f59e0b", color: "white", padding: "10px 20px", border: "none", borderRadius: "6px", cursor: selectedPegawai ? "pointer" : "not-allowed", opacity: selectedPegawai ? 1 : 0.5 }}
+        >
+          Edit
+        </button>
+        <button
+          onClick={handleDelete}
+          disabled={!selectedPegawai}
+          style={{ background: "#dc2626", color: "white", padding: "10px 20px", border: "none", borderRadius: "6px", cursor: selectedPegawai ? "pointer" : "not-allowed", opacity: selectedPegawai ? 1 : 0.5 }}
+        >
+          Hapus
+        </button>
+
+        {/* Input Pencarian dengan tombol clear, posisinya di kanan */}
+        <div style={{ position: "relative", maxWidth: "300px" }}>
+          <input
+            type="text"
+            placeholder="Cari pegawai..."
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1);
             }}
-          >
-            &#x2715;
-          </button>
-        )}
-      </div>
-    </div>
-    
-    {showModal && (
-      <Modal onClose={resetForm}>
-        <form onSubmit={handleSubmit}>
-          <h3 style={{ marginTop: 0 }}>{editId ? "Edit Data Pegawai" : "Rekam Pegawai Baru"}</h3>
-          
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", rowGap: "1rem", marginBottom: "1rem" }}>
-            <div>
-              <label>Nama:</label>
-              <input
-                type="text"
-                name="nama"
-                value={pegawai.nama}
-                onChange={handleChange}
-                required
-                style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
-              />
-            </div>
-            
-            <div>
-            <label>Pekerjaan:</label>
-            <select
-              name="pekerjaan"
-              value={pegawai.pekerjaan}
-              onChange={handleChange}
-              required
-              style={{ 
-                width: "100%", 
-                padding: "8px", 
-                border: "1px solid #ccc", 
-                borderRadius: "4px",
-                backgroundColor: pegawai.pekerjaan === "" ? "#f3f4f6" : "white" 
+            style={{ width: "100%", padding: "8px", paddingRight: "30px", border: "1px solid #ccc", borderRadius: "4px" }}
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm("")}
+              style={{
+                position: "absolute",
+                right: "1px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                fontSize: "0.9rem",
+                color: "#6b7280",
+                padding: "5px",
               }}
             >
-              <option value="">-- Pilih Pekerjaan --</option>
-              <option>Anggota Polri</option>
-              <option>ASN</option>
-              <option>PPPK</option>
-              <option>TKK</option>
-              <option>Dokter Mitra</option>
-              <option>Tenaga Mitra</option>
-            </select>
-          </div>
+              &#x2715;
+            </button>
+          )}
+        </div>
+      </div>
+      
+      {showModal && (
+        <Modal onClose={resetForm}>
+          <form onSubmit={handleSubmit}>
+            <h3 style={{ marginTop: 0 }}>{editId ? "Edit Data Pegawai" : "Rekam Pegawai Baru"}</h3>
             
-            <div>
-              <label>Identitas:</label>
-              <input
-                type="text"
-                name="identitas"
-                value={pegawai.identitas}
-                onChange={handleChange}
-                required
-                style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
-              />
-            </div>
-            
-            <div>
-              <label>Klasifikasi:</label>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", rowGap: "1rem", marginBottom: "1rem" }}>
+              <div>
+                <label>Nama:</label>
+                <input
+                  type="text"
+                  name="nama"
+                  value={pegawai.nama}
+                  onChange={handleChange}
+                  required
+                  style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
+                />
+              </div>
+              
+              <div>
+              <label>Pekerjaan:</label>
               <select
-                name="klasifikasi"
-                value={pegawai.klasifikasi}
+                name="pekerjaan"
+                value={pegawai.pekerjaan}
                 onChange={handleChange}
                 required
                 style={{ 
@@ -481,300 +435,337 @@ export default function Pegawai() {
                   padding: "8px", 
                   border: "1px solid #ccc", 
                   borderRadius: "4px",
-                  backgroundColor: pegawai.klasifikasi === "" ? "#f3f4f6" : "white" 
+                  backgroundColor: pegawai.pekerjaan === "" ? "#f3f4f6" : "white" 
                 }}
               >
-                <option value="">-- Pilih Klasifikasi --</option>
-                <option>Medis</option>
-                <option>Paramedis</option>
-                <option>Non Medis</option>
+                <option value="">-- Pilih Pekerjaan --</option>
+                <option>Anggota Polri</option>
+                <option>ASN</option>
+                <option>PPPK</option>
+                <option>TKK</option>
+                <option>Dokter Mitra</option>
+                <option>Tenaga Mitra</option>
               </select>
             </div>
+              
+              <div>
+                <label>Identitas:</label>
+                <input
+                  type="text"
+                  name="identitas"
+                  value={pegawai.identitas}
+                  onChange={handleChange}
+                  required
+                  style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
+                />
+              </div>
+              
+              <div>
+                <label>Klasifikasi:</label>
+                <select
+                  name="klasifikasi"
+                  value={pegawai.klasifikasi}
+                  onChange={handleChange}
+                  required
+                  style={{ 
+                    width: "100%", 
+                    padding: "8px", 
+                    border: "1px solid #ccc", 
+                    borderRadius: "4px",
+                    backgroundColor: pegawai.klasifikasi === "" ? "#f3f4f6" : "white" 
+                  }}
+                >
+                  <option value="">-- Pilih Klasifikasi --</option>
+                  <option>Medis</option>
+                  <option>Paramedis</option>
+                  <option>Non Medis</option>
+                </select>
+              </div>
+              
+              {/* Pangkat */}
+              <div>
+                <label>Pangkat:</label>
+                <select
+                  name="pangkat"
+                  value={pegawai.pangkat}
+                  onChange={handleChange}
+                  required={pegawai.pekerjaan === "Anggota Polri" || pegawai.pekerjaan === "ASN"}
+                  disabled={pegawai.pekerjaan !== "Anggota Polri" && pegawai.pekerjaan !== "ASN"}
+                  style={{
+                    width: "100%",
+                    padding: "8px",
+                    border: "1px solid #ccc",
+                    borderRadius: "4px",
+                    backgroundColor:
+                      pegawai.pekerjaan !== "Anggota Polri" && pegawai.pekerjaan !== "ASN"
+                        ? "#e9ecef"
+                        : pegawai.pangkat === ""
+                        ? "#f3f4f6"
+                        : "white",
+                  }}
+                >
+                  <option value="">-- Pilih Pangkat --</option>
+                  {pangkatOptions.map((pangkat) => (
+                    <option key={pangkat} value={pangkat}>
+                      {pangkat}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              {/* Golongan */}
+              <div>
+                <label>Golongan:</label>
+                <select
+                  name="golongan"
+                  value={pegawai.golongan}
+                  onChange={handleChange}
+                  required={pegawai.pekerjaan === "ASN"}
+                  disabled={pegawai.pekerjaan !== "ASN" && pegawai.pekerjaan !== "Anggota Polri" || !pegawai.pangkat}
+                  style={{
+                    width: "100%",
+                    padding: "8px",
+                    border: "1px solid #ccc",
+                    borderRadius: "4px",
+                    backgroundColor:
+                      (pegawai.pekerjaan !== "ASN" && pegawai.pekerjaan !== "Anggota Polri" || !pegawai.pangkat)
+                        ? "#e9ecef"
+                        : pegawai.golongan === ""
+                        ? "#f3f4f6"
+                        : "white",
+                  }}
+                >
+                  <option value="">-- Pilih Golongan --</option>
+                  {golonganOptions.map((golongan) => (
+                    <option key={golongan} value={golongan}>
+                      {golongan}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label>Status:</label>
+                <select
+                  name="status"
+                  value={pegawai.status}
+                  onChange={handleChange}
+                  required
+                  style={{
+                    width: "100%",
+                    padding: "8px",
+                    border: "1px solid #ccc",
+                    borderRadius: "4px",
+                    backgroundColor:
+                      pegawai.status === "" ? "#f3f4f6" : "white",
+                  }}
+                >
+                  <option value="">-- Pilih Status --</option>
+                  <option>Aktif</option>
+                  <option>Tidak Aktif</option>
+                </select>
+              </div>
+              
+              <div>
+                <label>Bank:</label>
+                <input
+                  type="text"
+                  name="bank"
+                  value={pegawai.bank}
+                  onChange={handleChange}
+                  style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
+                />
+              </div>
+              
+              <div>
+                <label>No. Rekening:</label>
+                <input
+                  type="text"
+                  name="no_rekening"
+                  value={pegawai.no_rekening}
+                  onChange={handleChange}
+                  style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
+                />
+              </div>
+              
+              <div>
+                <label>Nama Rekening:</label>
+                <input
+                  type="text"
+                  name="nama_rekening"
+                  value={pegawai.nama_rekening}
+                  onChange={handleChange}
+                  style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
+                />
+              </div>
+            </div>
             
-            {/* Pangkat */}
-            <div>
-              <label>Pangkat:</label>
-              <select
-                name="pangkat"
-                value={pegawai.pangkat}
-                onChange={handleChange}
-                required={pegawai.pekerjaan === "Anggota Polri" || pegawai.pekerjaan === "ASN"}
-                disabled={pegawai.pekerjaan !== "Anggota Polri" && pegawai.pekerjaan !== "ASN"}
-                style={{
-                  width: "100%",
-                  padding: "8px",
-                  border: "1px solid #ccc",
-                  borderRadius: "4px",
-                  backgroundColor:
-                    pegawai.pekerjaan !== "Anggota Polri" && pegawai.pekerjaan !== "ASN"
-                      ? "#e9ecef"
-                      : pegawai.pangkat === ""
-                      ? "#f3f4f6"
-                      : "white",
-                }}
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+              <button
+                type="button"
+                onClick={resetForm}
+                style={{ padding: "10px 20px", border: "1px solid #ccc", borderRadius: "6px", cursor: "pointer" }}
               >
-                <option value="">-- Pilih Pangkat --</option>
-                {pangkatOptions.map((pangkat) => (
-                  <option key={pangkat} value={pangkat}>
-                    {pangkat}
-                  </option>
-                ))}
-              </select>
-            </div>
-            
-            {/* Golongan */}
-            <div>
-              <label>Golongan:</label>
-              <select
-                name="golongan"
-                value={pegawai.golongan}
-                onChange={handleChange}
-                required={pegawai.pekerjaan === "ASN"}
-                disabled={pegawai.pekerjaan !== "ASN" && pegawai.pekerjaan !== "Anggota Polri" || !pegawai.pangkat}
-                style={{
-                  width: "100%",
-                  padding: "8px",
-                  border: "1px solid #ccc",
-                  borderRadius: "4px",
-                  backgroundColor:
-                    (pegawai.pekerjaan !== "ASN" && pegawai.pekerjaan !== "Anggota Polri" || !pegawai.pangkat)
-                      ? "#e9ecef"
-                      : pegawai.golongan === ""
-                      ? "#f3f4f6"
-                      : "white",
-                }}
+                Batal
+              </button>
+              <button
+                type="submit"
+                style={{ background: "#16a34a", color: "white", padding: "10px 20px", border: "none", borderRadius: "6px", cursor: "pointer" }}
               >
-                <option value="">-- Pilih Golongan --</option>
-                {golonganOptions.map((golongan) => (
-                  <option key={golongan} value={golongan}>
-                    {golongan}
-                  </option>
-                ))}
-              </select>
+                {editId ? "Update" : "Simpan"}
+              </button>
             </div>
-            
-            <div>
-              <label>Status:</label>
-              <select
-                name="status"
-                value={pegawai.status}
-                onChange={handleChange}
-                required
-                style={{
-                  width: "100%",
-                  padding: "8px",
-                  border: "1px solid #ccc",
-                  borderRadius: "4px",
-                  backgroundColor:
-                    pegawai.status === "" ? "#f3f4f6" : "white",
-                }}
-              >
-                <option value="">-- Pilih Status --</option>
-                <option>Aktif</option>
-                <option>Tidak Aktif</option>
-              </select>
-            </div>
-            
-            <div>
-              <label>Bank:</label>
-              <input
-                type="text"
-                name="bank"
-                value={pegawai.bank}
-                onChange={handleChange}
-                style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
-              />
-            </div>
-            
-            <div>
-              <label>No. Rekening:</label>
-              <input
-                type="text"
-                name="no_rekening"
-                value={pegawai.no_rekening}
-                onChange={handleChange}
-                style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
-              />
-            </div>
-            
-            <div>
-              <label>Nama Rekening:</label>
-              <input
-                type="text"
-                name="nama_rekening"
-                value={pegawai.nama_rekening}
-                onChange={handleChange}
-                style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
-              />
-            </div>
-          </div>
-          
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
-            <button
-              type="button"
-              onClick={resetForm}
-              style={{ padding: "10px 20px", border: "1px solid #ccc", borderRadius: "6px", cursor: "pointer" }}
-            >
-              Batal
-            </button>
-            <button
-              type="submit"
-              style={{ background: "#16a34a", color: "white", padding: "10px 20px", border: "none", borderRadius: "6px", cursor: "pointer" }}
-            >
-              {editId ? "Update" : "Simpan"}
-            </button>
-          </div>
-        </form>
-      </Modal>
-    )}
-    
-    {/* Tabel Pegawai */}
-    <table 
-      border="1" 
-      cellPadding="4" 
-      style={{ 
-        borderCollapse: "collapse", 
-        width: "100%", 
-        marginTop: "20px", 
-        fontSize: "12px",
-        tableLayout: "fixed"
-      }}
-    >
-      <thead>
-        <tr style={{ background: "#f3f4f6" }}>
-          <th style={{ width: "50px", padding: "8px", textAlign: "center" }}>No.</th>
-          <th style={{ width: "25%", padding: "8px", textAlign: "left" }}>Nama</th>
-          <th style={{ width: "25%", padding: "8px", textAlign: "left" }}>Pekerjaan</th>
-          <th style={{ width: "50%", padding: "8px", textAlign: "left" }}>Identitas</th>
-        </tr>
-      </thead>
-      <tbody>
-        {listPegawai.length > 0 ? (
-          listPegawai.map((p, index) => (
-            <tr
-              key={p.id}
-              onClick={() => handleRowClick(p)}
-              style={{ cursor: "pointer", backgroundColor: selectedPegawai?.id === p.id ? "#e0e7ff" : "white" }}
-            >
-              <td style={{ width: "50px", padding: "8px", textAlign: "center" }}>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-              <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.nama}</td>
-              <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.pekerjaan}</td>
-              <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.identitas}</td>
-            </tr>
-          ))
-        ) : (
-          <tr>
-            <td colSpan="4" style={{ textAlign: "center", padding: "1rem" }}>
-              Tidak ada data pegawai yang ditemukan.
-            </td>
-          </tr>
-        )}
-      </tbody>
-    </table>
-
-    {/* Kontrol Paginasi */}
-    <div style={{ marginTop: "1rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-      <div>
-        <span>Tampilkan </span>
-        <select 
-          value={itemsPerPage} 
-          onChange={(e) => {
-            setItemsPerPage(Number(e.target.value));
-            setCurrentPage(1);
-          }}
-          style={{ padding: "4px", borderRadius: "4px" }}
-        >
-          {[5, 10, 50, 100, 500, 1000].map(size => (
-            <option key={size} value={size}>{size}</option>
-          ))}
-        </select>
-        <span> baris</span>
-      </div>
-      <div>
-        {renderPaginationButtons()}
-      </div>
-    </div>
-    
-    {/* Detail Pegawai yang Dipilih */}
-    <div style={{ 
-        marginTop: "2rem", 
-        border: "1px solid #ccc", 
-        paddingTop: "0rem",
-        paddingBottom: "1rem", 
-        paddingLeft: "0rem", 
-        paddingRight: "0rem",  
-        borderRadius: "0px 8PX" }}>
-      <h3 
-          style={{ 
-              marginTop: 0,
-              padding: "0.5rem 1rem ",
-              backgroundColor: "#e5e7eaff",
-              borderRadius: "0px",
-              marginBottom: "1rem"
-          }}>
-          Detail Data Pegawai
-      </h3>
-      {selectedPegawai ? (
-      <div style={{ 
-          display: "grid", 
-          gridTemplateColumns: "1fr 1fr", 
-          gap: "1rem" 
-      }}>
-          {/* Baris 1: Nama */}
-          <div style={{ display: "flex" }}>
-              <p style={{ margin: 0, width: "150px", paddingLeft: "1rem" }}><strong>Nama</strong></p>
-              <p style={{ margin: 0 }}>: {selectedPegawai.nama}</p>
-          </div>
-          {/* Baris 2: Pekerjaan */}
-          <div style={{ display: "flex" }}>
-              <p style={{ margin: 0, width: "150px", }}><strong>Pekerjaan</strong></p>
-              <p style={{ margin: 0 }}>: {selectedPegawai.pekerjaan}</p>
-          </div>
-          {/* Baris 3: Identitas */}
-          <div style={{ display: "flex" }}>
-              <p style={{ margin: 0, width: "150px", paddingLeft: "1rem" }}><strong>Identitas</strong></p>
-              <p style={{ margin: 0 }}>: {selectedPegawai.identitas}</p>
-          </div>
-          {/* Baris 4: Klasifikasi */}
-          <div style={{ display: "flex" }}>
-              <p style={{ margin: 0, width: "150px" }}><strong>Klasifikasi</strong></p>
-              <p style={{ margin: 0 }}>: {selectedPegawai.klasifikasi}</p>
-          </div>
-          {/* Baris 5: Pangkat */}
-          <div style={{ display: "flex" }}>
-              <p style={{ margin: 0, width: "150px", paddingLeft: "1rem" }}><strong>Pangkat</strong></p>
-              <p style={{ margin: 0 }}>: {selectedPegawai.pangkat}</p>
-          </div>
-          {/* Baris 6: Golongan */}
-          <div style={{ display: "flex" }}>
-              <p style={{ margin: 0, width: "150px" }}><strong>Golongan</strong></p>
-              <p style={{ margin: 0 }}>: {selectedPegawai.golongan}</p>
-          </div>
-          {/* Baris 7: Status */}
-          <div style={{ display: "flex" }}>
-              <p style={{ margin: 0, width: "150px", paddingLeft: "1rem" }}><strong>Status</strong></p>
-              <p style={{ margin: 0 }}>: {selectedPegawai.status}</p>
-          </div>
-          {/* Baris 8: Bank */}
-          <div style={{ display: "flex" }}>
-              <p style={{ margin: 0, width: "150px" }}><strong>Bank</strong></p>
-              <p style={{ margin: 0 }}>: {selectedPegawai.bank}</p>
-          </div>
-          {/* Baris 9: No. Rekening */}
-          <div style={{ display: "flex" }}>
-              <p style={{ margin: 0, width: "150px", paddingLeft: "1rem" }}><strong>No. Rekening</strong></p>
-              <p style={{ margin: 0 }}>: {selectedPegawai.no_rekening}</p>
-          </div>
-          {/* Baris 10: Nama Rekening */}
-          <div style={{ display: "flex" }}>
-              <p style={{ margin: 0, width: "150px" }}><strong>Nama Rekening</strong></p>
-              <p style={{ margin: 0 }}>: {selectedPegawai.nama_rekening}</p>
-          </div>
-      </div>
-      ) : (
-          <p style={{ textAlign: "center", paddingBottom: "1rem" }}>Data Pegawai Belum Dipilih</p>
+          </form>
+        </Modal>
       )}
-    </div>
-  </Layout>
-);
+      
+      {/* Tabel Pegawai */}
+      <table 
+        border="1" 
+        cellPadding="4" 
+        style={{ 
+          borderCollapse: "collapse", 
+          width: "100%", 
+          marginTop: "20px", 
+          fontSize: "12px",
+          tableLayout: "fixed"
+        }}
+      >
+        <thead>
+          <tr style={{ background: "#f3f4f6" }}>
+            <th style={{ width: "50px", padding: "8px", textAlign: "center" }}>No.</th>
+            <th style={{ width: "25%", padding: "8px", textAlign: "left" }}>Nama</th>
+            <th style={{ width: "25%", padding: "8px", textAlign: "left" }}>Pekerjaan</th>
+            <th style={{ width: "50%", padding: "8px", textAlign: "left" }}>Identitas</th>
+          </tr>
+        </thead>
+        <tbody>
+          {listPegawai.length > 0 ? (
+            listPegawai.map((p, index) => (
+              <tr
+                key={p.id}
+                onClick={() => handleRowClick(p)}
+                style={{ cursor: "pointer", backgroundColor: selectedPegawai?.id === p.id ? "#e0e7ff" : "white" }}
+              >
+                <td style={{ width: "50px", padding: "8px", textAlign: "center" }}>{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.nama}</td>
+                <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.pekerjaan}</td>
+                <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.identitas}</td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan="4" style={{ textAlign: "center", padding: "1rem" }}>
+                Tidak ada data pegawai yang ditemukan.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+
+      {/* Kontrol Paginasi */}
+      <div style={{ marginTop: "1rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <span>Tampilkan </span>
+          <select 
+            value={itemsPerPage} 
+            onChange={(e) => {
+              setItemsPerPage(Number(e.target.value));
+              setCurrentPage(1);
+            }}
+            style={{ padding: "4px", borderRadius: "4px" }}
+          >
+            {[5, 10, 50, 100, 500, 1000].map(size => (
+              <option key={size} value={size}>{size}</option>
+            ))}
+          </select>
+          <span> baris</span>
+        </div>
+        <div>
+          {renderPaginationButtons()}
+        </div>
+      </div>
+      
+      {/* Detail Pegawai yang Dipilih */}
+      <div style={{ 
+          marginTop: "2rem", 
+          border: "1px solid #ccc", 
+          paddingTop: "0rem",
+          paddingBottom: "1rem", 
+          paddingLeft: "0rem", 
+          paddingRight: "0rem",  
+          borderRadius: "0px 8PX" }}>
+        <h3 
+            style={{ 
+                marginTop: 0,
+                padding: "0.5rem 1rem ",
+                backgroundColor: "#e5e7eaff",
+                borderRadius: "0px",
+                marginBottom: "1rem"
+            }}>
+            Detail Data Pegawai
+        </h3>
+        {selectedPegawai ? (
+        <div style={{ 
+            display: "grid", 
+            gridTemplateColumns: "1fr 1fr", 
+            gap: "1rem" 
+        }}>
+            {/* Baris 1: Nama */}
+            <div style={{ display: "flex" }}>
+                <p style={{ margin: 0, width: "150px", paddingLeft: "1rem" }}><strong>Nama</strong></p>
+                <p style={{ margin: 0 }}>: {selectedPegawai.nama}</p>
+            </div>
+            {/* Baris 2: Pekerjaan */}
+            <div style={{ display: "flex" }}>
+                <p style={{ margin: 0, width: "150px", }}><strong>Pekerjaan</strong></p>
+                <p style={{ margin: 0 }}>: {selectedPegawai.pekerjaan}</p>
+            </div>
+            {/* Baris 3: Identitas */}
+            <div style={{ display: "flex" }}>
+                <p style={{ margin: 0, width: "150px", paddingLeft: "1rem" }}><strong>Identitas</strong></p>
+                <p style={{ margin: 0 }}>: {selectedPegawai.identitas}</p>
+            </div>
+            {/* Baris 4: Klasifikasi */}
+            <div style={{ display: "flex" }}>
+                <p style={{ margin: 0, width: "150px" }}><strong>Klasifikasi</strong></p>
+                <p style={{ margin: 0 }}>: {selectedPegawai.klasifikasi}</p>
+            </div>
+            {/* Baris 5: Pangkat */}
+            <div style={{ display: "flex" }}>
+                <p style={{ margin: 0, width: "150px", paddingLeft: "1rem" }}><strong>Pangkat</strong></p>
+                <p style={{ margin: 0 }}>: {selectedPegawai.pangkat}</p>
+            </div>
+            {/* Baris 6: Golongan */}
+            <div style={{ display: "flex" }}>
+                <p style={{ margin: 0, width: "150px" }}><strong>Golongan</strong></p>
+                <p style={{ margin: 0 }}>: {selectedPegawai.golongan}</p>
+            </div>
+            {/* Baris 7: Status */}
+            <div style={{ display: "flex" }}>
+                <p style={{ margin: 0, width: "150px", paddingLeft: "1rem" }}><strong>Status</strong></p>
+                <p style={{ margin: 0 }}>: {selectedPegawai.status}</p>
+            </div>
+            {/* Baris 8: Bank */}
+            <div style={{ display: "flex" }}>
+                <p style={{ margin: 0, width: "150px" }}><strong>Bank</strong></p>
+                <p style={{ margin: 0 }}>: {selectedPegawai.bank}</p>
+            </div>
+            {/* Baris 9: No. Rekening */}
+            <div style={{ display: "flex" }}>
+                <p style={{ margin: 0, width: "150px", paddingLeft: "1rem" }}><strong>No. Rekening</strong></p>
+                <p style={{ margin: 0 }}>: {selectedPegawai.no_rekening}</p>
+            </div>
+            {/* Baris 10: Nama Rekening */}
+            <div style={{ display: "flex" }}>
+                <p style={{ margin: 0, width: "150px" }}><strong>Nama Rekening</strong></p>
+                <p style={{ margin: 0 }}>: {selectedPegawai.nama_rekening}</p>
+            </div>
+        </div>
+        ) : (
+            <p style={{ textAlign: "center", paddingBottom: "1rem" }}>Data Pegawai Belum Dipilih</p>
+        )}
+      </div>
+    </>
+  );
 }

@@ -2,7 +2,6 @@ import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/router";
 import { supabase } from "../lib/supabaseClient";
 import Swal from "sweetalert2";
-import Layout from "../components/Layout";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
@@ -682,7 +681,7 @@ export default function PencatatanPasien() {
   };
   
   return (
-    <Layout>
+    <>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0rem", flexWrap: "wrap", gap: "10px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", fontFamily: "Arial, sans-serif" }}>
           <h2>Rekapitulasi Harian</h2>
@@ -1021,6 +1020,6 @@ export default function PencatatanPasien() {
           onPageChange={setPasienPage}
         />
       )}
-    </Layout>
+    </>
   );
 }

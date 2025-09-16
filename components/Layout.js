@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { supabase } from "../lib/supabaseClient";
 import { useRouter } from "next/router";
 import Swal from "sweetalert2";
 
@@ -182,7 +181,6 @@ export default function Layout({ children, fullName }) {
           overflowY: "hidden",
         }}
       >
-        {/* Sidebar tetap diam, hanya area main yang menutup sidebar */}
         <aside
           style={{
             width: "200px",
