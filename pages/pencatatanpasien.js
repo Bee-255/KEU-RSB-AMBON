@@ -665,7 +665,7 @@ export default function PencatatanPasien() {
   return (
     <Layout>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", flexWrap: "wrap", gap: "10px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", fontFamily: "Arial, sans-serif" }}>
           <h2>Rekapitulasi Harian</h2>
           <button
             onClick={() => {

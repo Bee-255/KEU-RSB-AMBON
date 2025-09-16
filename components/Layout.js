@@ -70,7 +70,7 @@ export default function Layout({ children, fullName }) {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", fontFamily: "sf pro" }}>
+    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", fontFamily: "Arial, sans-serif" }}>
       
       {/* Header Utama dengan dua warna yang berbeda */}
       <header
