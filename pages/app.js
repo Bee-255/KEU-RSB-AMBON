@@ -2,6 +2,13 @@ import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { useRouter } from "next/router";
 
+// Perbaikan: Tambahkan gaya untuk menghapus margin dan padding bawaan browser
+const fullScreenWrapperStyle = {
+  margin: '0px',
+  padding: '0px',
+  minHeight: '100%',
+};
+
 export default function Home() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -56,16 +63,17 @@ export default function Home() {
     const { data, error } = authResponse;
 
     if (error) {
-      setMsgType("error");
-      // ✅ Perbaikan: Tangani pesan error spesifik dari Supabase
-      if (error.message.includes("User already registered")) {
-        setMessage("Email ini sudah terdaftar. Silakan login.");
-      } else {
-        setMessage(error.message || "Terjadi kesalahan!");
-      }
+    setMsgType("error");
+    if (error.message.includes("User already registered")) {
+      setMessage("Email ini sudah terdaftar. Silakan login.");
     } else {
+      // ✅ Perubahan di sini: Mengganti pesan error menjadi pesan kustom
+      setMessage("Email atau password yang Anda masukkan salah.");
+    }
+  }
+ else {
       setMsgType("success");
-      setMessage(isRegisterMode ? "Registrasi berhasil! Silakan lengkapi profil Anda." : "Login berhasil! 🎉");
+      setMessage(isRegisterMode ? "Registrasi berhasil! Silakan lengkapi profil Anda." : "Login berhasil!");
 
       if (isRegisterMode) {
         // Jika registrasi, buat profil kosong
@@ -91,57 +99,73 @@ export default function Home() {
   };
 
   return (
-    <div style={containerStyle}>
-      {/* Bagian Kiri: Logo dan Deskripsi */}
-      <div style={leftPanelStyle}>
-        <div style={contentStyle}>
-          <img src="/logo.svg" alt="Logo" style={logoStyle} />
-          <h2 style={titleStyle}>Aplikasi Keuangan</h2>
-          <p style={subtitleStyle}>Kelola keuanganmu dengan mudah</p>
-        </div>
-      </div>
-
-      {/* Bagian Kanan: Form Login/Register */}
-      <div style={rightPanelStyle}>
-        <h1 style={greetingStyle}>Selamat datang</h1>
-        <p style={subGreetingStyle}>Silakan {isRegisterMode ? "daftar" : "login"} untuk melanjutkan.</p>
-
-        <form onSubmit={handleAuth} style={formStyle}>
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={inputStyle}
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={inputStyle}
-          />
-          <button type="submit" disabled={loading} style={buttonStyle}>
-            {loading ? "Memuat..." : (isRegisterMode ? "Daftar" : "Login")}
-          </button>
-        </form>
-
-        {message && (
-          <div style={{ ...messageStyle, backgroundColor: msgType === "error" ? "#fee2e2" : "#dcfce7", color: msgType === "error" ? "#b91c1c" : "#166534" }}>
-            {message}
+    // Perbaikan: Tambahkan div pembungkus untuk menghilangkan margin bawaan
+    <div style={fullScreenWrapperStyle}>
+      <div style={containerStyle}>
+        {/* Bagian Kiri: Logo dan Deskripsi */}
+        <div style={leftPanelStyle}>
+          <div style={contentStyle}>
+            <img src="/logo.svg" alt="Logo" style={logoStyle} />
+            <h2 style={titleStyle}>Aplikasi Keuangan</h2>
+            <p style={subtitleStyle}>Kelola keuanganmu dengan mudah</p>
           </div>
-        )}
+        </div>
 
-        <p style={switchModeStyle}>
-          {isRegisterMode ? "Sudah punya akun?" : "Belum punya akun?"}{" "}
-          <button
-            onClick={() => setIsRegisterMode(!isRegisterMode)}
-            style={switchButtonStyle}
-            disabled={loading}
-          >
-            {isRegisterMode ? "Login" : "Daftar"}
-          </button>
-        </p>
+        {/* Bagian Kanan: Form Login/Register */}
+        <div style={rightPanelStyle}>
+          {/* Logo iconkeu.png di atas tulisan "Selamat datang" */}
+          <img src="/iconkeu.png" alt="Icon Keuangan" style={smallLogoStyle} />
+
+          <h1 style={greetingStyle}>Selamat datang</h1>
+          <p style={subGreetingStyle}>Silakan {isRegisterMode ? "daftar" : "login"} untuk melanjutkan.</p>
+
+          <form onSubmit={handleAuth} style={formStyle}>
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              style={inputStyle}
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              style={inputStyle}
+            />
+            <button
+              type="submit"
+              disabled={loading}
+              // Mengganti warna tombol berdasarkan isRegisterMode
+              style={{
+                ...buttonStyle,
+                backgroundColor: isRegisterMode ? "#10b981" : "#2563eb", // Hijau untuk Daftar, Biru untuk Login
+                opacity: loading ? 0.7 : 1, // Opasitas saat loading
+                cursor: loading ? "not-allowed" : "pointer",
+              }}
+            >
+              {loading ? "Memuat..." : (isRegisterMode ? "Daftar" : "Login")}
+            </button>
+          </form>
+
+          {message && (
+            <div style={{ ...messageStyle, backgroundColor: msgType === "error" ? "#fee2e2" : "#dcfce7", color: msgType === "error" ? "#b91c1c" : "#166534" }}>
+              {message}
+            </div>
+          )}
+
+          <p style={switchModeStyle}>
+            {isRegisterMode ? "Sudah punya akun?" : "Belum punya akun?"}{" "}
+            <button
+              onClick={() => setIsRegisterMode(!isRegisterMode)}
+              style={switchButtonStyle}
+              disabled={loading}
+            >
+              {isRegisterMode ? "Login" : "Daftar"}
+            </button>
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -195,6 +219,14 @@ const rightPanelStyle = {
   backgroundColor: "#f9fafb",
 };
 
+// Gaya baru untuk logo kecil di atas "Selamat datang"
+const smallLogoStyle = {
+  width: "80px", // Sesuaikan ukuran sesuai keinginan
+  height: "auto",
+  marginBottom: "15px", // Beri sedikit jarak dengan teks di bawahnya
+};
+
+
 const greetingStyle = {
   fontSize: "2rem",
   marginBottom: "1rem",
@@ -221,13 +253,12 @@ const inputStyle = {
 const buttonStyle = {
   width: "100%",
   padding: "12px",
-  backgroundColor: "#2563eb",
-  color: "white",
   border: "none",
   borderRadius: "8px",
   cursor: "pointer",
   fontWeight: "600",
   transition: "background-color 0.3s",
+  color: "white", // Pastikan warna teks tombol selalu putih
 };
 
 const messageStyle = {
