@@ -126,7 +126,7 @@ export default function Pegawai() {
   const [pegawai, setPegawai] = useState({
     nama: "",
     pekerjaan: "",
-    identitas: "",
+    nrp_nip_nir: "",
     klasifikasi: "",
     pangkat: "",
     golongan: "",
@@ -180,9 +180,9 @@ export default function Pegawai() {
 
     // Terapkan filter pencarian jika ada kata kunci
     if (searchTerm) {
-      query = query.or(`nama.ilike.%${searchTerm}%,pekerjaan.ilike.%${searchTerm}%,identitas.ilike.%${searchTerm}%`);
+      query = query.or(`nama.ilike.%${searchTerm}%,pekerjaan.ilike.%${searchTerm}%,nrp_nip_nir.ilike.%${searchTerm}%`);
     }
-
+nip
     // Eksekusi query dengan pengurutan dan rentang untuk paginasi
     const { data, count, error } = await query
       .order("id", { ascending: false })
@@ -286,7 +286,7 @@ export default function Pegawai() {
     setPegawai({
       nama: "",
       pekerjaan: "",
-      identitas: "",
+      nrp_nip_nir: "",
       klasifikasi: "",
       pangkat: "",
       golongan: "",
@@ -521,11 +521,11 @@ export default function Pegawai() {
             </div>
               
               <div>
-                <label>Identitas:</label>
+                <label>NRP / NIP / NIR:</label>
                 <input
                   type="text"
-                  name="identitas"
-                  value={pegawai.identitas}
+                  name="nrp_nip_nir"
+                  value={pegawai.nrp_nip_nir}
                   onChange={handleChange}
                   required
                   style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
@@ -708,7 +708,7 @@ export default function Pegawai() {
             <th style={{ width: "50px", padding: "8px", textAlign: "center" }}>No.</th>
             <th style={{ width: "25%", padding: "8px", textAlign: "left" }}>Nama</th>
             <th style={{ width: "25%", padding: "8px", textAlign: "left" }}>Pekerjaan</th>
-            <th style={{ width: "50%", padding: "8px", textAlign: "left" }}>Identitas</th>
+            <th style={{ width: "50%", padding: "8px", textAlign: "left" }}>NRP / NIP / NIR</th>
           </tr>
         </thead>
         <tbody>
@@ -722,7 +722,7 @@ export default function Pegawai() {
                 <td style={{ width: "50px", padding: "8px", textAlign: "center" }}>{(currentPage - 1) * itemsPerPage + index + 1}</td>
                 <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.nama}</td>
                 <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.pekerjaan}</td>
-                <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.identitas}</td>
+                <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.nrp_nip_nir}</td>
               </tr>
             ))
           ) : (
@@ -793,10 +793,10 @@ export default function Pegawai() {
                 <p style={{ margin: 0, width: "150px", }}><strong>Pekerjaan</strong></p>
                 <p style={{ margin: 0 }}>: {selectedPegawai.pekerjaan}</p>
             </div>
-            {/* Baris 3: Identitas */}
+            {/* Baris 3: NRP / NIP / NIR */}
             <div style={{ display: "flex" }}>
-                <p style={{ margin: 0, width: "150px", paddingLeft: "1rem" }}><strong>Identitas</strong></p>
-                <p style={{ margin: 0 }}>: {selectedPegawai.identitas}</p>
+                <p style={{ margin: 0, width: "150px", paddingLeft: "1rem" }}><strong>NRP / NIP / NIR</strong></p>
+                <p style={{ margin: 0 }}>: {selectedPegawai.nrp_nip_nir}</p>
             </div>
             {/* Baris 4: Klasifikasi */}
             <div style={{ display: "flex" }}>

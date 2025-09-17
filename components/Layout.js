@@ -90,7 +90,7 @@ export default function Layout({ children, fullName }) {
     boxSizing: "border-box",
   };
 
-  const activeStyle = {
+  const activeStyle = { 
     ...baseMenuItemStyle,
     backgroundColor: "rgba(255, 255, 255, 0.5)",
     borderLeft: "4px solid #2563eb", 
@@ -317,6 +317,12 @@ export default function Layout({ children, fullName }) {
                 style={router.pathname === "/pencatatanpasien" ? {...activeStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"}}
               >
                 <span style={{ fontSize: "0.9rem" }}>{fileIcon}</span> Pencatatan Pasien
+              </button>
+              <button
+                onClick={() => router.push("/sppr")}
+                style={router.pathname === "/sppr" ? {...activeStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"}}
+              >
+                <span style={{ fontSize: "0.9rem" }}>{fileIcon}</span> SPPR
               </button>
             </div>
           </div>
