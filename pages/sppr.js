@@ -335,4 +335,4 @@ const Sppr = () => {
   );
 };
 
-export default sppr;
+export default Sppr;
