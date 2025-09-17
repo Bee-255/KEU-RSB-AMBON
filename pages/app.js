@@ -175,7 +175,7 @@ export default function Home() {
 const containerStyle = {
   display: "flex",
   height: "100vh",
-  fontFamily: "SF Pro, -apple-system, BlinkMacSystemFont, sans-serif",
+  fontFamily: "Inter, sans-serif",
 };
 
 const leftPanelStyle = {
