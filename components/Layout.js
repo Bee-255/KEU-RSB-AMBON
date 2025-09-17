@@ -66,7 +66,7 @@ export default function Layout({ children, fullName }) {
       setOpenFolder(null);
       setTimeout(() => {
         setIsRekamActive(false);
-      }, 300);
+      }, 150);
     } else {
       setIsRekamActive(true);
       setOpenFolder('rekam');
