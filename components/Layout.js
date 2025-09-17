@@ -130,7 +130,7 @@ export default function Layout({ children, fullName }) {
   const isRekamOpen = openFolder === 'rekam';
 
   return (
-    <div style={{ fontFamily: "sf pro" }}>
+    <div style={{ }}>
       <header
         style={{
           display: "flex",
