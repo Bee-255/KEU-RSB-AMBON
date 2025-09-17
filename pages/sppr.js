@@ -35,7 +35,7 @@ const createPDF = (data) => {
   doc.save("laporan_sppr.pdf");
 };
 
-const sppr = () => {
+const Sppr = () => {
   const [spprList, setSpprList] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [currentSPPR, setCurrentSPPR] = useState(null);
