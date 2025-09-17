@@ -118,9 +118,8 @@ export default function Pegawai() {
   const [showModal, setShowModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
-  // State untuk paginasi
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
 
   // State form pegawai
@@ -310,14 +309,59 @@ export default function Pegawai() {
 
   const renderPaginationButtons = () => {
     const buttons = [];
-    for (let i = 1; i <= totalPages; i++) {
+    const maxVisibleButtons = 3;
+    let startPage, endPage;
+
+    if (totalPages <= maxVisibleButtons) {
+      startPage = 1;
+      endPage = totalPages;
+    } else if (currentPage <= Math.floor(maxVisibleButtons / 2) + 1) {
+      startPage = 1;
+      endPage = maxVisibleButtons;
+    } else if (currentPage + Math.floor(maxVisibleButtons / 2) >= totalPages) {
+      startPage = totalPages - maxVisibleButtons + 1;
+      endPage = totalPages;
+    } else {
+      startPage = currentPage - Math.floor(maxVisibleButtons / 2);
+      endPage = currentPage + Math.floor(maxVisibleButtons / 2);
+    }
+    
+    // Tambahkan tombol "<<"
+    buttons.push(
+      <button
+        key="prev"
+        onClick={() => handlePageChange(currentPage - 1)}
+        disabled={currentPage === 1}
+        style={{
+          padding: "4px 8px", // Diperkecil
+          margin: "0 4px",
+          border: "1px solid #ccc",
+          borderRadius: "4px",
+          cursor: "pointer",
+          backgroundColor: currentPage === 1 ? "#e9ecef" : "white",
+          color: currentPage === 1 ? "#6c757d" : "black",
+        }}
+      >
+        {"<<"}
+      </button>
+    );
+
+    // Tambahkan ellipsis di awal jika perlu
+    if (startPage > 1) {
+        buttons.push(
+            <span key="ellipsis-start" style={{ margin: "0 1px" }}>...</span>
+        );
+    }
+
+    // Tambahkan tombol halaman yang terlihat
+    for (let i = startPage; i <= endPage; i++) {
       buttons.push(
         <button
           key={i}
           onClick={() => handlePageChange(i)}
           style={{
-            padding: "8px 12px",
-            margin: "0 4px",
+            padding: "4px 8px", // Diperkecil
+            margin: "0 1px",
             border: "1px solid #ccc",
             borderRadius: "4px",
             cursor: "pointer",
@@ -329,6 +373,34 @@ export default function Pegawai() {
         </button>
       );
     }
+
+    // Tambahkan ellipsis di akhir jika perlu
+    if (endPage < totalPages) {
+      buttons.push(
+        <span key="ellipsis-end" style={{ margin: "0 1px" }}>...</span>
+      );
+    }
+
+    // Tambahkan tombol ">>"
+    buttons.push(
+      <button
+        key="next"
+        onClick={() => handlePageChange(currentPage + 1)}
+        disabled={currentPage === totalPages}
+        style={{
+          padding: "4px 8px", // Diperkecil
+          margin: "0 1px",
+          border: "1px solid #ccc",
+          borderRadius: "4px",
+          cursor: "pointer",
+          backgroundColor: currentPage === totalPages ? "#e9ecef" : "white",
+          color: currentPage === totalPages ? "#6c757d" : "black",
+        }}
+      >
+        {">>"}
+      </button>
+    );
+
     return buttons;
   };
   
@@ -675,13 +747,13 @@ export default function Pegawai() {
             }}
             style={{ padding: "4px", borderRadius: "4px" }}
           >
-            {[5, 10, 50, 100, 500, 1000].map(size => (
+            {[10, 20, 50, 100, 500, 1000].map(size => (
               <option key={size} value={size}>{size}</option>
             ))}
           </select>
           <span> baris</span>
         </div>
-        <div>
+        <div style={{ display: "flex", gap: "5px" }}>
           {renderPaginationButtons()}
         </div>
       </div>

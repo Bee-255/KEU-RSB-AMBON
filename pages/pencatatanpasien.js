@@ -682,90 +682,97 @@ export default function PencatatanPasien() {
   
   return (
     <>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0rem", flexWrap: "wrap", gap: "10px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", fontFamily: "Arial, sans-serif" }}>
-          <h2>Rekapitulasi Harian</h2>
-          <button
-            onClick={() => {
-              setNewRekapDate("");
-              setShowRekapModal(true);
-            }}
-            style={{ background: "#16a34a", color: "white", padding: "6px 10px", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "12px" }}
-          >
-            Tambah Rekap
-          </button>
-          <button
-            onClick={handleAddPasienClick}
-            disabled={selectedRekapIds.length === 0}
-            style={{ 
-              background: "#16a34a", 
-              color: "white", 
-              padding: "6px 10px", 
-              border: "none", 
-              borderRadius: "6px", 
-              cursor: selectedRekapIds.length === 0 ? "not-allowed" : "pointer", 
-              opacity: selectedRekapIds.length === 0 ? 0.5 : 1,
-              fontSize: "12px"
-            }}
-          >
-            Tambah Pasien
-          </button>
-          <button
-            onClick={handleDeleteRekap}
-            disabled={selectedRekapIds.length === 0}
-            style={{ 
-              background: "#dc2626", 
-              color: "white", 
-              padding: "6px 10px", 
-              border: "none", 
-              borderRadius: "6px", 
-              cursor: selectedRekapIds.length === 0 ? "not-allowed" : "pointer", 
-              opacity: selectedRekapIds.length === 0 ? 0.5 : 1,
-              fontSize: "12px"
-            }}
-          >
-            Hapus Rekap
-          </button>
-          <button
-            onClick={handleDownloadClick}
-            disabled={selectedRekapIds.length === 0}
-            style={{ 
-              background: "#2563eb", 
-              color: "white", 
-              padding: "6px 10px", 
-              border: "none", 
-              borderRadius: "6px", 
-              cursor: selectedRekapIds.length === 0 ? "not-allowed" : "pointer", 
-              opacity: selectedRekapIds.length === 0 ? 0.5 : 1,
-              fontSize: "12px"
-            }}
-          >
-            Download
-          </button>
-          <div style={{ display: "flex", flexDirection: "column", marginTop: "-25px" }}>
-            <label style={{ fontSize: "12px", marginBottom: "4px" }}>Tanggal Awal</label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              style={{ padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
-            />
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "1rem" }}>
+        <h2>Rekapitulasi Harian</h2>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
+          {/* Grup Kiri: Tombol Aksi */}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", fontFamily: "Arial, sans-serif" }}>
+            <button
+              onClick={() => {
+                setNewRekapDate("");
+                setShowRekapModal(true);
+              }}
+              style={{ background: "#16a34a", color: "white", padding: "6px 10px", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "12px" }}
+            >
+              Tambah Rekap
+            </button>
+            <button
+              onClick={handleAddPasienClick}
+              disabled={selectedRekapIds.length === 0}
+              style={{ 
+                background: "#16a34a", 
+                color: "white", 
+                padding: "6px 10px", 
+                border: "none", 
+                borderRadius: "6px", 
+                cursor: selectedRekapIds.length === 0 ? "not-allowed" : "pointer", 
+                opacity: selectedRekapIds.length === 0 ? 0.5 : 1,
+                fontSize: "12px"
+              }}
+            >
+              Tambah Pasien
+            </button>
+            <button
+              onClick={handleDeleteRekap}
+              disabled={selectedRekapIds.length === 0}
+              style={{ 
+                background: "#dc2626", 
+                color: "white", 
+                padding: "6px 10px", 
+                border: "none", 
+                borderRadius: "6px", 
+                cursor: selectedRekapIds.length === 0 ? "not-allowed" : "pointer", 
+                opacity: selectedRekapIds.length === 0 ? 0.5 : 1,
+                fontSize: "12px"
+              }}
+            >
+              Hapus Rekap
+            </button>
+            <button
+              onClick={handleDownloadClick}
+              disabled={selectedRekapIds.length === 0}
+              style={{ 
+                background: "#2563eb", 
+                color: "white", 
+                padding: "6px 10px", 
+                border: "none", 
+                borderRadius: "6px", 
+                cursor: selectedRekapIds.length === 0 ? "not-allowed" : "pointer", 
+                opacity: selectedRekapIds.length === 0 ? 0.5 : 1,
+                fontSize: "12px"
+              }}
+            >
+              Download
+            </button>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", marginTop: "-25px" }}>
-            <label style={{ fontSize: "12px", marginBottom: "4px" }}>Tanggal Akhir</label>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              style={{ padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
-            />
+
+          {/* Grup Kanan: Filter Tanggal */}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", fontFamily: "Arial, sans-serif" }}>
+            <div style={{ display: "flex", flexDirection: "column", marginTop: "-25px" }}>
+              <label style={{ fontSize: "12px", marginBottom: "4px" }}>Tanggal Awal</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                style={{ padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
+              />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", marginTop: "-25px" }}>
+              <label style={{ fontSize: "12px", marginBottom: "4px" }}>Tanggal Akhir</label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                style={{ padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
+              />
+            </div>
+            <button
+              onClick={handleClearFilter}
+              style={{ background: "#3b82f6", color: "white", padding: "6px 10px", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "12px" }}
+            >
+              Clear
+            </button>
           </div>
-          <button
-            onClick={handleClearFilter}
-            style={{ background: "#3b82f6", color: "white", padding: "6px 10px", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "12px" }}
-          >
-            Clear
-          </button>
         </div>
       </div>
       

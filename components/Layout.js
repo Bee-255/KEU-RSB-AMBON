@@ -130,15 +130,18 @@ export default function Layout({ children, fullName }) {
   const isRekamOpen = openFolder === 'rekam';
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", fontFamily: "sf pro" }}>
+    <div style={{ fontFamily: "sf pro" }}>
       <header
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "stretch",
           flexShrink: 0,
-          position: "relative",
-          zIndex: 10,
+          position: "fixed",
+          top: "0",
+          left: "0",
+          width: "100%",
+          zIndex: 1000, 
         }}
       >
         <div 
@@ -246,14 +249,9 @@ export default function Layout({ children, fullName }) {
           </button>
         </div>
       </header>
-      <div 
-        style={{ 
-          flex: 1, 
-          display: "flex",
-          overflowY: "hidden",
-        }}
-      >
-        <aside
+      
+      {/* Perubahan: Sidebar sekarang fixed */}
+      <aside
           style={{
             width: isSidebarVisible ? "200px" : "0",
             backgroundColor: "#E1E7EF",
@@ -265,75 +263,83 @@ export default function Layout({ children, fullName }) {
             flexShrink: 0,
             padding: "0",
             boxSizing: "border-box",
-            position: "relative",
-            zIndex: 2,
+            // Posisi fixed
+            position: "fixed",
+            top: "64px", // Geser ke bawah sesuai tinggi header
+            bottom: "0",
+            left: "0",
+            zIndex: 500, // Di atas konten utama
+          }}
+      >
+        <nav
+          style={{
+            display: isSidebarVisible ? "flex" : "none",
+            flexDirection: "column",
+            gap: "0rem",
+            padding: "1rem 0"
           }}
         >
-          <nav
+          {/* Rekam (Folder) */}
+          <div
+            onClick={handleRekamToggle}
+            style={isRekamActive ? activeStyle : inactiveStyle}
+          >
+            <span style={{ fontSize: "0.9rem" }}>{folderIcon}</span> Rekam
+            <span style={{
+              display: 'inline-block',
+              marginLeft: "auto",
+              width: "1em",
+              height: "1em",
+              transform: isRekamOpen ? 'rotate(-180deg)' : 'rotate(0deg)',
+              transition: 'transform 0.2s ease-in-out',
+            }}>
+              {arrowIcon}
+            </span>
+          </div>
+
+          {/* Sub-menu (Pegawai & Pencatatan Pasien) */}
+          <div 
             style={{
-              display: isSidebarVisible ? "flex" : "none",
-              flexDirection: "column",
-              gap: "0rem",
-              padding: "1rem 0"
+              maxHeight: isRekamOpen ? '200px' : '0',
+              overflow: 'hidden',
+              transition: 'max-height 0.2s',
             }}
           >
-            {/* Rekam (Folder) */}
-            <div
-              onClick={handleRekamToggle}
-              style={isRekamActive ? activeStyle : inactiveStyle}
-            >
-              <span style={{ fontSize: "0.9rem" }}>{folderIcon}</span> Rekam
-              <span style={{
-                display: 'inline-block',
-                marginLeft: "auto",
-                width: "1em",
-                height: "1em",
-                transform: isRekamOpen ? 'rotate(-180deg)' : 'rotate(0deg)',
-                transition: 'transform 0.2s ease-in-out',
-              }}>
-                {arrowIcon}
-              </span>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0rem" }}>
+              <button
+                onClick={() => router.push("/pegawai")}
+                style={router.pathname === "/pegawai" ? {...activeStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"}}
+              >
+                <span style={{ fontSize: "0.9rem" }}>{fileIcon}</span> Pegawai
+              </button>
+              <button
+                onClick={() => router.push("/pencatatanpasien")}
+                style={router.pathname === "/pencatatanpasien" ? {...activeStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"}}
+              >
+                <span style={{ fontSize: "0.9rem" }}>{fileIcon}</span> Pencatatan Pasien
+              </button>
             </div>
-
-            {/* Sub-menu (Pegawai & Pencatatan Pasien) */}
-            <div 
-              style={{
-                maxHeight: isRekamOpen ? '200px' : '0',
-                overflow: 'hidden',
-                transition: 'max-height 0.2s',
-              }}
-            >
-              <div style={{ display: "flex", flexDirection: "column", gap: "0rem" }}>
-                <button
-                  onClick={() => router.push("/pegawai")}
-                  style={router.pathname === "/pegawai" ? {...activeStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"}}
-                >
-                  <span style={{ fontSize: "0.9rem" }}>{fileIcon}</span> Pegawai
-                </button>
-                <button
-                  onClick={() => router.push("/pencatatanpasien")}
-                  style={router.pathname === "/pencatatanpasien" ? {...activeStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"}}
-                >
-                  <span style={{ fontSize: "0.9rem" }}>{fileIcon}</span> Pencatatan Pasien
-                </button>
-              </div>
-            </div>
-          </nav>
-        </aside>
-        <main 
-          style={{ 
-            flex: 1, 
-            padding: "1rem 2rem", 
-            backgroundColor: "#F3F4F6",
-            overflowY: "auto",
-            marginLeft: isSidebarVisible ? "0" : "0px",
-            transition: "margin-left 0.3s cubic-bezier(.4,0,.2,1)",
-            zIndex: 3,
-          }}
-        >
-          {children}
-        </main>
-      </div>
+          </div>
+        </nav>
+      </aside>
+      
+      {/* Perubahan: Main content digeser ke bawah dan ke samping */}
+      <main 
+        style={{ 
+          flex: 1, 
+          padding: "1rem 2rem", 
+          backgroundColor: "#F3F4F6",
+          overflowY: "auto",
+          // Geser ke kanan untuk memberi ruang sidebar yang fixed
+          marginLeft: isSidebarVisible ? "200px" : "0",
+          // Geser ke bawah untuk memberi ruang header yang fixed
+          paddingTop: "64px", 
+          transition: "margin-left 0.3s cubic-bezier(.4,0,.2,1)",
+          zIndex: 3,
+        }}
+      >
+        {children}
+      </main>
     </div>
   );
 }
