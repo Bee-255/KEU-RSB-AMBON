@@ -180,9 +180,10 @@ export default function Pegawai() {
 
     // Terapkan filter pencarian jika ada kata kunci
     if (searchTerm) {
-      query = query.or(`nama.ilike.%${searchTerm}%,pekerjaan.ilike.%${searchTerm}%,nrp_nip_nir.ilike.%${searchTerm}%`);
+      // BARIS YANG SUDAH DIPERBAIKI:
+      query = query.or(`nama.ilike.%${searchTerm}%,pekerjaan.ilike.%${searchTerm}%,nrp_nip_nik.ilike.%${searchTerm}%`);
     }
-nip
+
     // Eksekusi query dengan pengurutan dan rentang untuk paginasi
     const { data, count, error } = await query
       .order("id", { ascending: false })
