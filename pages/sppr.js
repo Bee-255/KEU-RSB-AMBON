@@ -1,9 +1,45 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { supabase } from "../lib/supabaseClient";
 import Swal from "sweetalert2";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
+
+// Komponen Modal Pop-up
+const Modal = ({ children, onClose }) => {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        width: "100%",
+        height: "100%",
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        zIndex: 1000,
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          backgroundColor: "white",
+          padding: "2rem",
+          borderRadius: "8px",
+          position: "relative",
+          maxWidth: "90%",
+          maxHeight: "90vh",
+          overflowY: "auto",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {children}
+      </div>
+    </div>
+  );
+};
 
 // Fungsi untuk membuat PDF dari tabel
 const createPDF = (data) => {
@@ -38,8 +74,13 @@ const createPDF = (data) => {
 const Sppr = () => {
   const [spprList, setSpprList] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
-  const [currentSPPR, setCurrentSPPR] = useState(null);
+  const [selectedSppr, setSelectedSppr] = useState(null);
+  const [showModal, setShowModal] = useState(false);
   const router = useRouter();
+
+  // State untuk Paginasi dan Jumlah Baris
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   // State untuk form input
   const [formData, setFormData] = useState({
@@ -51,109 +92,97 @@ const Sppr = () => {
     pangkat_nrp: "",
   });
 
-  // Ambil data SPPR dari Supabase saat halaman dimuat
   useEffect(() => {
     fetchSPPR();
   }, []);
 
   const fetchSPPR = async () => {
-    const { data, error } = await supabase.from("SPPR").select("*").order("created_at", { ascending: false });
+    const { data, error } = await supabase.from("sppr").select("*").order("created_at", { ascending: false });
     if (error) {
       console.error("Gagal mengambil data:", error);
+      Swal.fire("Error", "Gagal mengambil data SPPR. Periksa koneksi atau nama tabel.", "error");
     } else {
       setSpprList(data);
     }
   };
 
-  // Tangani perubahan input form
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
-  // Tangani tombol Rekam/Simpan
   const handleSave = async (e) => {
     e.preventDefault();
 
     if (isEditing) {
-      // Logic untuk Edit
       const { data, error } = await supabase
-        .from("SPPR")
+        .from("sppr")
         .update(formData)
-        .eq("id", currentSPPR.id);
+        .eq("id", selectedSppr.id);
 
       if (error) {
-        Swal.fire("Gagal!", "Data gagal diupdate. Coba lagi.", "error");
+        Swal.fire("Gagal!", `Data gagal diupdate: ${error.message}`, "error");
         console.error("Error updating data:", error);
       } else {
         Swal.fire("Berhasil!", "Data berhasil diupdate.", "success");
-        fetchSPPR(); // Refresh data
+        fetchSPPR();
         resetForm();
       }
     } else {
-      // Logic untuk Rekam
-      const { data, error } = await supabase.from("SPPR").insert([formData]);
+      const { data, error } = await supabase.from("sppr").insert([formData]);
 
       if (error) {
-        Swal.fire("Gagal!", "Data gagal disimpan. Coba lagi.", "error");
+        Swal.fire("Gagal!", `Data gagal disimpan: ${error.message}`, "error");
         console.error("Error inserting data:", error);
       } else {
         Swal.fire("Berhasil!", "Data berhasil disimpan.", "success");
-        fetchSPPR(); // Refresh data
+        fetchSPPR();
         resetForm();
       }
     }
   };
 
-  // Tangani tombol Edit
-  const handleEdit = (sppr) => {
-    setIsEditing(true);
-    setCurrentSPPR(sppr);
-    setFormData({
-      tanggal: sppr.tanggal,
-      nomor_surat: sppr.nomor_surat,
-      nama_kpa: sppr.nama_kpa,
-      nama_bendahara: sppr.nama_bendahara,
-      nama_pengambil: sppr.nama_pengambil,
-      pangkat_nrp: sppr.pangkat_nrp,
-    });
-  };
-
-  // Tangani tombol Hapus
-  const handleDelete = async (spprId) => {
-    Swal.fire({
+  const handleDelete = async () => {
+    if (!selectedSppr) return;
+    
+    const result = await Swal.fire({
       title: "Apakah Anda yakin?",
-      text: "Data yang dihapus tidak dapat dikembalikan!",
+      text: `Anda akan menghapus data SPPR dengan nomor surat ${selectedSppr.nomor_surat}`,
       icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#6b7280",
       confirmButtonText: "Ya, hapus!",
       cancelButtonText: "Batal",
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        const { error } = await supabase.from("SPPR").delete().eq("id", spprId);
-
-        if (error) {
-          Swal.fire("Gagal!", "Data gagal dihapus. Coba lagi.", "error");
-          console.error("Error deleting data:", error);
-        } else {
-          Swal.fire("Dihapus!", "Data berhasil dihapus.", "success");
-          fetchSPPR(); // Refresh data
-        }
-      }
     });
+
+    if (result.isConfirmed) {
+      const { error } = await supabase.from("sppr").delete().eq("id", selectedSppr.id);
+      if (error) {
+        Swal.fire("Gagal!", "Data gagal dihapus. Coba lagi.", "error");
+        console.error("Error deleting data:", error);
+      } else {
+        Swal.fire("Dihapus!", "Data berhasil dihapus.", "success");
+        setSelectedSppr(null);
+        fetchSPPR();
+      }
+    }
   };
 
-  // Tangani tombol Download
+  const handleEdit = () => {
+    if (!selectedSppr) return;
+    setIsEditing(true);
+    setFormData(selectedSppr);
+    setShowModal(true);
+  };
+
   const handleDownload = () => {
     createPDF(spprList);
   };
 
-  // Reset form
   const resetForm = () => {
     setIsEditing(false);
-    setCurrentSPPR(null);
+    setSelectedSppr(null);
     setFormData({
       tanggal: "",
       nomor_surat: "",
@@ -162,174 +191,324 @@ const Sppr = () => {
       nama_pengambil: "",
       pangkat_nrp: "",
     });
+    setShowModal(false);
+  };
+
+  const handleRowClick = (sppr) => {
+    if (selectedSppr?.id === sppr.id) {
+      setSelectedSppr(null);
+    } else {
+      setSelectedSppr(sppr);
+    }
+  };
+
+  // Logika Paginasi
+  const totalPages = Math.ceil(spprList.length / rowsPerPage);
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const endIndex = startIndex + rowsPerPage;
+  const paginatedSppr = spprList.slice(startIndex, endIndex);
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    setSelectedSppr(null); // Batalkan pilihan saat pindah halaman
+  };
+
+  const handleRowsPerPageChange = (e) => {
+    setRowsPerPage(parseInt(e.target.value));
+    setCurrentPage(1); // Kembali ke halaman 1 saat mengubah jumlah baris
+    setSelectedSppr(null); // Batalkan pilihan saat mengubah jumlah baris
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <header className="mb-6 text-center">
-        <h1 className="text-3xl font-bold">Surat Perintah Pendebitan Rekening</h1>
-      </header>
+    <div style={{ backgroundColor: "#F3F4F6" }}>
+      <h2>Data Surat Perintah Pendebitan Rekening</h2>
 
-      {/* Form Input Data */}
-      <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-        <h2 className="text-2xl font-semibold mb-4">
-          {isEditing ? "Edit Data SPPR" : "Rekam Data SPPR"}
-        </h2>
-        <form onSubmit={handleSave}>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Tanggal</label>
-              <input
-                type="date"
-                name="tanggal"
-                value={formData.tanggal}
-                onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                required
-              />
+      {/* Tombol Aksi */}
+      <div style={{ marginBottom: "0rem", display: "flex", gap: "10px", alignItems: "center" }}>
+        <button
+          onClick={() => {
+            resetForm();
+            setShowModal(true);
+          }}
+          style={{ background: "#16a34a", color: "white", padding: "6px 10px", border: "none", borderRadius: "6px", cursor: "pointer" }}
+        >
+          Rekam SPPR
+        </button>
+        <button
+          onClick={handleEdit}
+          disabled={!selectedSppr}
+          style={{ background: "#f59e0b", color: "white", padding: "6px 10px", border: "none", borderRadius: "6px", cursor: selectedSppr ? "pointer" : "not-allowed", opacity: selectedSppr ? 1 : 0.5 }}
+        >
+          Edit
+        </button>
+        <button
+          onClick={handleDelete}
+          disabled={!selectedSppr}
+          style={{ background: "#dc2626", color: "white", padding: "6px 10px", border: "none", borderRadius: "6px", cursor: selectedSppr ? "pointer" : "not-allowed", opacity: selectedSppr ? 1 : 0.5 }}
+        >
+          Hapus
+        </button>
+        <button
+          onClick={handleDownload}
+          style={{ background: "#3b82f6", color: "white", padding: "6px 10px", border: "none", borderRadius: "6px", cursor: "pointer" }}
+        >
+          Download PDF
+        </button>
+      </div>
+      
+      {/* Modal untuk Form */}
+      {showModal && (
+        <Modal onClose={resetForm}>
+          <form onSubmit={handleSave}>
+            <h3 style={{ marginTop: 0 }}>{isEditing ? "Edit Data SPPR" : "Rekam Data SPPR"}</h3>
+            
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", rowGap: "1rem", marginBottom: "1rem" }}>
+              <div>
+                <label>Tanggal:</label>
+                <input
+                  type="date"
+                  name="tanggal"
+                  value={formData.tanggal}
+                  onChange={handleInputChange}
+                  required
+                  style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
+                />
+              </div>
+              <div>
+                <label>Nomor Surat:</label>
+                <input
+                  type="text"
+                  name="nomor_surat"
+                  value={formData.nomor_surat}
+                  onChange={handleInputChange}
+                  required
+                  style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
+                />
+              </div>
+              <div>
+                <label>Nama KPA:</label>
+                <input
+                  type="text"
+                  name="nama_kpa"
+                  value={formData.nama_kpa}
+                  onChange={handleInputChange}
+                  required
+                  style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
+                />
+              </div>
+              <div>
+                <label>Nama Bendahara:</label>
+                <input
+                  type="text"
+                  name="nama_bendahara"
+                  value={formData.nama_bendahara}
+                  onChange={handleInputChange}
+                  required
+                  style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
+                />
+              </div>
+              <div>
+                <label>Nama Pengambil:</label>
+                <input
+                  type="text"
+                  name="nama_pengambil"
+                  value={formData.nama_pengambil}
+                  onChange={handleInputChange}
+                  required
+                  style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
+                />
+              </div>
+              <div>
+                <label>Pangkat & NRP:</label>
+                <input
+                  type="text"
+                  name="pangkat_nrp"
+                  value={formData.pangkat_nrp}
+                  onChange={handleInputChange}
+                  required
+                  style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Nomor Surat</label>
-              <input
-                type="text"
-                name="nomor_surat"
-                value={formData.nomor_surat}
-                onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Nama KPA</label>
-              <input
-                type="text"
-                name="nama_kpa"
-                value={formData.nama_kpa}
-                onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Nama Bendahara</label>
-              <input
-                type="text"
-                name="nama_bendahara"
-                value={formData.nama_bendahara}
-                onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Nama Pengambil</label>
-              <input
-                type="text"
-                name="nama_pengambil"
-                value={formData.nama_pengambil}
-                onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Pangkat & NRP</label>
-              <input
-                type="text"
-                name="pangkat_nrp"
-                value={formData.pangkat_nrp}
-                onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                required
-              />
-            </div>
-          </div>
-          <div className="mt-4 flex space-x-2">
-            <button
-              type="submit"
-              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition"
-            >
-              {isEditing ? "Simpan Perubahan" : "Rekam Data"}
-            </button>
-            {isEditing && (
+            
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
               <button
                 type="button"
                 onClick={resetForm}
-                className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition"
+                style={{ padding: "10px 20px", border: "1px solid #ccc", borderRadius: "6px", cursor: "pointer" }}
               >
                 Batal
               </button>
-            )}
-          </div>
-        </form>
-      </div>
+              <button
+                type="submit"
+                style={{ background: "#16a34a", color: "white", padding: "10px 20px", border: "none", borderRadius: "6px", cursor: "pointer" }}
+              >
+                {isEditing ? "Update" : "Simpan"}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
 
-      {/* Tabel Data dan Tombol Download */}
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-semibold">Daftar SPPR</h2>
-          <button
-            onClick={handleDownload}
-            className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition"
+      {/* Tabel Data SPPR */}
+      <div style={{ overflowX: "auto" }}>
+        <table 
+          border="1" 
+          cellPadding="4" 
+          style={{ 
+            borderCollapse: "collapse", 
+            width: "100%", 
+            marginTop: "20px", 
+            fontSize: "12px",
+            tableLayout: "fixed"
+          }}
+        >
+          <thead>
+            <tr style={{ background: "#f3f4f6" }}>
+              <th style={{ width: "50px", padding: "8px", textAlign: "center" }}>No.</th>
+              <th style={{ width: "15%", padding: "8px", textAlign: "left" }}>Tanggal</th>
+              <th style={{ width: "20%", padding: "8px", textAlign: "left" }}>Nomor Surat</th>
+              <th style={{ width: "15%", padding: "8px", textAlign: "left" }}>Nama KPA</th>
+              <th style={{ width: "15%", padding: "8px", textAlign: "left" }}>Nama Bendahara</th>
+              <th style={{ width: "15%", padding: "8px", textAlign: "left" }}>Nama Pengambil</th>
+              <th style={{ width: "15%", padding: "8px", textAlign: "left" }}>Pangkat/NRP</th>
+            </tr>
+          </thead>
+          <tbody>
+            {paginatedSppr.length > 0 ? (
+              paginatedSppr.map((sppr, index) => (
+                <tr
+                  key={sppr.id}
+                  onClick={() => handleRowClick(sppr)}
+                  style={{ cursor: "pointer", backgroundColor: selectedSppr?.id === sppr.id ? "#e0e7ff" : "white" }}
+                >
+                  <td style={{ width: "50px", padding: "8px", textAlign: "center" }}>{startIndex + index + 1}</td>
+                  <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{sppr.tanggal}</td>
+                  <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{sppr.nomor_surat}</td>
+                  <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{sppr.nama_kpa}</td>
+                  <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{sppr.nama_bendahara}</td>
+                  <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{sppr.nama_pengambil}</td>
+                  <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{sppr.pangkat_nrp}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="7" style={{ textAlign: "center", padding: "1rem" }}>
+                  Tidak ada data SPPR yang ditemukan.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+      
+      {/* Container Paginasi dan Jumlah Baris */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", marginTop: "1rem", fontSize: "14px" }}>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <span>Tampilkan </span>
+          <select 
+            value={rowsPerPage} 
+            onChange={handleRowsPerPageChange}
+            style={{ 
+              marginLeft: "8px", 
+              padding: "4px 8px", 
+              borderRadius: "4px",
+              border: "1px solid #ccc"
+            }}
           >
-            Download PDF
+            <option value={5}>5</option>
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+          </select>
+          <span style={{ marginLeft: "8px" }}> baris</span>
+        </div>
+        <div>
+          <button
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            style={{ 
+              padding: "6px 12px", 
+              border: "1px solid #ccc", 
+              borderRadius: "4px",
+              cursor: currentPage === 1 ? "not-allowed" : "pointer",
+              backgroundColor: currentPage === 1 ? "#f3f4f6" : "white"
+            }}
+          >
+            Previous
+          </button>
+          <span style={{ margin: "0 12px" }}>
+            Halaman {currentPage} dari {totalPages}
+          </span>
+          <button
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            style={{ 
+              padding: "6px 12px", 
+              border: "1px solid #ccc", 
+              borderRadius: "4px",
+              cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+              backgroundColor: currentPage === totalPages ? "#f3f4f6" : "white"
+            }}
+          >
+            Next
           </button>
         </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tanggal
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Nomor Surat
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Nama KPA
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Nama Bendahara
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Nama Pengambil
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Pangkat/NRP
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Aksi
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {spprList.map((sppr) => (
-                <tr key={sppr.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{sppr.tanggal}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{sppr.nomor_surat}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{sppr.nama_kpa}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{sppr.nama_bendahara}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{sppr.nama_pengambil}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{sppr.pangkat_nrp}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button
-                      onClick={() => handleEdit(sppr)}
-                      className="text-indigo-600 hover:text-indigo-900 mr-4"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(sppr.id)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      Hapus
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      </div>
+
+      {/* Detail Data SPPR yang Dipilih */}
+      <div style={{ 
+          marginTop: "2rem", 
+          border: "1px solid #ccc", 
+          paddingTop: "0rem",
+          paddingBottom: "1rem", 
+          paddingLeft: "0rem", 
+          paddingRight: "0rem",  
+          borderRadius: "0px 8PX" }}>
+        <h3 
+            style={{ 
+                marginTop: 0,
+                padding: "0.5rem 1rem ",
+                backgroundColor: "#e5e7eaff",
+                borderRadius: "0px",
+                marginBottom: "1rem"
+            }}>
+            Detail Data SPPR
+        </h3>
+        {selectedSppr ? (
+        <div style={{ 
+            display: "grid", 
+            gridTemplateColumns: "1fr 1fr", 
+            gap: "1rem" 
+        }}>
+            <div style={{ display: "flex" }}>
+                <p style={{ margin: 0, width: "150px", paddingLeft: "1rem" }}><strong>Tanggal</strong></p>
+                <p style={{ margin: 0 }}>: {selectedSppr.tanggal}</p>
+            </div>
+            <div style={{ display: "flex" }}>
+                <p style={{ margin: 0, width: "150px" }}><strong>Nomor Surat</strong></p>
+                <p style={{ margin: 0 }}>: {selectedSppr.nomor_surat}</p>
+            </div>
+            <div style={{ display: "flex" }}>
+                <p style={{ margin: 0, width: "150px", paddingLeft: "1rem" }}><strong>Nama KPA</strong></p>
+                <p style={{ margin: 0 }}>: {selectedSppr.nama_kpa}</p>
+            </div>
+            <div style={{ display: "flex" }}>
+                <p style={{ margin: 0, width: "150px" }}><strong>Nama Bendahara</strong></p>
+                <p style={{ margin: 0 }}>: {selectedSppr.nama_bendahara}</p>
+            </div>
+            <div style={{ display: "flex" }}>
+                <p style={{ margin: 0, width: "150px", paddingLeft: "1rem" }}><strong>Nama Pengambil</strong></p>
+                <p style={{ margin: 0 }}>: {selectedSppr.nama_pengambil}</p>
+            </div>
+            <div style={{ display: "flex" }}>
+                <p style={{ margin: 0, width: "150px" }}><strong>Pangkat & NRP</strong></p>
+                <p style={{ margin: 0 }}>: {selectedSppr.pangkat_nrp}</p>
+            </div>
         </div>
+        ) : (
+            <p style={{ textAlign: "center", paddingBottom: "1rem" }}>Data SPPR Belum Dipilih</p>
+        )}
       </div>
     </div>
   );
