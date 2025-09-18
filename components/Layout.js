@@ -253,27 +253,26 @@ export default function Layout({ children, fullName }) {
       {/* Perubahan: Sidebar sekarang fixed */}
       <aside
           style={{
-            width: isSidebarVisible ? "200px" : "0",
+            width: "200px",
             backgroundColor: "#E1E7EF",
             color: "#000",
             display: "flex",
             flexDirection: "column",
-            transition: "width 0.3s ease",
+            transition: "left 0.3s ease",
             overflow: "hidden",
             flexShrink: 0,
             padding: "0",
             boxSizing: "border-box",
-            // Posisi fixed
             position: "fixed",
-            top: "64px", // Geser ke bawah sesuai tinggi header
+            top: "64px",
             bottom: "0",
-            left: "0",
-            zIndex: 500, // Di atas konten utama
+            left: isSidebarVisible ? "0" : "-200px",
+            zIndex: 500,
           }}
       >
         <nav
           style={{
-            display: isSidebarVisible ? "flex" : "none",
+            display: "flex",
             flexDirection: "column",
             gap: "0rem",
             padding: "1rem 0"
@@ -329,16 +328,14 @@ export default function Layout({ children, fullName }) {
         </nav>
       </aside>
       
-      {/* Perubahan: Main content digeser ke bawah dan ke samping */}
+      {/* Main content */}
       <main 
         style={{ 
           flex: 1, 
           padding: "1rem 2rem", 
           backgroundColor: "#F3F4F6",
           overflowY: "auto",
-          // Geser ke kanan untuk memberi ruang sidebar yang fixed
           marginLeft: isSidebarVisible ? "200px" : "0",
-          // Geser ke bawah untuk memberi ruang header yang fixed
           paddingTop: "64px", 
           transition: "margin-left 0.3s cubic-bezier(.4,0,.2,1)",
           zIndex: 3,

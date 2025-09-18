@@ -871,69 +871,67 @@ export default function PencatatanPasien() {
         </Modal>
       )}
 
-      <table border="1" cellPadding="4" style={{ borderCollapse: "collapse", width: "100%", marginTop: "0px", fontSize: "12px" }}>
-        <thead>
-          <tr style={{ background: "#f3f4f6" }}>
-            <th style={{ padding: "8px", textAlign: "left", width: "30px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                <input
-                  type="checkbox"
-                  ref={selectAllRef}
-                  checked={isAllRekapSelected}
-                  onChange={handleSelectAllRekap}
-                  style={{ transform: "scale(1.3)" }}
-                />
-                <span style={{ fontSize: "12px" }}>Check</span>
-              </div>
-            </th>
-            <th style={{ padding: "8px", textAlign: "left" }}>Tanggal</th>
-            <th style={{ padding: "8px", textAlign: "left" }}>Nama User</th>
-            <th style={{ padding: "8px", textAlign: "center" }}>Total Pasien</th>
-            <th style={{ padding: "8px", textAlign: "center" }}>Total Tagihan</th>
-            <th style={{ padding: "8px", textAlign: "center" }}>Bayar Tunai</th>
-            <th style={{ padding: "8px", textAlign: "center" }}>Bayar Transfer</th>
-            <th style={{ padding: "8px", textAlign: "center" }}>Total Pembayaran</th>
-            <th style={{ padding: "8px", textAlign: "center" }}>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {paginatedRekap.length > 0 ? (
-            paginatedRekap.map((rekap) => (
-              <tr 
-                key={rekap.id} 
-                style={{ backgroundColor: selectedRekapIds.includes(rekap.id) ? "#e0e7ff" : "white", cursor: "pointer" }}
-              >
-                <td>
-                  <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-                      <input
-                          type="checkbox"
-                          checked={selectedRekapIds.includes(rekap.id)}
-                          onChange={() => handleRekapCheckbox(rekap.id)}
-                          style={{ transform: "scale(1.3)" }}
-                      />
-                  </div>
-              </td>
-                <td style={{ padding: "8px", fontWeight: "bold" }}>
-                  {formatDate(rekap.tanggal)}
-                </td>
-                <td style={{ padding: "8px" }}>{rekap.nama_user}</td>
-                <td style={{ padding: "8px", textAlign: "center" }}>{rekap.total_pasien}</td>
-                <td style={{ padding: "8px", textAlign: "right" }}>{formatRupiah(rekap.total_tagihan)}</td>
-                <td style={{ padding: "8px", textAlign: "right" }}>{formatRupiah(rekap.total_tunai)}</td>
-                <td style={{ padding: "8px", textAlign: "right"}}>{formatRupiah(rekap.total_transfer)}</td>
-                <td style={{ padding: "8px", textAlign: "right"}}>{formatRupiah(rekap.total_pembayaran)}</td>
-                <td style={{ padding: "8px" }}>{rekap.status}</td>
-              </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan="9" style={{ textAlign: "center", padding: "1rem" }}>
-                Tidak ada data rekapitulasi yang ditemukan.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+      <table border="1" cellPadding="4" style={{ borderCollapse: "collapse", width: "100%", marginTop: "0px", fontSize: "12px" }}> 
+    <thead> 
+      <tr style={{ background: "#f3f4f6" }}> 
+        <th style={{ padding: "8px", textAlign: "center", width: "50px" }}> 
+          <input 
+            type="checkbox" 
+            ref={selectAllRef} 
+            checked={isAllRekapSelected} 
+            onChange={handleSelectAllRekap} 
+            style={{ transform: "scale(1.3)" }} 
+          /> 
+        </th> 
+        <th style={{ padding: "8px", textAlign: "left" }}>Tanggal</th> 
+        <th style={{ padding: "8px", textAlign: "left" }}>Nama User</th> 
+        <th style={{ padding: "8px", textAlign: "center" }}>Total Pasien</th> 
+        <th style={{ padding: "8px", textAlign: "center" }}>Total Tagihan</th> 
+        <th style={{ padding: "8px", textAlign: "center" }}>Bayar Tunai</th> 
+        <th style={{ padding: "8px", textAlign: "center" }}>Bayar Transfer</th> 
+        <th style={{ padding: "8px", textAlign: "center" }}>Total Pembayaran</th> 
+        <th style={{ padding: "8px", textAlign: "center" }}>Status</th> 
+      </tr> 
+    </thead> 
+    <tbody> 
+      {paginatedRekap.length > 0 ? ( 
+        paginatedRekap.map((rekap) => ( 
+          <tr  
+            key={rekap.id}  
+            style={{ backgroundColor: selectedRekapIds.includes(rekap.id) ? "#e0e7ff" : "white", cursor: "pointer" }} 
+          > 
+            <td> 
+              <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}> 
+                  <input 
+                      type="checkbox" 
+                      checked={selectedRekapIds.includes(rekap.id)} 
+                      onChange={() => handleRekapCheckbox(rekap.id)} 
+                      style={{ transform: "scale(1.3)" }} 
+                  /> 
+              </div> 
+          </td> 
+            <td style={{ padding: "8px", fontWeight: "bold" }}> 
+              {formatDate(rekap.tanggal)} 
+            </td> 
+            <td style={{ padding: "8px" }}>{rekap.nama_user}</td> 
+            <td style={{ padding: "8px", textAlign: "center" }}>{rekap.total_pasien}</td> 
+            <td style={{ padding: "8px", textAlign: "right" }}>{formatRupiah(rekap.total_tagihan)}</td> 
+            <td style={{ padding: "8px", textAlign: "right" }}>{formatRupiah(rekap.total_tunai)}</td> 
+            <td style={{ padding: "8px", textAlign: "right"}}>{formatRupiah(rekap.total_transfer)}</td> 
+            <td style={{ padding: "8px", textAlign: "right"}}>{formatRupiah(rekap.total_pembayaran)}</td> 
+            <td style={{ padding: "8px" }}>{rekap.status}</td> 
+          </tr> 
+        )) 
+      ) : ( 
+        <tr> 
+          <td colSpan="9" style={{ textAlign: "center", padding: "1rem" }}> 
+            Tidak ada data rekapitulasi yang ditemukan. 
+          </td> 
+        </tr> 
+      )} 
+    </tbody> 
+  </table>
+      
       {/* Rekap Pagination */}
       {totalRekapPages > 1 && (
         <Pagination
