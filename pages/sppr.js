@@ -5,6 +5,113 @@ import Swal from "sweetalert2";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 
+// Fungsi untuk mengonversi angka menjadi teks (Terbilang)
+const terbilang = (angka) => {
+  const bilangan = [
+    "",
+    "satu",
+    "dua",
+    "tiga",
+    "empat",
+    "lima",
+    "enam",
+    "tujuh",
+    "delapan",
+    "sembilan",
+    "sepuluh",
+    "sebelas",
+  ];
+
+  angka = Math.abs(angka);
+  if (angka === 0) {
+    return "nol";
+  }
+
+  if (angka < 12) {
+    return bilangan[angka];
+  } else if (angka < 20) {
+    return terbilang(angka - 10) + " belas";
+  } else if (angka < 100) {
+    const sisa = angka % 10;
+    const puluh = Math.floor(angka / 10);
+    return (
+      bilangan[puluh] +
+      " puluh" +
+      (sisa > 0 ? " " + terbilang(sisa) : "")
+    );
+  } else if (angka < 200) {
+    const sisa = angka - 100;
+    return "seratus" + (sisa > 0 ? " " + terbilang(sisa) : "");
+  } else if (angka < 1000) {
+    const sisa = angka % 100;
+    const ratus = Math.floor(angka / 100);
+    return (
+      bilangan[ratus] +
+      " ratus" +
+      (sisa > 0 ? " " + terbilang(sisa) : "")
+    );
+  } else if (angka < 2000) {
+    const sisa = angka - 1000;
+    return "seribu" + (sisa > 0 ? " " + terbilang(sisa) : "");
+  } else if (angka < 1000000) {
+    const sisa = angka % 1000;
+    const ribu = Math.floor(angka / 1000);
+    return (
+      terbilang(ribu) +
+      " ribu" +
+      (sisa > 0 ? " " + terbilang(sisa) : "")
+    );
+  } else if (angka < 1000000000) {
+    const sisa = angka % 1000000;
+    const juta = Math.floor(angka / 1000000);
+    return (
+      terbilang(juta) +
+      " juta" +
+      (sisa > 0 ? " " + terbilang(sisa) : "")
+    );
+  } else if (angka < 1000000000000) {
+    const sisa = angka % 1000000000;
+    const milyar = Math.floor(angka / 1000000000);
+    return (
+      terbilang(milyar) +
+      " milyar" +
+      (sisa > 0 ? " " + terbilang(sisa) : "")
+    );
+  } else if (angka < 1000000000000000) {
+    const sisa = angka % 1000000000000;
+    const triliun = Math.floor(angka / 1000000000000);
+    return (
+      terbilang(triliun) +
+      " triliun" +
+      (sisa > 0 ? " " + terbilang(sisa) : "")
+    );
+  } else {
+    return "Jumlah melebihi batas";
+  }
+};
+
+// Fungsi untuk memformat setiap kata menjadi kapital di awal
+const capitalizeWords = (str) => {
+  if (!str) return "";
+  return str
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+};
+
+// Fungsi untuk memformat angka dengan pemisah ribuan
+const formatAngka = (angka) => {
+  if (angka === null || typeof angka === 'undefined') {
+    return "";
+  }
+  return angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+};
+
+// Fungsi untuk mengembalikan angka murni dari string yang diformat
+const parseAngka = (str) => {
+  return parseInt(str.replace(/\./g, ""), 10) || 0;
+};
+
 // Komponen Modal Pop-up
 const Modal = ({ children, onClose }) => {
   return (
@@ -29,7 +136,7 @@ const Modal = ({ children, onClose }) => {
           padding: "2rem",
           borderRadius: "8px",
           position: "relative",
-          maxWidth: "90%",
+          maxWidth: "700px", // Lebar diubah menjadi 700px
           maxHeight: "90vh",
           overflowY: "auto",
         }}
@@ -54,10 +161,12 @@ const createPDF = (data) => {
     item.nama_bendahara,
     item.nama_pengambil,
     item.pangkat_nrp,
+    formatAngka(item.jumlah_penarikan),
+    `${capitalizeWords(terbilang(item.jumlah_penarikan))} Rupiah`
   ]);
 
   const tableHeaders = [
-    ["Tanggal", "Nomor Surat", "Nama KPA", "Bendahara", "Pengambil", "Pangkat/NRP"],
+    ["Tanggal", "Nomor Surat", "Nama KPA", "Bendahara", "Pengambil", "Pangkat/NRP", "Jumlah Penarikan", "Terbilang"],
   ];
 
   doc.autoTable({
@@ -90,6 +199,7 @@ const Sppr = () => {
     nama_bendahara: "",
     nama_pengambil: "",
     pangkat_nrp: "",
+    jumlah_penarikan: 0,
   });
 
   useEffect(() => {
@@ -108,18 +218,28 @@ const Sppr = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    if (name === "jumlah_penarikan") {
+      const sanitizedValue = parseAngka(value);
+      setFormData({ ...formData, [name]: sanitizedValue });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
   };
-
+  
   const handleSave = async (e) => {
     e.preventDefault();
-
+  
+    const dataToSave = {
+      ...formData,
+      jumlah_penarikan: parseInt(formData.jumlah_penarikan) || 0,
+    };
+  
     if (isEditing) {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("sppr")
-        .update(formData)
+        .update(dataToSave)
         .eq("id", selectedSppr.id);
-
+  
       if (error) {
         Swal.fire("Gagal!", `Data gagal diupdate: ${error.message}`, "error");
         console.error("Error updating data:", error);
@@ -129,8 +249,8 @@ const Sppr = () => {
         resetForm();
       }
     } else {
-      const { data, error } = await supabase.from("sppr").insert([formData]);
-
+      const { error } = await supabase.from("sppr").insert([dataToSave]);
+  
       if (error) {
         Swal.fire("Gagal!", `Data gagal disimpan: ${error.message}`, "error");
         console.error("Error inserting data:", error);
@@ -141,7 +261,7 @@ const Sppr = () => {
       }
     }
   };
-
+  
   const handleDelete = async () => {
     if (!selectedSppr) return;
     
@@ -166,6 +286,7 @@ const Sppr = () => {
         setSelectedSppr(null);
         fetchSPPR();
       }
+      resetForm();
     }
   };
 
@@ -190,6 +311,7 @@ const Sppr = () => {
       nama_bendahara: "",
       nama_pengambil: "",
       pangkat_nrp: "",
+      jumlah_penarikan: 0,
     });
     setShowModal(false);
   };
@@ -210,53 +332,51 @@ const Sppr = () => {
 
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
-    setSelectedSppr(null); // Batalkan pilihan saat pindah halaman
+    setSelectedSppr(null); 
   };
 
   const handleRowsPerPageChange = (e) => {
     setRowsPerPage(parseInt(e.target.value));
-    setCurrentPage(1); // Kembali ke halaman 1 saat mengubah jumlah baris
-    setSelectedSppr(null); // Batalkan pilihan saat mengubah jumlah baris
+    setCurrentPage(1); 
+    setSelectedSppr(null); 
   };
 
   return (
-    <div style={{ backgroundColor: "#F3F4F6" }}>
+    <div style={{ padding: "1rem 2rem", backgroundColor: "#F3F4F6" }}>
       <h2>Data Surat Perintah Pendebitan Rekening</h2>
 
-      {/* Tombol Aksi */}
-      <div style={{ marginBottom: "0rem", display: "flex", gap: "10px", alignItems: "center" }}>
+      <div style={{ marginBottom: "1rem", display: "flex", gap: "10px", alignItems: "center" }}>
         <button
           onClick={() => {
             resetForm();
             setShowModal(true);
           }}
-          style={{ background: "#16a34a", color: "white", padding: "6px 10px", border: "none", borderRadius: "6px", cursor: "pointer" }}
+          style={{ background: "#16a34a", color: "white", padding: "10px 20px", border: "none", borderRadius: "6px", cursor: "pointer" }}
         >
           Rekam SPPR
         </button>
         <button
           onClick={handleEdit}
           disabled={!selectedSppr}
-          style={{ background: "#f59e0b", color: "white", padding: "6px 10px", border: "none", borderRadius: "6px", cursor: selectedSppr ? "pointer" : "not-allowed", opacity: selectedSppr ? 1 : 0.5 }}
+          style={{ background: "#f59e0b", color: "white", padding: "10px 20px", border: "none", borderRadius: "6px", cursor: selectedSppr ? "pointer" : "not-allowed", opacity: selectedSppr ? 1 : 0.5 }}
         >
           Edit
         </button>
         <button
           onClick={handleDelete}
           disabled={!selectedSppr}
-          style={{ background: "#dc2626", color: "white", padding: "6px 10px", border: "none", borderRadius: "6px", cursor: selectedSppr ? "pointer" : "not-allowed", opacity: selectedSppr ? 1 : 0.5 }}
+          style={{ background: "#dc2626", color: "white", padding: "10px 20px", border: "none", borderRadius: "6px", cursor: selectedSppr ? "pointer" : "not-allowed", opacity: selectedSppr ? 1 : 0.5 }}
         >
           Hapus
         </button>
         <button
           onClick={handleDownload}
-          style={{ background: "#3b82f6", color: "white", padding: "6px 10px", border: "none", borderRadius: "6px", cursor: "pointer" }}
+          style={{ background: "#3b82f6", color: "white", padding: "10px 20px", border: "none", borderRadius: "6px", cursor: "pointer" }}
         >
           Download PDF
         </button>
       </div>
       
-      {/* Modal untuk Form */}
       {showModal && (
         <Modal onClose={resetForm}>
           <form onSubmit={handleSave}>
@@ -329,6 +449,34 @@ const Sppr = () => {
                   style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
                 />
               </div>
+              {/* Layout untuk Jumlah Penarikan dan Terbilang */}
+              <div style={{ gridColumn: "span 2", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+                <div>
+                  <label>Jumlah Penarikan (Rp):</label>
+                  <input
+                    type="text"
+                    name="jumlah_penarikan"
+                    value={formatAngka(formData.jumlah_penarikan)}
+                    onChange={handleInputChange}
+                    style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
+                  />
+                </div>
+                <div>
+                  <label>Terbilang:</label>
+                  <div
+                      style={{
+                        padding: "8px",
+                        border: "1px solid #ccc",
+                        borderRadius: "4px",
+                        backgroundColor: "#f9f9f9",
+                        fontSize: "14px",
+                        textAlign: "justify",
+                      }}
+                    >
+                    {capitalizeWords(terbilang(parseInt(formData.jumlah_penarikan) || 0))} Rupiah
+                  </div>
+                </div>
+              </div>
             </div>
             
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
@@ -372,6 +520,8 @@ const Sppr = () => {
               <th style={{ width: "15%", padding: "8px", textAlign: "left" }}>Nama Bendahara</th>
               <th style={{ width: "15%", padding: "8px", textAlign: "left" }}>Nama Pengambil</th>
               <th style={{ width: "15%", padding: "8px", textAlign: "left" }}>Pangkat/NRP</th>
+              <th style={{ width: "15%", padding: "8px", textAlign: "left" }}>Jumlah Penarikan</th>
+              <th style={{ width: "20%", padding: "8px", textAlign: "left" }}>Terbilang</th>
             </tr>
           </thead>
           <tbody>
@@ -389,11 +539,13 @@ const Sppr = () => {
                   <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{sppr.nama_bendahara}</td>
                   <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{sppr.nama_pengambil}</td>
                   <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{sppr.pangkat_nrp}</td>
+                  <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{formatAngka(sppr.jumlah_penarikan)}</td>
+                  <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{capitalizeWords(terbilang(sppr.jumlah_penarikan))} Rupiah</td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="7" style={{ textAlign: "center", padding: "1rem" }}>
+                <td colSpan="9" style={{ textAlign: "center", padding: "1rem" }}>
                   Tidak ada data SPPR yang ditemukan.
                 </td>
               </tr>
@@ -504,6 +656,14 @@ const Sppr = () => {
             <div style={{ display: "flex" }}>
                 <p style={{ margin: 0, width: "150px" }}><strong>Pangkat & NRP</strong></p>
                 <p style={{ margin: 0 }}>: {selectedSppr.pangkat_nrp}</p>
+            </div>
+            <div style={{ display: "flex" }}>
+                <p style={{ margin: 0, width: "150px", paddingLeft: "1rem" }}><strong>Jumlah Penarikan</strong></p>
+                <p style={{ margin: 0 }}>: {formatAngka(selectedSppr.jumlah_penarikan)}</p>
+            </div>
+            <div style={{ display: "flex" }}>
+                <p style={{ margin: 0, width: "150px" }}><strong>Terbilang</strong></p>
+                <p style={{ margin: 0 }}>: {capitalizeWords(terbilang(selectedSppr.jumlah_penarikan))} Rupiah</p>
             </div>
         </div>
         ) : (
