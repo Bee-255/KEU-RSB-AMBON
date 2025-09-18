@@ -181,7 +181,7 @@ export default function Pegawai() {
     // Terapkan filter pencarian jika ada kata kunci
     if (searchTerm) {
       // BARIS YANG SUDAH DIPERBAIKI:
-      query = query.or(`nama.ilike.%${searchTerm}%,pekerjaan.ilike.%${searchTerm}%,nrp_nip_nik.ilike.%${searchTerm}%`);
+      query = query.or(`nama.ilike.%${searchTerm}%,pekerjaan.ilike.%${searchTerm}%,nrp_nip_nir.ilike.%${searchTerm}%`);
     }
 
     // Eksekusi query dengan pengurutan dan rentang untuk paginasi
