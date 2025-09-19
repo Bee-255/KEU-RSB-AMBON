@@ -1,3 +1,4 @@
+// sppr.js
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { supabase } from "../lib/supabaseClient";
@@ -112,6 +113,12 @@ const parseAngka = (str) => {
   return parseInt(str.replace(/\./g, ""), 10) || 0;
 };
 
+// Fungsi untuk mengubah angka bulan menjadi angka Romawi
+const toRoman = (num) => {
+    const roman = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
+    return roman[num] || "";
+};
+
 // Komponen Modal Pop-up
 const Modal = ({ children, onClose }) => {
   return (
@@ -136,7 +143,7 @@ const Modal = ({ children, onClose }) => {
           padding: "2rem",
           borderRadius: "8px",
           position: "relative",
-          maxWidth: "700px", // Lebar diubah menjadi 700px
+          maxWidth: "700px",
           maxHeight: "90vh",
           overflowY: "auto",
         }}
@@ -182,6 +189,10 @@ const createPDF = (data) => {
 
 const Sppr = () => {
   const [spprList, setSpprList] = useState([]);
+  const [kpaList, setKpaList] = useState([]);
+  const [bendaharaList, setBendaharaList] = useState([]);
+  // State baru untuk daftar pengambil
+  const [pengambilList, setPengambilList] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedSppr, setSelectedSppr] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -204,7 +215,13 @@ const Sppr = () => {
 
   useEffect(() => {
     fetchSPPR();
-  }, []);
+    fetchKPA();
+    fetchBendahara();
+    fetchPengambil(); // Panggil fungsi untuk mengambil data Pengambil
+    if (showModal && !isEditing) {
+      generateNomorSurat();
+    }
+  }, [showModal, isEditing]);
 
   const fetchSPPR = async () => {
     const { data, error } = await supabase.from("sppr").select("*").order("created_at", { ascending: false });
@@ -216,11 +233,101 @@ const Sppr = () => {
     }
   };
 
+  const fetchKPA = async () => {
+    const { data, error } = await supabase
+      .from("pejabat_keuangan")
+      .select("nama")
+      .eq("jabatan_pengelola_keuangan", "KPA")
+      .eq("status", "Aktif");
+    if (error) {
+      console.error("Gagal mengambil data KPA:", error);
+    } else {
+      setKpaList(data.map(item => item.nama));
+    }
+  };
+
+  const fetchBendahara = async () => {
+    const { data, error } = await supabase
+      .from("pejabat_keuangan")
+      .select("nama")
+      .eq("jabatan_pengelola_keuangan", "BPG")
+      .eq("status", "Aktif");
+    if (error) {
+      console.error("Gagal mengambil data Bendahara:", error);
+    } else {
+      setBendaharaList(data.map(item => item.nama));
+    }
+  };
+  
+  // Fungsi baru untuk mengambil data pengambil
+  const fetchPengambil = async () => {
+    const { data, error } = await supabase
+      .from("pegawai")
+      .select("nama, pangkat, nrp_nip_nir")
+      .in("jabatan_struktural", ["BANUM KEU", "STAF KEU"])
+      .eq("status", "Aktif");
+    if (error) {
+      console.error("Gagal mengambil data Pengambil:", error);
+    } else {
+      setPengambilList(data);
+    }
+  };
+
+  const generateNomorSurat = async () => {
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonthRoman = toRoman(today.getMonth() + 1);
+
+    const { data, error } = await supabase
+      .from("sppr")
+      .select("nomor_surat")
+      .gte("tanggal", `${currentYear}-01-01`)
+      .lt("tanggal", `${currentYear + 1}-01-01`)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Gagal mengambil data untuk penomoran:", error);
+      return;
+    }
+    
+    let lastNumber = 0;
+    if (data && data.length > 0) {
+        const lastSppr = data[0];
+        const parts = lastSppr.nomor_surat.split('/');
+        if (parts.length > 0) {
+            const lastPart = parts[0];
+            const num = parseInt(lastPart, 10);
+            if (!isNaN(num)) {
+                lastNumber = num;
+            }
+        }
+    }
+    const nextNumber = lastNumber + 1;
+    const formattedNumber = String(nextNumber).padStart(3, "0");
+
+    const newNomorSurat = `${formattedNumber}/KEU./${currentMonthRoman}/${currentYear}/Rumkit.`;
+
+    setFormData((prevData) => ({
+      ...prevData,
+      nomor_surat: newNomorSurat,
+      tanggal: today.toISOString().split("T")[0],
+    }));
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     if (name === "jumlah_penarikan") {
       const sanitizedValue = parseAngka(value);
       setFormData({ ...formData, [name]: sanitizedValue });
+    } else if (name === "nama_pengambil") {
+      // Cari data pengambil yang cocok
+      const selectedPengambil = pengambilList.find(p => p.nama === value);
+      // Update form data dengan nama dan gabungan pangkat & nrp
+      setFormData({
+        ...formData,
+        nama_pengambil: value,
+        pangkat_nrp: selectedPengambil ? `${selectedPengambil.pangkat} ${selectedPengambil.nrp_nip_nir}` : "",
+      });
     } else {
       setFormData({ ...formData, [name]: value });
     }
@@ -391,7 +498,8 @@ const Sppr = () => {
                   value={formData.tanggal}
                   onChange={handleInputChange}
                   required
-                  style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
+                  readOnly={isEditing}
+                  style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px", backgroundColor: isEditing ? "#f0f0f0" : "white" }}
                 />
               </div>
               <div>
@@ -400,53 +508,74 @@ const Sppr = () => {
                   type="text"
                   name="nomor_surat"
                   value={formData.nomor_surat}
+                  readOnly
                   onChange={handleInputChange}
                   required
-                  style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
+                  style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px", backgroundColor: "#f0f0f0" }}
                 />
               </div>
               <div>
                 <label>Nama KPA:</label>
-                <input
-                  type="text"
+                <select
                   name="nama_kpa"
                   value={formData.nama_kpa}
                   onChange={handleInputChange}
                   required
                   style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
-                />
+                >
+                  <option value="">-- Pilih KPA --</option>
+                  {kpaList.map((kpa, index) => (
+                    <option key={index} value={kpa}>
+                      {kpa}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label>Nama Bendahara:</label>
-                <input
-                  type="text"
+                <select
                   name="nama_bendahara"
                   value={formData.nama_bendahara}
                   onChange={handleInputChange}
                   required
                   style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
-                />
+                >
+                  <option value="">-- Pilih Bendahara --</option>
+                  {bendaharaList.map((bendahara, index) => (
+                    <option key={index} value={bendahara}>
+                      {bendahara}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label>Nama Pengambil:</label>
-                <input
-                  type="text"
+                {/* Ganti input dengan select dropdown */}
+                <select
                   name="nama_pengambil"
                   value={formData.nama_pengambil}
                   onChange={handleInputChange}
                   required
                   style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
-                />
+                >
+                  <option value="">-- Pilih Pengambil --</option>
+                  {/* Map dari data pengambil yang sudah difilter */}
+                  {pengambilList.map((pengambil, index) => (
+                    <option key={index} value={pengambil.nama}>
+                      {pengambil.nama}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label>Pangkat & NRP:</label>
+                {/* Input ini sekarang read-only dan otomatis terisi */}
                 <input
                   type="text"
                   name="pangkat_nrp"
                   value={formData.pangkat_nrp}
-                  onChange={handleInputChange}
-                  required
-                  style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
+                  readOnly
+                  style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px", backgroundColor: "#f0f0f0" }}
                 />
               </div>
               {/* Layout untuk Jumlah Penarikan dan Terbilang */}

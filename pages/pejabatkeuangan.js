@@ -41,7 +41,7 @@ const Modal = ({ children, onClose }) => {
 
 // Objek untuk memetakan singkatan ke deskripsi
 const jabatanMap = {
-  KPA: "KUASA PENGGUNAAN ANGGARAN",
+  KPA: "KUASA PENGGUNA ANGGARAN",
   PPK: "PEJABAT PEMBUAT KOMITMEN",
   PPSPM: "PEJABAT PENANDATANGANAN SURAT PERINTAH MEMBAYAR",
   BPG: "BENDAHARA PENGELUARAN",
@@ -64,6 +64,8 @@ const PejabatKeuangan = () => {
     jabatan_struktural: "",
     jabatan_pengelola_keuangan: "",
     deskripsi_jabatan: "",
+    // BARU: Tambah kolom status
+    status: "",
   });
 
   useEffect(() => {
@@ -82,7 +84,6 @@ const PejabatKeuangan = () => {
   };
 
   const fetchPegawai = async () => {
-    // Perbaikan: Ambil juga kolom 'jabatan_struktural'
     const { data, error } = await supabase.from("pegawai").select("nama, pangkat, nrp_nip_nir, jabatan_struktural");
     if (error) {
       console.error("Gagal mengambil data pegawai:", error);
@@ -99,7 +100,6 @@ const PejabatKeuangan = () => {
 
   const handlePegawaiChange = (e) => {
     const selectedName = e.target.value;
-    // Mencari objek pegawai yang cocok berdasarkan nama
     const selectedPegawai = pegawaiList.find(p => p.nama === selectedName);
     
     if (selectedPegawai) {
@@ -108,7 +108,6 @@ const PejabatKeuangan = () => {
         nama: selectedName,
         pangkat: selectedPegawai.pangkat,
         nrp_nip: selectedPegawai.nrp_nip_nir, 
-        // BARU: Set 'jabatan_struktural' secara otomatis
         jabatan_struktural: selectedPegawai.jabatan_struktural,
       });
     } else {
@@ -117,7 +116,7 @@ const PejabatKeuangan = () => {
         nama: "",
         pangkat: "",
         nrp_nip: "",
-        jabatan_struktural: "", // BARU: Reset 'jabatan_struktural'
+        jabatan_struktural: "",
       });
     }
   };
@@ -211,6 +210,8 @@ const PejabatKeuangan = () => {
       jabatan_struktural: "",
       jabatan_pengelola_keuangan: "",
       deskripsi_jabatan: "",
+      // BARU: Reset status
+      status: "",
     });
     setShowModal(false);
   };
@@ -306,14 +307,13 @@ const PejabatKeuangan = () => {
                     type="text"
                     name="jabatan_struktural"
                     value={formData.jabatan_struktural}
-                    // Tambahkan properti readOnly agar tidak bisa diedit manual
                     readOnly
                     style={{ 
                         width: "100%", 
                         padding: "8px", 
                         border: "1px solid #ccc", 
                         borderRadius: "4px",
-                        backgroundColor: "#f0f0f0" // Tampilkan warna abu-abu untuk input yang read-only
+                        backgroundColor: "#f0f0f0"
                     }}
                     />
                 </div>
@@ -348,6 +348,29 @@ const PejabatKeuangan = () => {
                     style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px", backgroundColor: "#f0f0f0" }}
                     />
                 </div>
+
+                {/* BARU: Kolom Status */}
+                <div>
+                  <label>Status:</label>
+                  <select
+                    name="status"
+                    value={formData.status}
+                    onChange={handleInputChange}
+                    required
+                    style={{
+                      width: "100%",
+                      padding: "8px",
+                      border: "1px solid #ccc",
+                      borderRadius: "4px",
+                      backgroundColor: formData.status === "" ? "#f0f0f0" : "white",
+                    }}
+                  >
+                    <option value="">-- Pilih Status --</option>
+                    <option>Aktif</option>
+                    <option>Tidak Aktif</option>
+                  </select>
+                </div>
+
                 </div>
                 
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
@@ -384,12 +407,13 @@ const PejabatKeuangan = () => {
             >
             <thead>
                 <tr style={{ background: "#f3f4f6" }}>
-                <th style={{ width: "30px", padding: "8px", textAlign: "center" }}>No.</th>
-                <th style={{ width: "25%", padding: "8px", textAlign: "left" }}>Nama</th>
-                <th style={{ width: "15%", padding: "8px", textAlign: "left" }}>Pangkat</th>
-                <th style={{ width: "15%", padding: "8px", textAlign: "left" }}>NRP/NIP</th>
-                <th style={{ width: "15%", padding: "8px", textAlign: "left" }}>Jabatan Pengelola Keuangan</th>
-                <th style={{ width: "25%", padding: "8px", textAlign: "left" }}>Deskripsi</th>
+                <th style={{ width: "40px", padding: "8px", textAlign: "center" }}>No.</th>
+                <th style={{ width: "30%", padding: "8px", textAlign: "left" }}>Nama</th>
+                <th style={{ width: "20%", padding: "8px", textAlign: "left" }}>Pangkat</th>
+                <th style={{ width: "30%", padding: "8px", textAlign: "left" }}>NRP/NIP</th>
+                <th style={{ width: "20%", padding: "8px", textAlign: "left" }}>Jabatan Pengelola Keuangan</th>
+                {/* BARU: Kolom status di tabel */}
+                <th style={{ width: "15%", padding: "8px", textAlign: "left" }}>Status</th>
                 </tr>
             </thead>
             <tbody>
@@ -405,7 +429,8 @@ const PejabatKeuangan = () => {
                     <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{pejabat.pangkat}</td>
                     <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{pejabat.nrp_nip}</td>
                     <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{pejabat.jabatan_pengelola_keuangan}</td>
-                    <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{jabatanMap[pejabat.jabatan_pengelola_keuangan] || ""}</td>
+                    {/* BARU: Menampilkan status di tabel */}
+                    <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{pejabat.status}</td>
                     </tr>
                 ))
                 ) : (
@@ -468,6 +493,11 @@ const PejabatKeuangan = () => {
                 <div style={{ display: "flex" }}>
                     <p style={{ margin: 0, width: "180px", paddingLeft: "1rem" }}><strong>Deskripsi Jabatan</strong></p>
                     <p style={{ margin: 0 }}>: {jabatanMap[selectedPejabat.jabatan_pengelola_keuangan] || ""}</p>
+                </div>
+                {/* BARU: Baris untuk Status */}
+                <div style={{ display: "flex" }}>
+                    <p style={{ margin: 0, width: "180px", paddingLeft: "1rem" }}><strong>Status</strong></p>
+                    <p style={{ margin: 0 }}>: {selectedPejabat.status}</p>
                 </div>
             </div>
             ) : (
