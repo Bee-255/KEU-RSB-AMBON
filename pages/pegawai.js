@@ -130,6 +130,8 @@ export default function Pegawai() {
     klasifikasi: "",
     pangkat: "",
     golongan: "",
+    // KOLOM BARU: Jabatan Struktural
+    jabatan_struktural: "",
     status: "",
     bank: "-",
     no_rekening: "-",
@@ -180,7 +182,6 @@ export default function Pegawai() {
 
     // Terapkan filter pencarian jika ada kata kunci
     if (searchTerm) {
-      // BARIS YANG SUDAH DIPERBAIKI:
       query = query.or(`nama.ilike.%${searchTerm}%,pekerjaan.ilike.%${searchTerm}%,nrp_nip_nir.ilike.%${searchTerm}%`);
     }
 
@@ -291,6 +292,8 @@ export default function Pegawai() {
       klasifikasi: "",
       pangkat: "",
       golongan: "",
+      // KOLOM BARU: Jabatan Struktural
+      jabatan_struktural: "",
       status: "",
       bank: "-",
       no_rekening: "-",
@@ -616,6 +619,18 @@ export default function Pegawai() {
                   ))}
                 </select>
               </div>
+
+              {/* BARU: Input Jabatan Struktural */}
+              <div>
+                <label>Jabatan Struktural:</label>
+                <input
+                  type="text"
+                  name="jabatan_struktural"
+                  value={pegawai.jabatan_struktural}
+                  onChange={handleChange}
+                  style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
+                />
+              </div>
               
               <div>
                 <label>Status:</label>
@@ -706,11 +721,13 @@ export default function Pegawai() {
       >
         <thead>
           <tr style={{ background: "#f3f4f6" }}>
-            <th style={{ width: "30px", padding: "8px", textAlign: "center" }}>No.</th>
-            <th style={{ width: "25%", padding: "8px", textAlign: "left" }}>Nama</th>
-            <th style={{ width: "25%", padding: "8px", textAlign: "left" }}>Pekerjaan</th>
-            <th style={{ width: "25%", padding: "8px", textAlign: "left" }}>Pangkat</th>
-            <th style={{ width: "50%", padding: "8px", textAlign: "left" }}>NRP / NIP / NIR</th>
+            <th style={{ width: "10px", padding: "8px", textAlign: "center" }}>No.</th>
+            <th style={{ width: "23%", padding: "8px", textAlign: "left" }}>Nama</th>
+            <th style={{ width: "10%", padding: "8px", textAlign: "left" }}>Pekerjaan</th>
+            <th style={{ width: "15%", padding: "8px", textAlign: "left" }}>Pangkat</th>
+            <th style={{ width: "15%", padding: "8px", textAlign: "left" }}>NRP / NIP / NIR</th>
+            <th style={{ width: "15%", padding: "8px", textAlign: "left" }}>Jabatan Struktural</th>
+            <th style={{ width: "10%", padding: "8px", textAlign: "left" }}>Status</th>
           </tr>
         </thead>
         <tbody>
@@ -721,16 +738,18 @@ export default function Pegawai() {
                 onClick={() => handleRowClick(p)}
                 style={{ cursor: "pointer", backgroundColor: selectedPegawai?.id === p.id ? "#e0e7ff" : "white" }}
               >
-                <td style={{ width: "50px", padding: "8px", textAlign: "center" }}>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.nama}</td>
-                <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.pekerjaan}</td>
-                <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.pangkat}</td>
-                <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.nrp_nip_nir}</td>
+                <td style={{ width: "30px", padding: "8px", textAlign: "center" }}>{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                <td style={{ width: "15%", padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.nama}</td>
+                <td style={{ width: "10%", padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.pekerjaan}</td>
+                <td style={{ width: "15%", padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.pangkat}</td>
+                <td style={{ width: "15%", padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.nrp_nip_nir}</td>
+                <td style={{ width: "15%", padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.jabatan_struktural}</td>
+                <td style={{ width: "15%", padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.status}</td>
               </tr>
             ))
           ) : (
             <tr>
-              <td colSpan="4" style={{ textAlign: "center", padding: "1rem" }}>
+              <td colSpan="7" style={{ textAlign: "center", padding: "1rem" }}>
                 Tidak ada data pegawai yang ditemukan.
               </td>
             </tr>
@@ -816,24 +835,29 @@ export default function Pegawai() {
                 <p style={{ margin: 0, width: "150px" }}><strong>Golongan</strong></p>
                 <p style={{ margin: 0 }}>: {selectedPegawai.golongan}</p>
             </div>
+            {/* BARU: Baris untuk Jabatan Struktural */}
+            <div style={{ display: "flex" }}>
+                <p style={{ margin: 0, width: "150px", paddingLeft: "1rem" }}><strong>Jabatan Struktural</strong></p>
+                <p style={{ margin: 0 }}>: {selectedPegawai.jabatan_struktural}</p>
+            </div>
             {/* Baris 7: Status */}
             <div style={{ display: "flex" }}>
-                <p style={{ margin: 0, width: "150px", paddingLeft: "1rem" }}><strong>Status</strong></p>
+                <p style={{ margin: 0, width: "150px" }}><strong>Status</strong></p>
                 <p style={{ margin: 0 }}>: {selectedPegawai.status}</p>
             </div>
             {/* Baris 8: Bank */}
             <div style={{ display: "flex" }}>
-                <p style={{ margin: 0, width: "150px" }}><strong>Bank</strong></p>
+                <p style={{ margin: 0, width: "150px", paddingLeft: "1rem" }}><strong>Bank</strong></p>
                 <p style={{ margin: 0 }}>: {selectedPegawai.bank}</p>
             </div>
             {/* Baris 9: No. Rekening */}
             <div style={{ display: "flex" }}>
-                <p style={{ margin: 0, width: "150px", paddingLeft: "1rem" }}><strong>No. Rekening</strong></p>
+                <p style={{ margin: 0, width: "150px" }}><strong>No. Rekening</strong></p>
                 <p style={{ margin: 0 }}>: {selectedPegawai.no_rekening}</p>
             </div>
             {/* Baris 10: Nama Rekening */}
             <div style={{ display: "flex" }}>
-                <p style={{ margin: 0, width: "150px" }}><strong>Nama Rekening</strong></p>
+                <p style={{ margin: 0, width: "150px", paddingLeft: "1rem" }}><strong>Nama Rekening</strong></p>
                 <p style={{ margin: 0 }}>: {selectedPegawai.nama_rekening}</p>
             </div>
         </div>

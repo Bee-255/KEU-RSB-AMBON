@@ -82,8 +82,8 @@ const PejabatKeuangan = () => {
   };
 
   const fetchPegawai = async () => {
-    // Perbaikan: Ubah nrp_nip_nip menjadi nrp_nip_nir
-    const { data, error } = await supabase.from("pegawai").select("nama, pangkat, nrp_nip_nir");
+    // Perbaikan: Ambil juga kolom 'jabatan_struktural'
+    const { data, error } = await supabase.from("pegawai").select("nama, pangkat, nrp_nip_nir, jabatan_struktural");
     if (error) {
       console.error("Gagal mengambil data pegawai:", error);
       Swal.fire("Error", "Gagal mengambil data pegawai. Periksa koneksi atau nama tabel.", "error");
@@ -99,6 +99,7 @@ const PejabatKeuangan = () => {
 
   const handlePegawaiChange = (e) => {
     const selectedName = e.target.value;
+    // Mencari objek pegawai yang cocok berdasarkan nama
     const selectedPegawai = pegawaiList.find(p => p.nama === selectedName);
     
     if (selectedPegawai) {
@@ -106,15 +107,17 @@ const PejabatKeuangan = () => {
         ...formData,
         nama: selectedName,
         pangkat: selectedPegawai.pangkat,
-        // Perbaikan: Akses properti nrp_nip_nir dari objek pegawai
         nrp_nip: selectedPegawai.nrp_nip_nir, 
+        // BARU: Set 'jabatan_struktural' secara otomatis
+        jabatan_struktural: selectedPegawai.jabatan_struktural,
       });
     } else {
       setFormData({
         ...formData,
         nama: "",
         pangkat: "",
-        nrp_nip: "", // Perbaikan: Set nrp_nip menjadi kosong
+        nrp_nip: "",
+        jabatan_struktural: "", // BARU: Reset 'jabatan_struktural'
       });
     }
   };
@@ -303,9 +306,15 @@ const PejabatKeuangan = () => {
                     type="text"
                     name="jabatan_struktural"
                     value={formData.jabatan_struktural}
-                    onChange={handleInputChange}
-                    required
-                    style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
+                    // Tambahkan properti readOnly agar tidak bisa diedit manual
+                    readOnly
+                    style={{ 
+                        width: "100%", 
+                        padding: "8px", 
+                        border: "1px solid #ccc", 
+                        borderRadius: "4px",
+                        backgroundColor: "#f0f0f0" // Tampilkan warna abu-abu untuk input yang read-only
+                    }}
                     />
                 </div>
                 <div style={{ display: "flex", flexDirection: "column" }}>
