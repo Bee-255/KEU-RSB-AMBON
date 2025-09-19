@@ -11,8 +11,7 @@ export default function Layout({ children, fullName }) {
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
   
   const [openFolder, setOpenFolder] = useState(null);
-  const [isRekamActive, setIsRekamActive] = useState(false);
-
+  
   const handleLogout = async () => {
     const result = await Swal.fire({
       title: "Yakin ingin keluar?",
@@ -54,23 +53,23 @@ export default function Layout({ children, fullName }) {
     return () => clearInterval(timerId);
   }, []);
 
+  // Memperbarui folder yang aktif berdasarkan path saat ini
   useEffect(() => {
-    if (router.pathname.startsWith('/pegawai') || router.pathname.startsWith('/pencatatanpasien')) {
+    if (router.pathname.startsWith('/pejabat')) {
+      setOpenFolder('administrasi');
+    } else if (router.pathname.startsWith('/pegawai') || router.pathname.startsWith('/pencatatanpasien') || router.pathname.startsWith('/sppr')) {
       setOpenFolder('rekam');
-      setIsRekamActive(true);
+    } else {
+      setOpenFolder(null);
     }
   }, [router.pathname]);
 
+  const handleAdminToggle = () => {
+    setOpenFolder(openFolder === 'administrasi' ? null : 'administrasi');
+  };
+
   const handleRekamToggle = () => {
-    if (openFolder === 'rekam') {
-      setOpenFolder(null);
-      setTimeout(() => {
-        setIsRekamActive(false);
-      }, 150);
-    } else {
-      setIsRekamActive(true);
-      setOpenFolder('rekam');
-    }
+    setOpenFolder(openFolder === 'rekam' ? null : 'rekam');
   };
 
   // --- Gaya Navigasi ---
@@ -124,10 +123,11 @@ export default function Layout({ children, fullName }) {
   const handleDashboardClick = () => {
     router.push("/dashboard");
     setOpenFolder(null);
-    setIsRekamActive(false);
   };
   
+  const isAdminOpen = openFolder === 'administrasi';
   const isRekamOpen = openFolder === 'rekam';
+  const isActive = (path) => router.pathname === path;
 
   return (
     <div style={{ }}>
@@ -278,10 +278,46 @@ export default function Layout({ children, fullName }) {
             padding: "1rem 0"
           }}
         >
+          {/* Administrasi (Folder) */}
+          <div
+            onClick={handleAdminToggle}
+            style={isAdminOpen ? activeStyle : inactiveStyle}
+          >
+            <span style={{ fontSize: "0.9rem" }}>{folderIcon}</span> Administrasi
+            <span style={{
+              display: 'inline-block',
+              marginLeft: "auto",
+              width: "1em",
+              height: "1em",
+              transform: isAdminOpen ? 'rotate(-180deg)' : 'rotate(0deg)',
+              transition: 'transform 0.2s ease-in-out',
+            }}>
+              {arrowIcon}
+            </span>
+          </div>
+
+          {/* Sub-menu Administrasi */}
+          <div 
+            style={{
+              maxHeight: isAdminOpen ? '200px' : '0',
+              overflow: 'hidden',
+              transition: 'max-height 0.2s',
+            }}
+          >
+            <div style={{ display: "flex", flexDirection: "column", gap: "0rem" }}>
+              <button
+                onClick={() => router.push("/pejabatkeuangan")}
+                style={isActive("/pejabatkeuangan") ? {...activeStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"}}
+              >
+                <span style={{ fontSize: "0.9rem" }}>{fileIcon}</span> Pejabat Keuangan
+              </button>
+            </div>
+          </div>
+          
           {/* Rekam (Folder) */}
           <div
             onClick={handleRekamToggle}
-            style={isRekamActive ? activeStyle : inactiveStyle}
+            style={isRekamOpen ? activeStyle : inactiveStyle}
           >
             <span style={{ fontSize: "0.9rem" }}>{folderIcon}</span> Rekam
             <span style={{
@@ -307,19 +343,19 @@ export default function Layout({ children, fullName }) {
             <div style={{ display: "flex", flexDirection: "column", gap: "0rem" }}>
               <button
                 onClick={() => router.push("/pegawai")}
-                style={router.pathname === "/pegawai" ? {...activeStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"}}
+                style={isActive("/pegawai") ? {...activeStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"}}
               >
                 <span style={{ fontSize: "0.9rem" }}>{fileIcon}</span> Pegawai
               </button>
               <button
                 onClick={() => router.push("/pencatatanpasien")}
-                style={router.pathname === "/pencatatanpasien" ? {...activeStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"}}
+                style={isActive("/pencatatanpasien") ? {...activeStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"}}
               >
                 <span style={{ fontSize: "0.9rem" }}>{fileIcon}</span> Pencatatan Pasien
               </button>
               <button
                 onClick={() => router.push("/sppr")}
-                style={router.pathname === "/sppr" ? {...activeStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"}}
+                style={isActive("/sppr") ? {...activeStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"}}
               >
                 <span style={{ fontSize: "0.9rem" }}>{fileIcon}</span> SPPR
               </button>

@@ -706,9 +706,10 @@ export default function Pegawai() {
       >
         <thead>
           <tr style={{ background: "#f3f4f6" }}>
-            <th style={{ width: "50px", padding: "8px", textAlign: "center" }}>No.</th>
+            <th style={{ width: "30px", padding: "8px", textAlign: "center" }}>No.</th>
             <th style={{ width: "25%", padding: "8px", textAlign: "left" }}>Nama</th>
             <th style={{ width: "25%", padding: "8px", textAlign: "left" }}>Pekerjaan</th>
+            <th style={{ width: "25%", padding: "8px", textAlign: "left" }}>Pangkat</th>
             <th style={{ width: "50%", padding: "8px", textAlign: "left" }}>NRP / NIP / NIR</th>
           </tr>
         </thead>
@@ -723,6 +724,7 @@ export default function Pegawai() {
                 <td style={{ width: "50px", padding: "8px", textAlign: "center" }}>{(currentPage - 1) * itemsPerPage + index + 1}</td>
                 <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.nama}</td>
                 <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.pekerjaan}</td>
+                <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.pangkat}</td>
                 <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.nrp_nip_nir}</td>
               </tr>
             ))
