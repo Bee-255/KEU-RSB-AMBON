@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Swal from "sweetalert2";
 import { supabase } from "@/utils/supabaseClient";
+import { FiFile, FiFolder, FiChevronRight, FiChevronLeft, FiChevronUp, FiChevronDown, FiMenu } from "react-icons/fi"; // Hanya impor FiChevronRight
 
 export default function Layout({ children, fullName }) {
   const router = useRouter();
@@ -53,7 +54,6 @@ export default function Layout({ children, fullName }) {
     return () => clearInterval(timerId);
   }, []);
 
-  // Memperbarui folder yang aktif berdasarkan path saat ini
   useEffect(() => {
     if (router.pathname.startsWith('/pejabat')) {
       setOpenFolder('administrasi');
@@ -72,7 +72,6 @@ export default function Layout({ children, fullName }) {
     setOpenFolder(openFolder === 'rekam' ? null : 'rekam');
   };
 
-  // --- Gaya Navigasi ---
   const baseMenuItemStyle = {
     background: "none",
     border: "none",
@@ -101,12 +100,6 @@ export default function Layout({ children, fullName }) {
     borderLeft: "4px solid transparent",
   };
 
-  const folderIcon = (
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="#4A5568">
-      <path d="M22 6c0-1.103-.897-2-2-2h-7.164a2 2 0 0 1-1.517-.703L11 2.375A2 2 0 0 0 9.483 2H4c-1.103 0-2 .897-2 2v16c0 1.103.897 2 2 2h18c1.103 0 2-.897 2-2V8c0-1.103-.897-2-2-2z"></path>
-    </svg>
-  );
-
   const fileIcon = (
     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4A5568" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -130,7 +123,7 @@ export default function Layout({ children, fullName }) {
   const isActive = (path) => router.pathname === path;
 
   return (
-    <div style={{ }}>
+    <div style={{}}>
       <header
         style={{
           display: "flex",
@@ -191,7 +184,7 @@ export default function Layout({ children, fullName }) {
                 style={{
                   background: "none",
                   border: "none",
-                  fontFamily: "Arial Rounded MT Bold, Arial Rounded, sans-serif",
+                  fontFamily: "'Inter', sans-serif",
                   fontSize: "1.5rem",
                   cursor: "pointer",
                   padding: 0,
@@ -209,11 +202,11 @@ export default function Layout({ children, fullName }) {
                   justifyContent: "center",
                   width: "100%",
                   height: "100%",
-                  transform: isSidebarVisible ? "rotate(45deg)" : "rotate(160deg)",
+                  transform: isSidebarVisible ? "rotate(-360deg)" : "rotate(-180deg)",
                   transition: "transform 0.3s ease",
                 }}
               >
-                {isSidebarVisible ? "×" : "+"}
+                <FiChevronLeft strokeWidth={4}/>
               </div>
             </button>
         </div>
@@ -250,7 +243,6 @@ export default function Layout({ children, fullName }) {
         </div>
       </header>
       
-      {/* Perubahan: Sidebar sekarang fixed */}
       <aside
           style={{
             width: "200px",
@@ -270,12 +262,26 @@ export default function Layout({ children, fullName }) {
             zIndex: 500,
           }}
       >
+        <div style={{ 
+          paddingTop: "1rem",
+          paddingLeft: "0.8rem",
+          paddingBottom: "0.5rem",
+          paddingBottom: "8px",
+          backgroundColor: "#E1E7EF",
+          borderBottom: "1px solid #ccc",
+          fontWeight: "600",
+          fontSize: "14px",
+          fontcolor: "000",
+          flexShrink: 0,
+        }}>
+          <FiMenu /> Menu
+        </div>
         <nav
           style={{
             display: "flex",
             flexDirection: "column",
             gap: "0rem",
-            padding: "1rem 0"
+            padding: "0.5rem 0"
           }}
         >
           {/* Administrasi (Folder) */}
@@ -283,7 +289,9 @@ export default function Layout({ children, fullName }) {
             onClick={handleAdminToggle}
             style={isAdminOpen ? activeStyle : inactiveStyle}
           >
-            <span style={{ fontSize: "0.9rem" }}>{folderIcon}</span> Administrasi
+            <span style={{ fontSize: "0.9rem" }}>
+              <FiFolder color={isAdminOpen ? '#2563eb' : '#4A5568'}/>
+            </span> Administrasi
             <span style={{
               display: 'inline-block',
               marginLeft: "auto",
@@ -292,7 +300,7 @@ export default function Layout({ children, fullName }) {
               transform: isAdminOpen ? 'rotate(-180deg)' : 'rotate(0deg)',
               transition: 'transform 0.2s ease-in-out',
             }}>
-              {arrowIcon}
+              <FiChevronDown />
             </span>
           </div>
 
@@ -309,7 +317,7 @@ export default function Layout({ children, fullName }) {
                 onClick={() => router.push("/pejabatkeuangan")}
                 style={isActive("/pejabatkeuangan") ? {...activeStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"}}
               >
-                <span style={{ fontSize: "0.9rem" }}>{fileIcon}</span> Pejabat Keuangan
+                <span style={{ fontSize: "0.9rem" }}><FiFile/></span> Pejabat Keuangan
               </button>
             </div>
           </div>
@@ -319,7 +327,9 @@ export default function Layout({ children, fullName }) {
             onClick={handleRekamToggle}
             style={isRekamOpen ? activeStyle : inactiveStyle}
           >
-            <span style={{ fontSize: "0.9rem" }}>{folderIcon}</span> Rekam
+            <span style={{ fontSize: "0.9rem" }}>
+              <FiFolder color={isRekamOpen ? '#2563eb' : '#4A5568'}  />
+            </span> Rekam
             <span style={{
               display: 'inline-block',
               marginLeft: "auto",
@@ -328,7 +338,7 @@ export default function Layout({ children, fullName }) {
               transform: isRekamOpen ? 'rotate(-180deg)' : 'rotate(0deg)',
               transition: 'transform 0.2s ease-in-out',
             }}>
-              {arrowIcon}
+              <FiChevronDown />
             </span>
           </div>
 
@@ -345,26 +355,25 @@ export default function Layout({ children, fullName }) {
                 onClick={() => router.push("/pegawai")}
                 style={isActive("/pegawai") ? {...activeStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"}}
               >
-                <span style={{ fontSize: "0.9rem" }}>{fileIcon}</span> Pegawai
+                <span style={{ fontSize: "0.9rem" }}><FiFile/></span> Pegawai
               </button>
               <button
                 onClick={() => router.push("/pencatatanpasien")}
                 style={isActive("/pencatatanpasien") ? {...activeStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"}}
               >
-                <span style={{ fontSize: "0.9rem" }}>{fileIcon}</span> Pencatatan Pasien
+                <span style={{ fontSize: "0.9rem" }}><FiFile/></span> Pencatatan Pasien
               </button>
               <button
                 onClick={() => router.push("/sppr")}
                 style={isActive("/sppr") ? {...activeStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"}}
               >
-                <span style={{ fontSize: "0.9rem" }}>{fileIcon}</span> SPPR
+                <span style={{ fontSize: "0.9rem" }}><FiFile/></span> SPPR
               </button>
             </div>
           </div>
         </nav>
       </aside>
       
-      {/* Main content */}
       <main 
         style={{ 
           flex: 1, 

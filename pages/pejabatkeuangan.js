@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import Swal from "sweetalert2";
+import { FiDelete, FiEdit3, FiPlus } from "react-icons/fi";
 
 // Komponen Modal Pop-up
 const Modal = ({ children, onClose }) => {
@@ -234,23 +235,32 @@ const PejabatKeuangan = () => {
                 resetForm();
                 setShowModal(true);
             }}
-            style={{ background: "#16a34a", color: "white", padding: "10px 20px", border: "none", borderRadius: "6px", cursor: "pointer" }}
+            style={{
+            background: "#16a34a", color: "white",padding: "6px 10px", border: "none",
+            borderRadius: "6px", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}
             >
-            Tambah Pejabat
+            <FiPlus /> Tambah Pejabat
             </button>
             <button
             onClick={handleEdit}
             disabled={!selectedPejabat}
-            style={{ background: "#f59e0b", color: "white", padding: "10px 20px", border: "none", borderRadius: "6px", cursor: selectedPejabat ? "pointer" : "not-allowed", opacity: selectedPejabat ? 1 : 0.5 }}
+            style={{
+            background: "#f59e0b", color: "white",padding: "6px 10px", border: "none",
+            borderRadius: "6px", display: "flex", alignItems: "center", gap: "5px",
+            cursor: selectedPejabat ? "pointer" : "not-allowed", opacity: selectedPejabat ? 1 : 0.5
+          }}
             >
-            Edit
+            <FiEdit3 /> Edit
             </button>
             <button
             onClick={handleDelete}
             disabled={!selectedPejabat}
-            style={{ background: "#dc2626", color: "white", padding: "10px 20px", border: "none", borderRadius: "6px", cursor: selectedPejabat ? "pointer" : "not-allowed", opacity: selectedPejabat ? 1 : 0.5 }}
+            style={{ background: "#dc2626", color: "white",padding: "6px 10px", border: "none",
+            borderRadius: "6px", display: "flex", alignItems: "center", gap: "5px",
+            cursor: selectedPejabat ? "pointer" : "not-allowed", opacity: selectedPejabat ? 1 : 0.5
+           }}
             >
-            Hapus
+            <FiDelete /> Hapus
             </button>
         </div>
         
