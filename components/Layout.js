@@ -287,7 +287,7 @@ export default function Layout({ children, fullName }) {
               transform: isAdminOpen ? 'rotate(-180deg)' : 'rotate(0deg)',
               transition: 'transform 0.2s ease-in-out',
             }}>
-              <FiChevronDown />
+              <FiChevronDown strokeWidth={4} backgroundColor />
             </span>
           </div>
 
@@ -325,7 +325,7 @@ export default function Layout({ children, fullName }) {
               transform: isRekamOpen ? 'rotate(-180deg)' : 'rotate(0deg)',
               transition: 'transform 0.2s ease-in-out',
             }}>
-              <FiChevronDown />
+              <FiChevronDown strokeWidth={4} />
             </span>
           </div>
 

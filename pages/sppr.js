@@ -867,7 +867,7 @@ const Sppr = () => {
         paddingBottom: "1rem",
         paddingLeft: "0rem",
         paddingRight: "0rem",
-        borderRadius: "0px 8PX", fontSize: "12px", boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)"
+        borderRadius: "0px 0px 8px 8px", fontSize: "12px", boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)"
       }}>
         <h3
           style={{
