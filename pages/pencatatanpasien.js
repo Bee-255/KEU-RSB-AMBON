@@ -686,7 +686,7 @@ export default function PencatatanPasien() {
         <h2>Rekapitulasi Harian</h2>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
           {/* Grup Kiri: Tombol Aksi */}
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", fontFamily: "Arial, sans-serif" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "5px", flexWrap: "wrap", fontFamily: "Arial, sans-serif" }}>
             <button
               onClick={() => {
                 setNewRekapDate("");

@@ -767,7 +767,7 @@ const Sppr = () => {
           style={{
             borderCollapse: "collapse",
             width: "100%",
-            marginTop: "20px",
+            marginTop: "0px",
             fontSize: "12px",
             tableLayout: "fixed"
           }}

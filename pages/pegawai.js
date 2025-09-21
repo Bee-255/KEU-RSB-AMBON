@@ -253,9 +253,10 @@ export default function Pegawai() {
   // --- Tampilan (JSX) ---
   return (
     <>
+    <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "1rem" }}></div>
       <h2>Data Pegawai</h2>
 
-      <div style={{ marginBottom: "1rem", display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center" }}>
+      <div style={{ marginBottom: "1rem", display: "flex", flexWrap: "wrap", gap: "5px", alignItems: "center" }}>
         <button
           onClick={() => {
             resetForm();
@@ -558,7 +559,7 @@ export default function Pegawai() {
         style={{ 
           borderCollapse: "collapse", 
           width: "100%", 
-          marginTop: "20px", 
+          marginTop: "0px", 
           fontSize: "12px",
           tableLayout: "fixed",
         }}
