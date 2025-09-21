@@ -289,7 +289,7 @@ export default function Pegawai() {
             cursor: selectedPegawai ? "pointer" : "not-allowed", opacity: selectedPegawai ? 1 : 0.5
            }}
         >
-          <FiDelete size={14} strokeWidth={3} />Hapus
+          <FiDelete size={14} strokeWidth={3} /> Hapus
         </button>
 
         <div style={{ position: "relative", maxWidth: "300px", marginLeft: "0" }}>

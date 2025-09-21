@@ -5,6 +5,7 @@ import Swal from "sweetalert2";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import { terbilang } from "../lib/terbilang";
+import { FiChevronLeft, FiChevronRight, FiChevronsLeft, FiChevronsRight, FiDelete, FiEdit3, FiPlus, FiDownload,FiSkipBack, FiSkipForward } from "react-icons/fi";
 
 // Fungsi untuk memformat setiap kata menjadi kapital di awal
 const capitalizeWords = (str) => {
@@ -567,30 +568,35 @@ const Sppr = () => {
             fetchPengambil();
             setShowModal(true);
           }}
-          style={{ background: "#16a34a", color: "white", padding: "10px 20px", border: "none", borderRadius: "6px", cursor: "pointer" }}
+          style={{ background: "#16a34a", color: "white",padding: "6px 10px", border: "none",
+            borderRadius: "6px", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}
         >
-          Rekam SPPR
+          <FiPlus size={14} strokeWidth={4}  /> Rekam SPPR
         </button>
         <button
           onClick={handleEdit}
           disabled={!selectedSppr}
-          style={{ background: "#f59e0b", color: "white", padding: "10px 20px", border: "none", borderRadius: "6px", cursor: selectedSppr ? "pointer" : "not-allowed", opacity: selectedSppr ? 1 : 0.5 }}
+          style={{ background: "#f59e0b", color: "white",padding: "6px 10px", border: "none",
+            borderRadius: "6px", display: "flex", alignItems: "center", gap: "5px", cursor: selectedSppr ? "pointer" : "not-allowed", opacity: selectedSppr ? 1 : 0.5 }}
         >
-          Edit
+          <FiEdit3 size={14} strokeWidth={3}/> Edit
         </button>
         <button
           onClick={handleDelete}
           disabled={!selectedSppr}
-          style={{ background: "#dc2626", color: "white", padding: "10px 20px", border: "none", borderRadius: "6px", cursor: selectedSppr ? "pointer" : "not-allowed", opacity: selectedSppr ? 1 : 0.5 }}
+          style={{ background: "#dc2626", color: "white",padding: "6px 10px", border: "none",
+            borderRadius: "6px", display: "flex", alignItems: "center", gap: "5px", cursor: selectedSppr ? "pointer" : "not-allowed", opacity: selectedSppr ? 1 : 0.5 }}
         >
-          Hapus
+          <FiDelete size={14} strokeWidth={3} /> Hapus
         </button>
         <button
           onClick={handleDownload}
           disabled={!selectedSppr}
-          style={{ background: "#3b82f6", color: "white", padding: "10px 20px", border: "none", borderRadius: "6px", cursor: selectedSppr ? "pointer" : "not-allowed", opacity: selectedSppr ? 1 : 0.5 }}
+          style={{ background: "#3b82f6", color: "white", padding: "6px 10px", border: "none", 
+            borderRadius: "6px", display: "flex", alignItems: "center", gap: "5px",
+            cursor: selectedSppr ? "pointer" : "not-allowed", opacity: selectedSppr ? 1 : 0.5 }}
         >
-          Download PDF
+          <FiDownload size={14} strokeWidth={3}/> Download PDF
         </button>
       </div>
 
