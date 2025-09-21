@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Swal from "sweetalert2";
 import { supabase } from "@/utils/supabaseClient";
-import { FiFile, FiFolder, FiChevronRight, FiChevronLeft, FiChevronUp, FiChevronDown, FiMenu } from "react-icons/fi"; // Hanya impor FiChevronRight
+import { FiFile, FiFolder, FiChevronRight, FiChevronLeft, FiChevronUp, FiChevronDown } from "react-icons/fi"; // Hanya impor FiChevronRight
 
 export default function Layout({ children, fullName }) {
   const router = useRouter();
@@ -262,26 +262,13 @@ export default function Layout({ children, fullName }) {
             zIndex: 500,
           }}
       >
-        <div style={{ 
-          paddingTop: "1rem",
-          paddingLeft: "0.8rem",
-          paddingBottom: "0.5rem",
-          paddingBottom: "8px",
-          backgroundColor: "#E1E7EF",
-          borderBottom: "1px solid #ccc",
-          fontWeight: "600",
-          fontSize: "14px",
-          fontcolor: "000",
-          flexShrink: 0,
-        }}>
-          <FiMenu /> Menu
-        </div>
+        
         <nav
           style={{
             display: "flex",
             flexDirection: "column",
             gap: "0rem",
-            padding: "0.5rem 0"
+            padding: "1.5rem 0"
           }}
         >
           {/* Administrasi (Folder) */}

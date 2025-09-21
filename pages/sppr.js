@@ -91,7 +91,7 @@ const createPDF = (sppr) => {
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 20;
-  const contentMargin = 6;
+  const contentMargin = 4;
   const lineHeight = 4;
 
   // Tempatkan string Base64 dari file Inter-Regular.ttf di sini
@@ -219,7 +219,7 @@ const createPDF = (sppr) => {
     doc.rect(boxX, y, boxWidth, part5BoxHeight); // Kotak atas dasar
     let part5Y = y + 5;
     
-    doc.text(`Atas dasar: Surat perintah bayar nomor ${sppr.nomor_surat}`, textX, part5Y);
+    doc.text(`Atas dasar: Surat perintah bayar nomor ......... **)`, textX, part5Y);
     
     y += part5BoxHeight;
 
