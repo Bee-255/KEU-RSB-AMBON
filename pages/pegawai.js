@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import Swal from "sweetalert2";
-import { FaPlus, FaEdit, FaTrashAlt, FaAngleLeft, FaAngleRight, FaAngleDoubleLeft, FaAngleDoubleRight, FaRegTrashAlt } from "react-icons/fa"; // Menggunakan ikon dari Fa untuk konsistensi
-import { FiChevronLeft, FiChevronRight, FiSkipBack, FiSkipForward } from "react-icons/fi";
+import { FaPlus, FaEdit, FaTrashAlt, FaAngleLeft, FaAngleRight, FaAngleDoubleLeft, FaAngleDoubleRight, FaRegTrashAlt } from "react-icons/fa";
+import PaginasiKeu from '../components/paginasi';
 
 // Komponen Modal Pop-up
 const Modal = ({ children, onClose }) => {
@@ -208,6 +208,12 @@ export default function Pegawai() {
     setSelectedPegawai(null);
   };
 
+  const handleItemsPerPageChange = (size) => {
+    setItemsPerPage(size);
+    setCurrentPage(1);
+    setSelectedPegawai(null);
+  };
+
   const handleRowClick = (p) => {
     if (selectedPegawai?.id === p.id) {
       setSelectedPegawai(null);
@@ -256,7 +262,7 @@ export default function Pegawai() {
   // --- Tampilan (JSX) ---
   return (
     <>
-    <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "1rem" }}></div>
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "1rem" }}></div>
       <h2>Data Pegawai</h2>
 
       <div style={{ marginBottom: "1rem", display: "flex", flexWrap: "wrap", gap: "5px", alignItems: "center" }}>
@@ -592,7 +598,7 @@ export default function Pegawai() {
                 <td style={{ width: "15%", padding: "6px 0px 6px 8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.pangkat}</td>
                 <td style={{ width: "15%", padding: "6px 0px 6px 8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.nrp_nip_nir}</td>
                 <td style={{ width: "15%", padding: "6px 0px 6px 8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.jabatan_struktural}</td>
-                <td style={{ width: "15%", padding: "6px 0px 6px 8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.status}</td>
+                <td style={{ width: "10%", padding: "6px 0px 6px 8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.status}</td>
               </tr>
             ))
           ) : (
@@ -606,59 +612,15 @@ export default function Pegawai() {
       </table>
 
       {/* Kontrol Paginasi */}
-      <div style={{ marginTop: "1rem", display: "flex", justifyContent: "left", alignItems: "center", padding: "0px 0px" }}>
-        <span style={{ fontSize: "0.85rem" }}>
-            Menampilkan {Math.min((currentPage - 1) * itemsPerPage + 1, totalItems)} - {Math.min(currentPage * itemsPerPage, totalItems)} dari {totalItems} data
-        </span>
-        <div style={{ display: "flex", gap: "5px", marginLeft: "auto", alignItems: "center" }}>
-            <div style={{ display: "flex", border: "1px solid #ccc", borderRadius: "4px", overflow: "hidden", marginleft: "10px" }}>
-                <button
-                    onClick={() => handlePageChange(1)}
-                    disabled={currentPage === 1}
-                    style={{ padding: "8px 12px", background: "white", border: "none", cursor: "pointer", opacity: currentPage === 1 ? 0.5 : 1 }}
-                >
-                    <FiSkipBack />
-                </button>
-                <button
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    style={{ padding: "8px 12px", background: "white", border: "none", cursor: "pointer", opacity: currentPage === 1 ? 0.5 : 1 }}
-                >
-                    <FiChevronLeft />
-                </button>
-                <button
-                    style={{ padding: "8px 12px", background: "#2563eb", color: "white", border: "none", fontWeight: "bold" }}
-                >
-                    {currentPage}
-                </button>
-                <button
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    style={{ padding: "8px 12px", background: "white", border: "none", cursor: "pointer", opacity: currentPage === totalPages ? 0.5 : 1 }}
-                >
-                    <FiChevronRight />
-                </button>
-                <button
-                    onClick={() => handlePageChange(totalPages)}
-                    disabled={currentPage === totalPages}
-                    style={{ padding: "8px 12px", background: "white", border: "none", cursor: "pointer", opacity: currentPage === totalPages ? 0.5 : 1 }}
-                >
-                    <FiSkipForward />
-                </button>
-            </div>
-            <select 
-                value={itemsPerPage} 
-                onChange={(e) => {
-                    setItemsPerPage(Number(e.target.value));
-                    setCurrentPage(1);
-                }}
-                style={{ padding: "8px 2px 8px 8px", borderRadius: "4px", border: "1px solid #ccc" , backgroundColor: "white"}}
-            >
-                {[10, 20, 50, 100, 500, 1000].map(size => (
-                    <option key={size} value={size}>{size}</option>
-                ))}
-            </select>
-        </div>
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+        <PaginasiKeu
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          itemsPerPage={itemsPerPage}
+          onPageChange={handlePageChange}
+          onItemsPerPageChange={handleItemsPerPageChange}
+        />
       </div>
       
       {/* Detail Pegawai yang Dipilih */}

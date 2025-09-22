@@ -7,6 +7,7 @@ import "jspdf-autotable";
 import { terbilang } from "../lib/terbilang";
 import { FiChevronLeft, FiChevronRight, FiChevronsLeft, FiChevronsRight, FiDelete, FiEdit3, FiPlus, FiDownload,FiSkipBack, FiSkipForward} from "react-icons/fi";
 import { FaPlus, FaEdit, FaTrashAlt, FaRegTrashAlt } from "react-icons/fa";
+import PaginasiKeu from '../components/paginasi';
 
 // Fungsi untuk memformat setiap kata menjadi kapital di awal
 const capitalizeWords = (str) => {
@@ -807,58 +808,14 @@ const Sppr = () => {
       </div>
 
       {/* Container Paginasi dan Jumlah Baris */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", marginTop: "1rem", fontSize: "14px" }}>
-        <div style={{ display: "flex", alignItems: "center" }}>
-          <span>Tampilkan </span>
-          <select
-            value={rowsPerPage}
-            onChange={handleRowsPerPageChange}
-            style={{
-              marginLeft: "8px",
-              padding: "4px 8px",
-              borderRadius: "4px",
-              border: "1px solid #ccc"
-            }}
-          >
-            <option value={5}>5</option>
-            <option value={10}>10</option>
-            <option value={20}>20</option>
-            <option value={50}>50</option>
-          </select>
-          <span style={{ marginLeft: "8px" }}> baris</span>
-        </div>
-        <div>
-          <button
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-            style={{
-              padding: "6px 12px",
-              border: "1px solid #ccc",
-              borderRadius: "4px",
-              cursor: currentPage === 1 ? "not-allowed" : "pointer",
-              backgroundColor: currentPage === 1 ? "#f3f4f6" : "white"
-            }}
-          >
-            Previous
-          </button>
-          <span style={{ margin: "0 12px" }}>
-            Halaman {currentPage} dari {totalPages}
-          </span>
-          <button
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-            style={{
-              padding: "6px 12px",
-              border: "1px solid #ccc",
-              borderRadius: "4px",
-              cursor: currentPage === totalPages ? "not-allowed" : "pointer",
-              backgroundColor: currentPage === totalPages ? "#f3f4f6" : "white"
-            }}
-          >
-            Next
-          </button>
-        </div>
-      </div>
+      <PaginasiKeu 
+        currentPage={currentPage} 
+        totalPages={totalPages} 
+        totalItems={Sppr.length} 
+        itemsPerPage={rowsPerPage} 
+        onPageChange={handlePageChange} 
+        onItemsPerPageChange={handleRowsPerPageChange} 
+      />
 
       {/* Detail Data SPPR yang Dipilih */}
       <div style={{

@@ -6,8 +6,9 @@ import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
 import { applyPlugin } from "jspdf-autotable";
-import { FaPlus, FaEdit, FaUserPlus, FaTrashAlt, FaAngleLeft, FaAngleRight, FaAngleDoubleLeft, FaAngleDoubleRight, FaRegTrashAlt, FaDownload } from "react-icons/fa"; // Menggunakan ikon dari Fa untuk konsistensi
+import { FaPlus, FaEdit, FaUserPlus, FaTrashAlt, FaAngleLeft, FaAngleRight, FaAngleDoubleLeft, FaAngleDoubleRight, FaRegTrashAlt, FaDownload } from "react-icons/fa";
 import { FiChevronLeft, FiChevronRight, FiSkipBack, FiSkipForward } from "react-icons/fi";
+import PaginasiKeu from '../components/paginasi'; // Import komponen PaginasiKeu
 
 applyPlugin(jsPDF);
 
@@ -104,79 +105,6 @@ const formatToNumber = (str) => {
   return cleaned ? parseInt(cleaned, 10) : 0;
 };
 
-// Komponen Paginasi Reusable
-const Pagination = ({ currentPage, totalPages, onPageChange }) => {
-  const pageNumbers = [];
-  const maxPagesToShow = 5;
-  let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
-  let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
-  if (endPage - startPage + 1 < maxPagesToShow) {
-    startPage = Math.max(1, endPage - maxPagesToShow + 1);
-  }
-
-  for (let i = startPage; i <= endPage; i++) {
-    pageNumbers.push(i);
-  }
-
-  return (
-    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "2px", marginTop: "1rem" }}>
-      <button
-        onClick={() => onPageChange(currentPage - 1)}
-        disabled={currentPage === 1}
-        style={{ padding: "4px 8px", border: "1px solid #ccc", borderRadius: "4px", backgroundColor: "#f3f4f6", cursor: "pointer", fontSize: "12px" }}
-      >
-        Prev
-      </button>
-      {startPage > 1 && (
-        <>
-          <button
-            onClick={() => onPageChange(1)}
-            style={{ padding: "4px 8px", border: "1px solid #ccc", borderRadius: "4px", backgroundColor: "white", cursor: "pointer", fontSize: "12px" }}
-          >
-            1
-          </button>
-          {startPage > 2 && <span style={{ padding: "4px 2px", fontSize: "12px" }}>...</span>}
-        </>
-      )}
-      {pageNumbers.map(number => (
-        <button
-          key={number}
-          onClick={() => onPageChange(number)}
-          style={{
-            padding: "4px 8px",
-            border: `1px solid ${currentPage === number ? '#3b82f6' : '#ccc'}`,
-            borderRadius: "4px",
-            backgroundColor: currentPage === number ? '#e0e7ff' : 'white',
-            fontWeight: currentPage === number ? 'bold' : 'normal',
-            cursor: "pointer",
-            fontSize: "12px"
-          }}
-        >
-          {number}
-        </button>
-      ))}
-      {endPage < totalPages && (
-        <>
-          {endPage < totalPages - 1 && <span style={{ padding: "4px 2px", fontSize: "12px" }}>...</span>}
-          <button
-            onClick={() => onPageChange(totalPages)}
-            style={{ padding: "4px 8px", border: "1px solid #ccc", borderRadius: "4px", backgroundColor: "white", cursor: "pointer", fontSize: "12px" }}
-          >
-            {totalPages}
-          </button>
-        </>
-      )}
-      <button
-        onClick={() => onPageChange(currentPage + 1)}
-        disabled={currentPage === totalPages}
-        style={{ padding: "4px 8px", border: "1px solid #ccc", borderRadius: "4px", backgroundColor: "#f3f4f6", cursor: "pointer", fontSize: "12px" }}
-      >
-        Next
-      </button>
-    </div>
-  );
-};
-
 export default function PencatatanPasien() {
   const router = useRouter();
   const [userId, setUserId] = useState(null);
@@ -203,15 +131,14 @@ export default function PencatatanPasien() {
   const [newRekapDate, setNewRekapDate] = useState("");
 
   const [rekapPage, setRekapPage] = useState(1);
-  const [pasienPage, setPasienPage] = useState(1);
-  const rekapPerPage = 5;
-  const pasienPerPage = 10;
-  
+  const [rekapPerPage, setRekapPerPage] = useState(5);
   const rekapStartIndex = (rekapPage - 1) * rekapPerPage;
   const rekapEndIndex = rekapStartIndex + rekapPerPage;
   const paginatedRekap = rekapitulasiList.slice(rekapStartIndex, rekapEndIndex);
   const totalRekapPages = Math.ceil(rekapitulasiList.length / rekapPerPage);
 
+  const [pasienPage, setPasienPage] = useState(1);
+  const [pasienPerPage, setPasienPerPage] = useState(10);
   const pasienStartIndex = (pasienPage - 1) * pasienPerPage;
   const pasienEndIndex = pasienStartIndex + pasienPerPage;
   const paginatedPasien = pasienList.slice(pasienStartIndex, pasienEndIndex);
@@ -253,8 +180,7 @@ export default function PencatatanPasien() {
     };
     fetchAllSelectedPasien();
   }, [selectedRekapIds]);
-  
-  // Efek untuk mengontrol status "Pilih Semua" (termasuk indeterminate)
+
   useEffect(() => {
     if (selectAllRef.current) {
       const isIndeterminate = selectedRekapIds.length > 0 && selectedRekapIds.length < paginatedRekap.length;
@@ -276,8 +202,8 @@ export default function PencatatanPasien() {
     }
     console.log("Rekapitulasi yang diterima:", data);
     setRekapitulasiList(data);
-};
-  
+  };
+
   const fetchPasienByRekapId = async (rekapId) => {
     const { data, error } = await supabase
       .from("pasien_harian")
@@ -314,8 +240,8 @@ export default function PencatatanPasien() {
 
     const { data, error } = await supabase
       .from("rekaman_harian")
-      .insert([{ 
-        tanggal: newRekapDate, 
+      .insert([{
+        tanggal: newRekapDate,
         user_id: userId,
         nama_user: userName,
         total_pembayaran: 0,
@@ -336,16 +262,16 @@ export default function PencatatanPasien() {
   const handlePasienFormChange = (e) => {
     const { name, value } = e.target;
     let updatedPasienData = { ...pasienData, [name]: value };
-  
+
     if (name === "unit_layanan") {
       updatedPasienData.jenis_rawat = unitToJenisRawat[value] || "";
     }
-  
+
     if (["jumlah_tagihan", "bayar_tunai", "bayar_transfer", "diskon"].includes(name)) {
       const rawValue = formatToNumber(value.toString());
       updatedPasienData = { ...updatedPasienData, [name]: rawValue };
     }
-    
+
     const jumlahTagihan = formatToNumber(updatedPasienData.jumlah_tagihan);
     const diskon = formatToNumber(updatedPasienData.diskon);
     const bayarTunai = formatToNumber(updatedPasienData.bayar_tunai);
@@ -393,7 +319,7 @@ export default function PencatatanPasien() {
 
   const handlePasienFormSubmit = async (e) => {
     e.preventDefault();
-    
+
     const rekapIdToSubmit = selectedRekapIds.length > 0 ? selectedRekapIds[0] : null;
     if (!rekapIdToSubmit) {
       Swal.fire("Peringatan!", "Silakan pilih setidaknya satu rekapitulasi harian.", "warning");
@@ -412,7 +338,7 @@ export default function PencatatanPasien() {
       rekaman_harian_id: rekapIdToSubmit,
       user_id: userId,
     };
-    
+
     if (dataToSubmit.bayar_transfer > 0 && !dataToSubmit.tanggal_transfer) {
       Swal.fire("Peringatan!", "Tanggal transfer wajib diisi jika ada pembayaran transfer.", "warning");
       return;
@@ -421,7 +347,7 @@ export default function PencatatanPasien() {
       Swal.fire("Peringatan!", "Harap lengkapi semua data pasien yang wajib diisi.", "warning");
       return;
     }
-    
+
     let isSuccess = false;
     let successMessage = "";
 
@@ -486,7 +412,6 @@ export default function PencatatanPasien() {
     const p = pasienList.find(p => p.id === selectedPasienId);
     if (!p) return;
     const rekapId = p.rekaman_harian_id;
-
     const result = await Swal.fire({
       title: "Apakah Anda yakin?",
       text: `Anda akan menghapus data ${p.nama_pasien}`,
@@ -497,7 +422,7 @@ export default function PencatatanPasien() {
       confirmButtonText: "Ya, hapus!",
       cancelButtonText: "Batal",
     });
-    
+
     if (result.isConfirmed) {
       try {
         const { error } = await supabase.from("pasien_harian").delete().eq("id", selectedPasienId);
@@ -513,7 +438,7 @@ export default function PencatatanPasien() {
       }
     }
   };
-  
+
   const handleDeleteRekap = async () => {
     if (selectedRekapIds.length === 0) {
       Swal.fire("Info", "Pilih rekapitulasi yang ingin dihapus.", "info");
@@ -530,7 +455,7 @@ export default function PencatatanPasien() {
       confirmButtonText: "Ya, hapus!",
       cancelButtonText: "Batal",
     });
-    
+
     if (result.isConfirmed) {
       try {
         const { error } = await supabase.from("rekaman_harian").delete().in("id", selectedRekapIds);
@@ -563,7 +488,7 @@ export default function PencatatanPasien() {
       setSelectedRekapIds(allIds);
     }
   };
-  
+
   const handlePasienRowClick = (pasien) => {
     setSelectedPasienId((prev) => (prev === pasien.id ? null : pasien.id));
   };
@@ -653,7 +578,7 @@ export default function PencatatanPasien() {
     }
     const doc = new jsPDF('l', 'mm', 'a4');
     doc.text(`Data Pasien Multi Hari`, 14, 20);
-    
+
     const headers = [['No.', 'Tanggal', 'Nama Pasien', 'No. RM', 'Unit Layanan', 'Jml Bersih', 'Total Bayar', 'Status']];
     const data = pasienMulti.map((p, index) => [
       index + 1,
@@ -681,6 +606,30 @@ export default function PencatatanPasien() {
     setStartDate("");
     setEndDate("");
   };
+
+  const handleRekapPageChange = (page) => {
+    setRekapPage(page);
+    setSelectedRekapIds([]);
+    setPasienList([]);
+  };
+
+  const handleRekapItemsPerPageChange = (size) => {
+    setRekapPerPage(size);
+    setRekapPage(1);
+    setSelectedRekapIds([]);
+    setPasienList([]);
+  };
+
+  const handlePasienPageChange = (page) => {
+    setPasienPage(page);
+    setSelectedPasienId(null);
+  };
+  
+  const handlePasienItemsPerPageChange = (size) => {
+    setPasienPerPage(size);
+    setPasienPage(1);
+    setSelectedPasienId(null);
+  };
   
   return (
     <>
@@ -702,16 +651,16 @@ export default function PencatatanPasien() {
             <button
               onClick={handleAddPasienClick}
               disabled={selectedRekapIds.length === 0}
-              style={{ 
-                background: "#16a34a", 
-                color: "white", 
-                padding: "6px 10px", 
-                border: "none", 
-                borderRadius: "6px", 
-                display: "flex", 
-                alignItems: "center", 
+              style={{
+                background: "#16a34a",
+                color: "white",
+                padding: "6px 10px",
+                border: "none",
+                borderRadius: "6px",
+                display: "flex",
+                alignItems: "center",
                 gap: "5px",
-                cursor: selectedRekapIds.length === 0 ? "not-allowed" : "pointer", 
+                cursor: selectedRekapIds.length === 0 ? "not-allowed" : "pointer",
                 opacity: selectedRekapIds.length === 0 ? 0.5 : 1,
                 fontSize: "12px"
               }}
@@ -721,13 +670,13 @@ export default function PencatatanPasien() {
             <button
               onClick={handleDeleteRekap}
               disabled={selectedRekapIds.length === 0}
-              style={{ 
-                background: "#dc2626", 
-                color: "white", 
-                padding: "6px 10px", 
-                border: "none", 
-                borderRadius: "6px", 
-                cursor: selectedRekapIds.length === 0 ? "not-allowed" : "pointer", 
+              style={{
+                background: "#dc2626",
+                color: "white",
+                padding: "6px 10px",
+                border: "none",
+                borderRadius: "6px",
+                cursor: selectedRekapIds.length === 0 ? "not-allowed" : "pointer",
                 opacity: selectedRekapIds.length === 0 ? 0.5 : 1,
                 fontSize: "12px"
               }}
@@ -737,16 +686,16 @@ export default function PencatatanPasien() {
             <button
               onClick={handleDownloadClick}
               disabled={selectedRekapIds.length === 0}
-              style={{ 
-                background: "#2563eb", 
-                color: "white", 
-                padding: "6px 10px", 
-                border: "none", 
-                borderRadius: "6px", 
-                display: "flex", 
-                alignItems: "center", 
+              style={{
+                background: "#2563eb",
+                color: "white",
+                padding: "6px 10px",
+                border: "none",
+                borderRadius: "6px",
+                display: "flex",
+                alignItems: "center",
                 gap: "5px",
-                cursor: selectedRekapIds.length === 0 ? "not-allowed" : "pointer", 
+                cursor: selectedRekapIds.length === 0 ? "not-allowed" : "pointer",
                 opacity: selectedRekapIds.length === 0 ? 0.5 : 1,
                 fontSize: "12px"
               }}
@@ -784,19 +733,19 @@ export default function PencatatanPasien() {
           </div>
         </div>
       </div>
-      
+
       {showRekapModal && (
         <Modal onClose={() => setShowRekapModal(false)}>
           <form onSubmit={handleRekapFormSubmit}>
             <h3 style={{ marginTop: 0 }}>Tambah Rekapitulasi Baru</h3>
             <div>
               <label>Tanggal:</label>
-              <input 
-                type="date" 
-                value={newRekapDate} 
-                onChange={(e) => setNewRekapDate(e.target.value)} 
-                required 
-                style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }} 
+              <input
+                type="date"
+                value={newRekapDate}
+                onChange={(e) => setNewRekapDate(e.target.value)}
+                required
+                style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
               />
             </div>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "1rem" }}>
@@ -880,75 +829,76 @@ export default function PencatatanPasien() {
         </Modal>
       )}
 
-      <table border="1" cellPadding="4" style={{ borderCollapse: "collapse", width: "100%", marginTop: "0px", fontSize: "12px" }}> 
-    <thead> 
-      <tr style={{ background: "#f3f4f6" }}> 
-        <th style={{ padding: "4px", textAlign: "center", width: "30px" }}> 
-          <input 
-            type="checkbox" 
-            ref={selectAllRef} 
-            checked={isAllRekapSelected} 
-            onChange={handleSelectAllRekap} 
-            style={{ transform: "scale(1.3)" }} 
-          /> 
-        </th> 
-        <th style={{ padding: "8px", textAlign: "left" }}>Tanggal</th> 
-        <th style={{ padding: "8px", textAlign: "left" }}>Nama User</th> 
-        <th style={{ padding: "8px", textAlign: "center" }}>Total Pasien</th> 
-        <th style={{ padding: "8px", textAlign: "center" }}>Total Tagihan</th> 
-        <th style={{ padding: "8px", textAlign: "center" }}>Bayar Tunai</th> 
-        <th style={{ padding: "8px", textAlign: "center" }}>Bayar Transfer</th> 
-        <th style={{ padding: "8px", textAlign: "center" }}>Total Pembayaran</th> 
-        <th style={{ padding: "8px", textAlign: "center" }}>Status</th> 
-      </tr> 
-    </thead> 
-    <tbody> 
-      {paginatedRekap.length > 0 ? ( 
-        paginatedRekap.map((rekap) => ( 
-          <tr  
-            key={rekap.id}  
-            style={{ backgroundColor: selectedRekapIds.includes(rekap.id) ? "#e0e7ff" : "white", cursor: "pointer" }} 
-          > 
-            <td> 
-              <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}> 
-                  <input 
-                      type="checkbox" 
-                      checked={selectedRekapIds.includes(rekap.id)} 
-                      onChange={() => handleRekapCheckbox(rekap.id)} 
-                      style={{ transform: "scale(1.3)" }} 
-                  /> 
-              </div> 
-          </td> 
-            <td style={{ padding: "8px", fontWeight: "bold" }}> 
-              {formatDate(rekap.tanggal)} 
-            </td> 
-            <td style={{ padding: "8px" }}>{rekap.nama_user}</td> 
-            <td style={{ padding: "8px", textAlign: "center" }}>{rekap.total_pasien}</td> 
-            <td style={{ padding: "8px", textAlign: "right" }}>{formatRupiah(rekap.total_tagihan)}</td> 
-            <td style={{ padding: "8px", textAlign: "right" }}>{formatRupiah(rekap.total_tunai)}</td> 
-            <td style={{ padding: "8px", textAlign: "right"}}>{formatRupiah(rekap.total_transfer)}</td> 
-            <td style={{ padding: "8px", textAlign: "right"}}>{formatRupiah(rekap.total_pembayaran)}</td> 
-            <td style={{ padding: "8px" }}>{rekap.status}</td> 
-          </tr> 
-        )) 
-      ) : ( 
-        <tr> 
-          <td colSpan="9" style={{ textAlign: "center", padding: "1rem" }}> 
-            Tidak ada data rekapitulasi yang ditemukan. 
-          </td> 
-        </tr> 
-      )} 
-    </tbody> 
-  </table>
-      
-      {/* Rekap Pagination */}
-      {totalRekapPages > 1 && (
-        <Pagination
-          currentPage={rekapPage}
-          totalPages={totalRekapPages}
-          onPageChange={setRekapPage}
-        />
+      <table border="1" cellPadding="4" style={{ borderCollapse: "collapse", width: "100%", marginTop: "0px", fontSize: "12px" }}>
+    <thead>
+      <tr style={{ background: "#f3f4f6" }}>
+        <th style={{ padding: "4px", textAlign: "center", width: "30px" }}>
+          <input
+            type="checkbox"
+            ref={selectAllRef}
+            checked={isAllRekapSelected}
+            onChange={handleSelectAllRekap}
+            style={{ transform: "scale(1.3)" }}
+          />
+        </th>
+        <th style={{ padding: "8px", textAlign: "left" }}>Tanggal</th>
+        <th style={{ padding: "8px", textAlign: "left" }}>Nama User</th>
+        <th style={{ padding: "8px", textAlign: "center" }}>Total Pasien</th>
+        <th style={{ padding: "8px", textAlign: "center" }}>Total Tagihan</th>
+        <th style={{ padding: "8px", textAlign: "center" }}>Bayar Tunai</th>
+        <th style={{ padding: "8px", textAlign: "center" }}>Bayar Transfer</th>
+        <th style={{ padding: "8px", textAlign: "center" }}>Total Pembayaran</th>
+        <th style={{ padding: "8px", textAlign: "center" }}>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {paginatedRekap.length > 0 ? (
+        paginatedRekap.map((rekap) => (
+          <tr
+            key={rekap.id}
+            style={{ backgroundColor: selectedRekapIds.includes(rekap.id) ? "#e0e7ff" : "white", cursor: "pointer" }}
+          >
+            <td>
+              <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+                  <input
+                      type="checkbox"
+                      checked={selectedRekapIds.includes(rekap.id)}
+                      onChange={() => handleRekapCheckbox(rekap.id)}
+                      style={{ transform: "scale(1.3)" }}
+                  />
+              </div>
+          </td>
+            <td style={{ padding: "8px", fontWeight: "bold" }}>
+              {formatDate(rekap.tanggal)}
+            </td>
+            <td style={{ padding: "8px" }}>{rekap.nama_user}</td>
+            <td style={{ padding: "8px", textAlign: "center" }}>{rekap.total_pasien}</td>
+            <td style={{ padding: "8px", textAlign: "right" }}>{formatRupiah(rekap.total_tagihan)}</td>
+            <td style={{ padding: "8px", textAlign: "right" }}>{formatRupiah(rekap.total_tunai)}</td>
+            <td style={{ padding: "8px", textAlign: "right"}}>{formatRupiah(rekap.total_transfer)}</td>
+            <td style={{ padding: "8px", textAlign: "right"}}>{formatRupiah(rekap.total_pembayaran)}</td>
+            <td style={{ padding: "8px" }}>{rekap.status}</td>
+          </tr>
+        ))
+      ) : (
+        <tr>
+          <td colSpan="9" style={{ textAlign: "center", padding: "1rem" }}>
+            Tidak ada data rekapitulasi yang ditemukan.
+          </td>
+        </tr>
       )}
+    </tbody>
+  </table>
+
+      {/* Rekap Pagination */}
+      <PaginasiKeu
+        currentPage={rekapPage}
+        totalPages={totalRekapPages}
+        totalItems={rekapitulasiList.length}
+        itemsPerPage={rekapPerPage}
+        onPageChange={handleRekapPageChange}
+        onItemsPerPageChange={handleRekapItemsPerPageChange}
+      />
 
       {/* Kontrol Download Data Pasien */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "1rem", marginBottom: "0rem" }}>
@@ -957,16 +907,16 @@ export default function PencatatanPasien() {
             <button
                 onClick={handleEditPasien}
                 disabled={!selectedPasienId}
-                style={{ 
-                    background: "#f59e0b", 
-                    color: "white", 
-                    padding: "6px 10px", 
-                    border: "none", 
-                    borderRadius: "6px", 
-                    display: "flex", 
-                    alignItems: "center", 
-                    gap: "5px", 
-                    cursor: !selectedPasienId ? "not-allowed" : "pointer", 
+                style={{
+                    background: "#f59e0b",
+                    color: "white",
+                    padding: "6px 10px",
+                    border: "none",
+                    borderRadius: "6px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "5px",
+                    cursor: !selectedPasienId ? "not-allowed" : "pointer",
                     opacity: !selectedPasienId ? 0.5 : 1,
                     fontSize: "12px"
                 }}
@@ -976,16 +926,16 @@ export default function PencatatanPasien() {
             <button
                 onClick={handleDeletePasien}
                 disabled={!selectedPasienId}
-                style={{ 
-                    background: "#dc2626", 
-                    color: "white", 
-                    padding: "6px 16px", 
-                    border: "none", 
+                style={{
+                    background: "#dc2626",
+                    color: "white",
+                    padding: "6px 16px",
+                    border: "none",
                     borderRadius: "6px",
-                    display: "flex", 
-                    alignItems: "center", 
+                    display: "flex",
+                    alignItems: "center",
                     gap: "5px",
-                    cursor: !selectedPasienId ? "not-allowed" : "pointer", 
+                    cursor: !selectedPasienId ? "not-allowed" : "pointer",
                     opacity: !selectedPasienId ? 0.5 : 1,
                     fontSize: "12px"
                 }}
@@ -994,7 +944,7 @@ export default function PencatatanPasien() {
             </button>
         </div>
       </div>
-      
+
       {/* Tabel Data Pasien */}
       <table border="1" cellPadding="4" style={{ borderCollapse: "collapse", width: "100%", marginTop: "0px", fontSize: "12px" }}>
         <thead>
@@ -1010,9 +960,9 @@ export default function PencatatanPasien() {
         <tbody>
           {paginatedPasien.length > 0 ? (
             paginatedPasien.map((p) => (
-              <tr 
+              <tr
                 key={p.id}
-                onClick={() => handlePasienRowClick(p)} 
+                onClick={() => handlePasienRowClick(p)}
                 style={{ backgroundColor: selectedPasienId === p.id ? "#e0e7ff" : "white", cursor: "pointer" }}
               >
                 <td style={{ padding: "6px" }}>{formatDate(rekapitulasiList.find(r => r.id === p.rekaman_harian_id)?.tanggal)}</td>
@@ -1032,14 +982,6 @@ export default function PencatatanPasien() {
           )}
         </tbody>
       </table>
-      {/* Pasien Pagination */}
-      {totalPasienPages > 1 && (
-        <Pagination
-          currentPage={pasienPage}
-          totalPages={totalPasienPages}
-          onPageChange={setPasienPage}
-        />
-      )}
     </>
   );
 }
