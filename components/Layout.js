@@ -274,7 +274,7 @@ export default function Layout({ children, fullName }) {
               transform: isAdminOpen ? 'rotate(-180deg)' : 'rotate(0deg)',
               transition: 'transform 0.2s ease-in-out',
             }}>
-              <FaAngleDown strokeWidth={4} backgroundColor />
+              <FaAngleDown strokeWidth={4} color="#7586A6" />
             </span>
           </div>
 
@@ -314,7 +314,7 @@ export default function Layout({ children, fullName }) {
               transform: isRekamOpen ? 'rotate(-180deg)' : 'rotate(0deg)',
               transition: 'transform 0.2s ease-in-out',
             }}>
-              <FaAngleDown strokeWidth={4} />
+              <FaAngleDown strokeWidth={4} color="#7586A6" />
             </span>
           </div>
 

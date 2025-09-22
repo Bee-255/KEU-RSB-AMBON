@@ -1,8 +1,10 @@
+// components/Pegawai.js
+
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import Swal from "sweetalert2";
-import { FiChevronLeft, FiChevronRight, FiChevronsLeft, FiChevronsRight, FiDelete, FiEdit3, FiPlus, FiSkipBack, FiSkipForward } from "react-icons/fi";
-import { FaPlus, FaEdit, FaTrashAlt } from "react-icons/fa";
+import { FaPlus, FaEdit, FaTrashAlt, FaAngleLeft, FaAngleRight, FaAngleDoubleLeft, FaAngleDoubleRight } from "react-icons/fa"; // Menggunakan ikon dari Fa untuk konsistensi
+import { FiChevronLeft, FiChevronRight, FiSkipBack, FiSkipForward } from "react-icons/fi";
 
 // Komponen Modal Pop-up
 const Modal = ({ children, onClose }) => {
