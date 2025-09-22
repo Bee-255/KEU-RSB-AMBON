@@ -6,6 +6,8 @@ import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
 import { applyPlugin } from "jspdf-autotable";
+import { FaPlus, FaEdit, FaTrashAlt, FaAngleLeft, FaAngleRight, FaAngleDoubleLeft, FaAngleDoubleRight, FaRegTrashAlt } from "react-icons/fa"; // Menggunakan ikon dari Fa untuk konsistensi
+import { FiChevronLeft, FiChevronRight, FiSkipBack, FiSkipForward } from "react-icons/fi";
 
 applyPlugin(jsPDF);
 
@@ -694,7 +696,7 @@ export default function PencatatanPasien() {
               }}
               style={{ background: "#16a34a", color: "white", padding: "6px 10px", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "12px" }}
             >
-              Tambah Rekap
+              <FaRegTrashAlt/>Tambah Rekap
             </button>
             <button
               onClick={handleAddPasienClick}
