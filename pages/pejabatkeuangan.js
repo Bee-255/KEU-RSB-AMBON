@@ -2,7 +2,8 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import Swal from "sweetalert2";
-import { FiDelete, FiEdit3, FiPlus } from "react-icons/fi";
+import { FaPlus, FaEdit, FaTrashAlt, FaAngleLeft, FaAngleRight, FaAngleDoubleLeft, FaAngleDoubleRight, FaRegTrashAlt } from "react-icons/fa"; // Menggunakan ikon dari Fa untuk konsistensi
+import { FiChevronLeft, FiChevronRight, FiSkipBack, FiSkipForward } from "react-icons/fi";
 
 // Komponen Modal Pop-up
 const Modal = ({ children, onClose }) => {
@@ -239,7 +240,7 @@ const PejabatKeuangan = () => {
             background: "#16a34a", color: "white",padding: "6px 10px", border: "none",
             borderRadius: "6px", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}
             >
-            <FiPlus /> Tambah Pejabat
+            <FaPlus /> Tambah Pejabat
             </button>
             <button
             onClick={handleEdit}
@@ -250,7 +251,7 @@ const PejabatKeuangan = () => {
             cursor: selectedPejabat ? "pointer" : "not-allowed", opacity: selectedPejabat ? 1 : 0.5
           }}
             >
-            <FiEdit3 /> Edit
+            <FaEdit /> Edit
             </button>
             <button
             onClick={handleDelete}
@@ -260,7 +261,7 @@ const PejabatKeuangan = () => {
             cursor: selectedPejabat ? "pointer" : "not-allowed", opacity: selectedPejabat ? 1 : 0.5
            }}
             >
-            <FiDelete /> Hapus
+            <FaRegTrashAlt /> Hapus
             </button>
         </div>
         
@@ -410,7 +411,7 @@ const PejabatKeuangan = () => {
             style={{ 
                 borderCollapse: "collapse", 
                 width: "100%", 
-                marginTop: "20px", 
+                marginTop: "0px", 
                 fontSize: "12px",
                 tableLayout: "fixed"
             }}

@@ -6,7 +6,7 @@ import jsPDF from "jspdf";
 import "jspdf-autotable";
 import { terbilang } from "../lib/terbilang";
 import { FiChevronLeft, FiChevronRight, FiChevronsLeft, FiChevronsRight, FiDelete, FiEdit3, FiPlus, FiDownload,FiSkipBack, FiSkipForward} from "react-icons/fi";
-import { FaPlus, FaEdit, FaTrashAlt } from "react-icons/fa";
+import { FaPlus, FaEdit, FaTrashAlt, FaRegTrashAlt } from "react-icons/fa";
 
 // Fungsi untuk memformat setiap kata menjadi kapital di awal
 const capitalizeWords = (str) => {
@@ -588,7 +588,7 @@ const Sppr = () => {
           style={{ background: "#dc2626", color: "white",padding: "6px 10px", border: "none",
             borderRadius: "6px", display: "flex", alignItems: "center", gap: "5px", cursor: selectedSppr ? "pointer" : "not-allowed", opacity: selectedSppr ? 1 : 0.5 }}
         >
-          <FaTrashAlt /> Hapus
+          <FaRegTrashAlt /> Hapus
         </button>
         <button
           onClick={handleDownload}
