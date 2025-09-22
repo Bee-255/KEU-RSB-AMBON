@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import Swal from "sweetalert2";
 import { FiChevronLeft, FiChevronRight, FiChevronsLeft, FiChevronsRight, FiDelete, FiEdit3, FiPlus, FiSkipBack, FiSkipForward } from "react-icons/fi";
+import { FaPlus, FaEdit, FaTrashAlt } from "react-icons/fa";
 
 // Komponen Modal Pop-up
 const Modal = ({ children, onClose }) => {
@@ -267,7 +268,7 @@ export default function Pegawai() {
             borderRadius: "6px", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px"
           }}
         >
-          <FiPlus size={14} strokeWidth={4}  /> Rekam Pegawai
+          <FaPlus  /> Rekam Pegawai
         </button>
 
         <button
@@ -280,7 +281,7 @@ export default function Pegawai() {
           }}
           
         >
-          <FiEdit3 size={14} strokeWidth={3}/> Edit
+          <FaEdit/> Edit
         </button>
         <button
           onClick={handleDelete}
@@ -290,7 +291,7 @@ export default function Pegawai() {
             cursor: selectedPegawai ? "pointer" : "not-allowed", opacity: selectedPegawai ? 1 : 0.5
            }}
         >
-          <FiDelete size={14} strokeWidth={3} /> Hapus
+          <FaTrashAlt /> Hapus
         </button>
 
         <div style={{ position: "relative", maxWidth: "300px", marginLeft: "0" }}>

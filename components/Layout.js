@@ -5,6 +5,7 @@ import { useRouter } from "next/router";
 import Swal from "sweetalert2";
 import { supabase } from "@/utils/supabaseClient";
 import { FiFile, FiFolder, FiChevronRight, FiChevronLeft, FiChevronUp, FiChevronDown } from "react-icons/fi"; // Hanya impor FiChevronRight
+import { FaPlus, FaEdit, FaTrashAlt, FaFolder, FaFile, FaAngleLeft, FaAngleDown } from "react-icons/fa";
 
 export default function Layout({ children, fullName }) {
   const router = useRouter();
@@ -206,7 +207,7 @@ export default function Layout({ children, fullName }) {
                   transition: "transform 0.3s ease",
                 }}
               >
-                <FiChevronLeft strokeWidth={4}/>
+                <FaAngleLeft strokeWidth={4}/>
               </div>
             </button>
         </div>
@@ -277,7 +278,7 @@ export default function Layout({ children, fullName }) {
             style={isAdminOpen ? activeStyle : inactiveStyle}
           >
             <span style={{ fontSize: "0.9rem" }}>
-              <FiFolder color={isAdminOpen ? '#2563eb' : '#4A5568'}/>
+              <FaFolder color={isAdminOpen ? '#2563eb' : '#4A5568'}/>
             </span> Administrasi
             <span style={{
               display: 'inline-block',
@@ -287,7 +288,7 @@ export default function Layout({ children, fullName }) {
               transform: isAdminOpen ? 'rotate(-180deg)' : 'rotate(0deg)',
               transition: 'transform 0.2s ease-in-out',
             }}>
-              <FiChevronDown strokeWidth={4} backgroundColor />
+              <FaAngleDown strokeWidth={4} backgroundColor />
             </span>
           </div>
 
@@ -304,7 +305,7 @@ export default function Layout({ children, fullName }) {
                 onClick={() => router.push("/pejabatkeuangan")}
                 style={isActive("/pejabatkeuangan") ? {...activeStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"}}
               >
-                <span style={{ fontSize: "0.9rem" }}><FiFile/></span> Pejabat Keuangan
+                <span style={{ fontSize: "0.9rem" }}><FaFile/></span> Pejabat Keuangan
               </button>
             </div>
           </div>
@@ -315,7 +316,7 @@ export default function Layout({ children, fullName }) {
             style={isRekamOpen ? activeStyle : inactiveStyle}
           >
             <span style={{ fontSize: "0.9rem" }}>
-              <FiFolder color={isRekamOpen ? '#2563eb' : '#4A5568'}  />
+              <FaFolder color={isRekamOpen ? '#2563eb' : '#4A5568'}  />
             </span> Rekam
             <span style={{
               display: 'inline-block',
@@ -325,7 +326,7 @@ export default function Layout({ children, fullName }) {
               transform: isRekamOpen ? 'rotate(-180deg)' : 'rotate(0deg)',
               transition: 'transform 0.2s ease-in-out',
             }}>
-              <FiChevronDown strokeWidth={4} />
+              <FaAngleDown strokeWidth={4} />
             </span>
           </div>
 
@@ -342,19 +343,19 @@ export default function Layout({ children, fullName }) {
                 onClick={() => router.push("/pegawai")}
                 style={isActive("/pegawai") ? {...activeStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"}}
               >
-                <span style={{ fontSize: "0.9rem" }}><FiFile/></span> Pegawai
+                <span style={{ fontSize: "0.9rem" }}><FaFile/></span> Pegawai
               </button>
               <button
                 onClick={() => router.push("/pencatatanpasien")}
                 style={isActive("/pencatatanpasien") ? {...activeStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"}}
               >
-                <span style={{ fontSize: "0.9rem" }}><FiFile/></span> Pencatatan Pasien
+                <span style={{ fontSize: "0.9rem" }}><FaFile/></span> Pencatatan Pasien
               </button>
               <button
                 onClick={() => router.push("/sppr")}
                 style={isActive("/sppr") ? {...activeStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"}}
               >
-                <span style={{ fontSize: "0.9rem" }}><FiFile/></span> SPPR
+                <span style={{ fontSize: "0.9rem" }}><FaFile/></span> SPPR
               </button>
             </div>
           </div>

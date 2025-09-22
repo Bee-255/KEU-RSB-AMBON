@@ -5,7 +5,8 @@ import Swal from "sweetalert2";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import { terbilang } from "../lib/terbilang";
-import { FiChevronLeft, FiChevronRight, FiChevronsLeft, FiChevronsRight, FiDelete, FiEdit3, FiPlus, FiDownload,FiSkipBack, FiSkipForward } from "react-icons/fi";
+import { FiChevronLeft, FiChevronRight, FiChevronsLeft, FiChevronsRight, FiDelete, FiEdit3, FiPlus, FiDownload,FiSkipBack, FiSkipForward} from "react-icons/fi";
+import { FaPlus, FaEdit, FaTrashAlt } from "react-icons/fa";
 
 // Fungsi untuk memformat setiap kata menjadi kapital di awal
 const capitalizeWords = (str) => {
@@ -559,7 +560,7 @@ const Sppr = () => {
     <div style={{ padding: "0rem 0rem", backgroundColor: "#F3F4F6" }}>
       <h2>Data Surat Perintah Pendebitan Rekening</h2>
 
-      <div style={{ marginBottom: "1rem", display: "flex", gap: "10px", alignItems: "center" }}>
+      <div style={{ marginBottom: "1rem", display: "flex", gap: "5px", alignItems: "center" }}>
         <button
           onClick={() => {
             resetForm();
@@ -571,7 +572,7 @@ const Sppr = () => {
           style={{ background: "#16a34a", color: "white",padding: "6px 10px", border: "none",
             borderRadius: "6px", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}
         >
-          <FiPlus size={14} strokeWidth={4}  /> Rekam SPPR
+          <FaPlus/> Rekam SPPR
         </button>
         <button
           onClick={handleEdit}
@@ -579,7 +580,7 @@ const Sppr = () => {
           style={{ background: "#f59e0b", color: "white",padding: "6px 10px", border: "none",
             borderRadius: "6px", display: "flex", alignItems: "center", gap: "5px", cursor: selectedSppr ? "pointer" : "not-allowed", opacity: selectedSppr ? 1 : 0.5 }}
         >
-          <FiEdit3 size={14} strokeWidth={3}/> Edit
+          <FaEdit /> Edit
         </button>
         <button
           onClick={handleDelete}
@@ -587,7 +588,7 @@ const Sppr = () => {
           style={{ background: "#dc2626", color: "white",padding: "6px 10px", border: "none",
             borderRadius: "6px", display: "flex", alignItems: "center", gap: "5px", cursor: selectedSppr ? "pointer" : "not-allowed", opacity: selectedSppr ? 1 : 0.5 }}
         >
-          <FiDelete size={14} strokeWidth={3} /> Hapus
+          <FaTrashAlt /> Hapus
         </button>
         <button
           onClick={handleDownload}
