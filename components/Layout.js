@@ -4,8 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Swal from "sweetalert2";
 import { supabase } from "@/utils/supabaseClient";
-import { FiFile, FiFolder, FiChevronRight, FiChevronLeft, FiChevronUp, FiChevronDown } from "react-icons/fi"; // Hanya impor FiChevronRight
-import { FaPlus, FaEdit, FaTrashAlt, FaFolder, FaFile, FaAngleLeft, FaAngleDown } from "react-icons/fa";
+import { FaFolder, FaFile, FaAngleLeft, FaAngleDown } from "react-icons/fa";
 
 export default function Layout({ children, fullName }) {
   const router = useRouter();
@@ -100,19 +99,6 @@ export default function Layout({ children, fullName }) {
     backgroundColor: "#E1E7EF",
     borderLeft: "4px solid transparent",
   };
-
-  const fileIcon = (
-    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4A5568" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-      <polyline points="14 2 14 8 20 8"></polyline>
-    </svg>
-  );
-
-  const arrowIcon = (
-    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
-      <polyline points="6 9 12 15 18 9"></polyline>
-    </svg>
-  );
 
   const handleDashboardClick = () => {
     router.push("/dashboard");
@@ -305,7 +291,9 @@ export default function Layout({ children, fullName }) {
                 onClick={() => router.push("/pejabatkeuangan")}
                 style={isActive("/pejabatkeuangan") ? {...activeStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"}}
               >
-                <span style={{ fontSize: "0.9rem" }}><FaFile/></span> Pejabat Keuangan
+                <span style={{ fontSize: "0.9rem" }}>
+                  <FaFile color={isActive("/pejabatkeuangan") ? '#2563eb' : '#4A5568'} />
+                </span> Pejabat Keuangan
               </button>
             </div>
           </div>
@@ -343,19 +331,25 @@ export default function Layout({ children, fullName }) {
                 onClick={() => router.push("/pegawai")}
                 style={isActive("/pegawai") ? {...activeStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"}}
               >
-                <span style={{ fontSize: "0.9rem" }}><FaFile/></span> Pegawai
+                <span style={{ fontSize: "0.9rem" }}>
+                  <FaFile color={isActive("/pegawai") ? '#2563eb' : '#4A5568'} />
+                </span> Pegawai
               </button>
               <button
                 onClick={() => router.push("/pencatatanpasien")}
                 style={isActive("/pencatatanpasien") ? {...activeStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"}}
               >
-                <span style={{ fontSize: "0.9rem" }}><FaFile/></span> Pencatatan Pasien
+                <span style={{ fontSize: "0.9rem" }}>
+                  <FaFile color={isActive("/pencatatanpasien") ? '#2563eb' : '#4A5568'} />
+                </span> Pencatatan Pasien
               </button>
               <button
                 onClick={() => router.push("/sppr")}
                 style={isActive("/sppr") ? {...activeStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"}}
               >
-                <span style={{ fontSize: "0.9rem" }}><FaFile/></span> SPPR
+                <span style={{ fontSize: "0.9rem" }}>
+                  <FaFile color={isActive("/sppr") ? '#2563eb' : '#4A5568'} />
+                </span> SPPR
               </button>
             </div>
           </div>
