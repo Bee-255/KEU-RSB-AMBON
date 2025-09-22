@@ -6,7 +6,7 @@ import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
 import { applyPlugin } from "jspdf-autotable";
-import { FaPlus, FaEdit, FaTrashAlt, FaAngleLeft, FaAngleRight, FaAngleDoubleLeft, FaAngleDoubleRight, FaRegTrashAlt } from "react-icons/fa"; // Menggunakan ikon dari Fa untuk konsistensi
+import { FaPlus, FaEdit, FaTrashAlt, FaAngleLeft, FaAngleRight, FaAngleDoubleLeft, FaAngleDoubleRight, FaRegTrashAlt, FaDownload } from "react-icons/fa"; // Menggunakan ikon dari Fa untuk konsistensi
 import { FiChevronLeft, FiChevronRight, FiSkipBack, FiSkipForward } from "react-icons/fi";
 
 applyPlugin(jsPDF);
@@ -694,9 +694,10 @@ export default function PencatatanPasien() {
                 setNewRekapDate("");
                 setShowRekapModal(true);
               }}
-              style={{ background: "#16a34a", color: "white", padding: "6px 10px", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "12px" }}
+              style={{ background: "#16a34a", color: "white",padding: "6px 10px", border: "none",
+            borderRadius: "6px", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}
             >
-              <FaRegTrashAlt/>Tambah Rekap
+              <FaPlus/>Tambah Rekap
             </button>
             <button
               onClick={handleAddPasienClick}
@@ -707,12 +708,15 @@ export default function PencatatanPasien() {
                 padding: "6px 10px", 
                 border: "none", 
                 borderRadius: "6px", 
+                display: "flex", 
+                alignItems: "center", 
+                gap: "5px",
                 cursor: selectedRekapIds.length === 0 ? "not-allowed" : "pointer", 
                 opacity: selectedRekapIds.length === 0 ? 0.5 : 1,
                 fontSize: "12px"
               }}
             >
-              Tambah Pasien
+              <FaPlus/> Tambah Pasien
             </button>
             <button
               onClick={handleDeleteRekap}
@@ -728,7 +732,7 @@ export default function PencatatanPasien() {
                 fontSize: "12px"
               }}
             >
-              Hapus Rekap
+              <FaRegTrashAlt/> Hapus
             </button>
             <button
               onClick={handleDownloadClick}
@@ -739,12 +743,15 @@ export default function PencatatanPasien() {
                 padding: "6px 10px", 
                 border: "none", 
                 borderRadius: "6px", 
+                display: "flex", 
+                alignItems: "center", 
+                gap: "5px",
                 cursor: selectedRekapIds.length === 0 ? "not-allowed" : "pointer", 
                 opacity: selectedRekapIds.length === 0 ? 0.5 : 1,
                 fontSize: "12px"
               }}
             >
-              Download
+              <FaDownload /> Download
             </button>
           </div>
 
@@ -956,12 +963,15 @@ export default function PencatatanPasien() {
                     padding: "6px 10px", 
                     border: "none", 
                     borderRadius: "6px", 
+                    display: "flex", 
+                    alignItems: "center", 
+                    gap: "5px", 
                     cursor: !selectedPasienId ? "not-allowed" : "pointer", 
                     opacity: !selectedPasienId ? 0.5 : 1,
                     fontSize: "12px"
                 }}
             >
-                Edit
+                <FaEdit/> Edit
             </button>
             <button
                 onClick={handleDeletePasien}
@@ -971,13 +981,16 @@ export default function PencatatanPasien() {
                     color: "white", 
                     padding: "6px 16px", 
                     border: "none", 
-                    borderRadius: "6px", 
+                    borderRadius: "6px",
+                    display: "flex", 
+                    alignItems: "center", 
+                    gap: "5px",
                     cursor: !selectedPasienId ? "not-allowed" : "pointer", 
                     opacity: !selectedPasienId ? 0.5 : 1,
                     fontSize: "12px"
                 }}
             >
-                Hapus
+                <FaRegTrashAlt /> Hapus
             </button>
         </div>
       </div>
