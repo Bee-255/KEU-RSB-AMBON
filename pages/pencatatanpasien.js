@@ -6,7 +6,7 @@ import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
 import { applyPlugin } from "jspdf-autotable";
-import { FaPlus, FaEdit, FaTrashAlt, FaAngleLeft, FaAngleRight, FaAngleDoubleLeft, FaAngleDoubleRight, FaRegTrashAlt, FaDownload } from "react-icons/fa"; // Menggunakan ikon dari Fa untuk konsistensi
+import { FaPlus, FaEdit, FaUserPlus, FaTrashAlt, FaAngleLeft, FaAngleRight, FaAngleDoubleLeft, FaAngleDoubleRight, FaRegTrashAlt, FaDownload } from "react-icons/fa"; // Menggunakan ikon dari Fa untuk konsistensi
 import { FiChevronLeft, FiChevronRight, FiSkipBack, FiSkipForward } from "react-icons/fi";
 
 applyPlugin(jsPDF);
@@ -716,7 +716,7 @@ export default function PencatatanPasien() {
                 fontSize: "12px"
               }}
             >
-              <FaPlus/> Tambah Pasien
+              <FaUserPlus size={14}/> Tambah Pasien
             </button>
             <button
               onClick={handleDeleteRekap}
@@ -883,7 +883,7 @@ export default function PencatatanPasien() {
       <table border="1" cellPadding="4" style={{ borderCollapse: "collapse", width: "100%", marginTop: "0px", fontSize: "12px" }}> 
     <thead> 
       <tr style={{ background: "#f3f4f6" }}> 
-        <th style={{ padding: "8px", textAlign: "center", width: "50px" }}> 
+        <th style={{ padding: "4px", textAlign: "center", width: "30px" }}> 
           <input 
             type="checkbox" 
             ref={selectAllRef} 
