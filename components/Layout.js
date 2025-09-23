@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Swal from "sweetalert2";
 import { supabase } from "@/utils/supabaseClient";
-import { FaFolder, FaFile, FaAngleLeft, FaAngleDown } from "react-icons/fa";
+import { FaFolder, FaFile, FaAngleLeft, FaAngleDown, FaSignOutAlt } from "react-icons/fa";
 
 export default function Layout({ children, fullName }) {
   const router = useRouter();
@@ -223,9 +223,12 @@ export default function Layout({ children, fullName }) {
               borderRadius: "6px",
               cursor: "pointer",
               fontWeight: "600",
+              display: "flex",
+              alignItems: "center",
+              gap: "5px",
             }}
           >
-            Logout
+            <FaSignOutAlt /> Logout
           </button>
         </div>
       </header>
