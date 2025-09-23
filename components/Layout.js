@@ -12,6 +12,7 @@ export default function Layout({ children, fullName }) {
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
   
   const [openFolder, setOpenFolder] = useState(null);
+  const [hoveredItem, setHoveredItem] = useState(null); // State baru untuk melacak item yang di-hover
   
   const handleLogout = async () => {
     const result = await Swal.fire({
@@ -98,6 +99,25 @@ export default function Layout({ children, fullName }) {
     ...baseMenuItemStyle,
     backgroundColor: "#E1E7EF",
     borderLeft: "4px solid transparent",
+  };
+  
+  // Style baru untuk efek hover
+  const hoverStyle = { 
+    background: "none",
+    border: "none",
+    color: "#000",
+    textAlign: "left",
+    cursor: "pointer",
+    fontSize: "0.8rem",
+    padding: "0.2rem 0.5rem 0.2rem 0.5rem",
+    margin: "0rem",
+    display: "flex",
+    alignItems: "center",
+    gap: "0.5rem",
+    width: "100%",
+    boxSizing: "border-box",
+    backgroundColor: "rgba(255, 255, 255, 0.5)",
+    borderLeft: "4px solid #d1d5db", 
   };
 
   const handleDashboardClick = () => {
@@ -264,10 +284,14 @@ export default function Layout({ children, fullName }) {
           {/* Administrasi (Folder) */}
           <div
             onClick={handleAdminToggle}
-            style={isAdminOpen ? activeStyle : inactiveStyle}
+            onMouseEnter={() => setHoveredItem('administrasi')}
+            onMouseLeave={() => setHoveredItem(null)}
+            style={
+              isAdminOpen ? activeStyle : (hoveredItem === 'administrasi' ? hoverStyle : inactiveStyle)
+            }
           >
             <span style={{ fontSize: "0.9rem" }}>
-              <FaFolder color={isAdminOpen ? '#2563eb' : '#4A5568'}/>
+              <FaFolder color={isAdminOpen || hoveredItem === 'administrasi' ? '#2563eb' : '#4A5568'}/>
             </span> Administrasi
             <span style={{
               display: 'inline-block',
@@ -292,10 +316,16 @@ export default function Layout({ children, fullName }) {
             <div style={{ display: "flex", flexDirection: "column", gap: "0rem" }}>
               <button
                 onClick={() => router.push("/pejabatkeuangan")}
-                style={isActive("/pejabatkeuangan") ? {...activeStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"}}
+                onMouseEnter={() => setHoveredItem('pejabatkeuangan')}
+                onMouseLeave={() => setHoveredItem(null)}
+                style={
+                  isActive("/pejabatkeuangan") ? 
+                  {...activeStyle, paddingLeft: "1rem"} : 
+                  (hoveredItem === 'pejabatkeuangan' ? {...hoverStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"})
+                }
               >
                 <span style={{ fontSize: "0.9rem" }}>
-                  <FaFile color={isActive("/pejabatkeuangan") ? '#2563eb' : '#4A5568'} />
+                  <FaFile color={isActive("/pejabatkeuangan") || hoveredItem === 'pejabatkeuangan' ? '#2563eb' : '#4A5568'} />
                 </span> Pejabat Keuangan
               </button>
             </div>
@@ -304,10 +334,14 @@ export default function Layout({ children, fullName }) {
           {/* Rekam (Folder) */}
           <div
             onClick={handleRekamToggle}
-            style={isRekamOpen ? activeStyle : inactiveStyle}
+            onMouseEnter={() => setHoveredItem('rekam')}
+            onMouseLeave={() => setHoveredItem(null)}
+            style={
+              isRekamOpen ? activeStyle : (hoveredItem === 'rekam' ? hoverStyle : inactiveStyle)
+            }
           >
             <span style={{ fontSize: "0.9rem" }}>
-              <FaFolder color={isRekamOpen ? '#2563eb' : '#4A5568'}  />
+              <FaFolder color={isRekamOpen || hoveredItem === 'rekam' ? '#2563eb' : '#4A5568'}  />
             </span> Rekam
             <span style={{
               display: 'inline-block',
@@ -332,26 +366,44 @@ export default function Layout({ children, fullName }) {
             <div style={{ display: "flex", flexDirection: "column", gap: "0rem" }}>
               <button
                 onClick={() => router.push("/pegawai")}
-                style={isActive("/pegawai") ? {...activeStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"}}
+                onMouseEnter={() => setHoveredItem('pegawai')}
+                onMouseLeave={() => setHoveredItem(null)}
+                style={
+                  isActive("/pegawai") ? 
+                  {...activeStyle, paddingLeft: "1rem"} : 
+                  (hoveredItem === 'pegawai' ? {...hoverStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"})
+                }
               >
                 <span style={{ fontSize: "0.9rem" }}>
-                  <FaFile color={isActive("/pegawai") ? '#2563eb' : '#4A5568'} />
+                  <FaFile color={isActive("/pegawai") || hoveredItem === 'pegawai' ? '#2563eb' : '#4A5568'} />
                 </span> Pegawai
               </button>
               <button
                 onClick={() => router.push("/pencatatanpasien")}
-                style={isActive("/pencatatanpasien") ? {...activeStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"}}
+                onMouseEnter={() => setHoveredItem('pencatatanpasien')}
+                onMouseLeave={() => setHoveredItem(null)}
+                style={
+                  isActive("/pencatatanpasien") ? 
+                  {...activeStyle, paddingLeft: "1rem"} : 
+                  (hoveredItem === 'pencatatanpasien' ? {...hoverStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"})
+                }
               >
                 <span style={{ fontSize: "0.9rem" }}>
-                  <FaFile color={isActive("/pencatatanpasien") ? '#2563eb' : '#4A5568'} />
+                  <FaFile color={isActive("/pencatatanpasien") || hoveredItem === 'pencatatanpasien' ? '#2563eb' : '#4A5568'} />
                 </span> Pencatatan Pasien
               </button>
               <button
                 onClick={() => router.push("/sppr")}
-                style={isActive("/sppr") ? {...activeStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"}}
+                onMouseEnter={() => setHoveredItem('sppr')}
+                onMouseLeave={() => setHoveredItem(null)}
+                style={
+                  isActive("/sppr") ? 
+                  {...activeStyle, paddingLeft: "1rem"} : 
+                  (hoveredItem === 'sppr' ? {...hoverStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"})
+                }
               >
                 <span style={{ fontSize: "0.9rem" }}>
-                  <FaFile color={isActive("/sppr") ? '#2563eb' : '#4A5568'} />
+                  <FaFile color={isActive("/sppr") || hoveredItem === 'sppr' ? '#2563eb' : '#4A5568'} />
                 </span> SPPR
               </button>
             </div>

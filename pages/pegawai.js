@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import Swal from "sweetalert2";
-import { FaPlus, FaEdit, FaTrashAlt, FaAngleLeft, FaAngleRight, FaAngleDoubleLeft, FaAngleDoubleRight, FaRegTrashAlt } from "react-icons/fa";
+import { FaPlus, FaEdit, FaRegTrashAlt } from "react-icons/fa";
 import PaginasiKeu from '../components/paginasi';
 
 // Komponen Modal Pop-up
@@ -67,15 +67,19 @@ const golonganByPangkatAsn = {
 const golonganByPangkatPolri = {
   "KOMISARIS BESAR POLISI": ["IV/c"], "AJUN KOMISARIS BESAR POLISI": ["IV/b"], "KOMISARIS POLISI": ["IV/a"],
   "AJUN KOMISARIS POLISI": ["III/c"], "INSPEKTUR POLISI SATU": ["III/b"], "INSPEKTUR POLISI DUA": ["III/a"],
-  "AIPTU": ["II/f"], "AIPDA": ["II/e"], "BBRIPKA": ["II/d"], "BRIGADIR": ["II/c"], "BRIPTU": ["II/b"], "BRIPDA": ["II/a"],
+  "AIPTU": ["II/f"], "AIPDA": ["II/e"], "BRIPKA": ["II/d"], "BRIGADIR": ["II/c"], "BRIPTU": ["II/b"], "BRIPDA": ["II/a"],
   "AJUN BRIGADIR POLISI": ["I/e"], "AJUN BRIGADIR POLISI DUA": ["I/d"], "BHAYANGKARA KEPALA": ["I/c"], "BHAYANGKARA SATU": ["I/b"], "BHAYANGKARA DUA": ["I/a"]
 };
+
+// Urutan pekerjaan kustom
+const pekerjaanOrder = ["Anggota Polri", "ASN", "PPPK", "TKK", "Dokter Mitra", "Tenaga Mitra"];
 
 export default function Pegawai() {
   const [editId, setEditId] = useState(null);
   const [selectedPegawai, setSelectedPegawai] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterPekerjaan, setFilterPekerjaan] = useState("");
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -104,24 +108,59 @@ export default function Pegawai() {
 
   // --- Fungsi-fungsi Utama ---
   const fetchPegawai = async () => {
-    const from = (currentPage - 1) * itemsPerPage;
-    const to = from + itemsPerPage - 1;
+    let query = supabase.from("pegawai").select("*");
 
-    let query = supabase.from("pegawai").select("*", { count: "exact" });
+    if (filterPekerjaan) {
+        query = query.filter('pekerjaan', 'eq', filterPekerjaan);
+    }
 
     if (searchTerm) {
       query = query.or(`nama.ilike.%${searchTerm}%,pekerjaan.ilike.%${searchTerm}%,nrp_nip_nir.ilike.%${searchTerm}%`);
     }
 
-    const { data, count, error } = await query.order("id", { ascending: false }).range(from, to);
-    
+    // Mengambil semua data untuk diurutkan di sisi klien
+    const { data, count, error } = await query.order("id", { ascending: false });
+
     if (error) {
       console.error("Error fetching pegawai:", error.message);
       return;
     }
     
-    setTotalItems(count);
-    setListPegawai(data);
+    // Logika Pengurutan di Sisi Klien
+    const sortedData = data.sort((a, b) => {
+      // 1. Urutkan berdasarkan Pekerjaan
+      const pekerjaanA = pekerjaanOrder.indexOf(a.pekerjaan);
+      const pekerjaanB = pekerjaanOrder.indexOf(b.pekerjaan);
+      if (pekerjaanA !== pekerjaanB) return pekerjaanA - pekerjaanB;
+      
+      // 2. Urutkan berdasarkan Pangkat (tinggi ke rendah)
+      const getPangkatIndex = (pangkat, pekerjaan) => {
+          if (pekerjaan === "Anggota Polri") return allPangkatPolri.indexOf(pangkat);
+          if (pekerjaan === "ASN") return allPangkatAsn.indexOf(pangkat);
+          return 999; // Untuk yang tidak memiliki pangkat
+      };
+      const pangkatA = getPangkatIndex(a.pangkat, a.pekerjaan);
+      const pangkatB = getPangkatIndex(b.pangkat, b.pekerjaan);
+      if (pangkatA !== pangkatB) return pangkatA - pangkatB;
+      
+      // 3. Urutkan berdasarkan Status (Aktif di atas Tidak Aktif)
+      const statusOrder = { 'Aktif': 1, 'Tidak Aktif': 2 };
+      const statusA = statusOrder[a.status] || 3;
+      const statusB = statusOrder[b.status] || 3;
+      if (statusA !== statusB) return statusA - statusB;
+
+      // 4. Urutkan berdasarkan Nama (Abjad A-Z)
+      return a.nama.localeCompare(b.nama);
+    });
+
+    setTotalItems(sortedData.length);
+
+    // Menerapkan Paginasi pada data yang sudah diurutkan
+    const from = (currentPage - 1) * itemsPerPage;
+    const to = from + itemsPerPage;
+    const paginatedData = sortedData.slice(from, to);
+    
+    setListPegawai(paginatedData);
   };
 
   const handleChange = (e) => {
@@ -133,7 +172,24 @@ export default function Pegawai() {
     e.preventDefault();
     let isSuccess = false;
     let successMessage = "";
+    
+    if (!editId) {
+        const { data: existingPegawai, error: checkError } = await supabase
+            .from("pegawai")
+            .select("id")
+            .or(`nama.ilike.${pegawai.nama},nrp_nip_nir.ilike.${pegawai.nrp_nip_nir}`);
 
+        if (checkError) {
+            Swal.fire("Error!", checkError.message, "error");
+            return;
+        }
+
+        if (existingPegawai && existingPegawai.length > 0) {
+            Swal.fire("Gagal!", "Data dengan Nama atau NRP/NIP/NIR yang sama sudah ada.", "error");
+            return;
+        }
+    }
+    
     if (editId) {
       const { error } = await supabase.from("pegawai").update(pegawai).eq("id", editId);
       if (error) {
@@ -221,11 +277,16 @@ export default function Pegawai() {
       setSelectedPegawai(p);
     }
   };
+  
+  const handleFilterChange = (e) => {
+      setFilterPekerjaan(e.target.value);
+      setCurrentPage(1);
+  };
 
   // --- Efek Samping (useEffect) ---
   useEffect(() => {
     fetchPegawai();
-  }, [currentPage, itemsPerPage, searchTerm]);
+  }, [currentPage, itemsPerPage, searchTerm, filterPekerjaan]);
 
   useEffect(() => {
     if (pegawai.pekerjaan === "Anggota Polri") {
@@ -301,6 +362,24 @@ export default function Pegawai() {
         >
           <FaRegTrashAlt /> Hapus
         </button>
+
+        <select
+            value={filterPekerjaan}
+            onChange={handleFilterChange}
+            style={{
+                padding: "6px 10px",
+                border: "1px solid #ccc",
+                borderRadius: "6px",
+                cursor: "pointer",
+                backgroundColor: "#f3f4f6",
+                fontSize: "0.8rem",
+            }}
+        >
+            <option value="">Semua Pekerjaan</option>
+            {pekerjaanOrder.map((pekerjaan) => (
+                <option key={pekerjaan} value={pekerjaan}>{pekerjaan}</option>
+            ))}
+        </select>
 
         <div style={{ position: "relative", maxWidth: "300px", marginLeft: "0" }}>
           <input

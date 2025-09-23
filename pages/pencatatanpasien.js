@@ -95,7 +95,7 @@ const unitToJenisRawat = {
   "RUANGAN OPERASI": "Penunjang", "MCU": "Penunjang"
 };
 
-const klasifikasiOptions = ["umum", "selisih"];
+const klasifikasiOptions = ["UMUM", "SELISIH"];
 
 const formatToNumber = (str) => {
   if (typeof str !== 'string' && typeof str !== 'number') {
