@@ -230,7 +230,7 @@ const PejabatKeuangan = () => {
     <div style={{ padding: "0rem 0rem", backgroundColor: "#F3F4F6" }}>
         <h2>Data Pejabat Keuangan</h2>
 
-        <div style={{ marginBottom: "1rem", display: "flex", gap: "10px", alignItems: "center" }}>
+        <div style={{ marginBottom: "1rem", display: "flex", gap: "5px", alignItems: "center" }}>
             <button
             onClick={() => {
                 resetForm();
