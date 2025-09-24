@@ -1,13 +1,87 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { useRouter } from "next/router";
+import Head from "next/head"; // Import Head dari Next.js
 
-// Perbaikan: Tambahkan gaya untuk menghapus margin dan padding bawaan browser
 const fullScreenWrapperStyle = {
-  margin: '0px',
-  padding: '0px',
-  minHeight: '100%',
+  margin: '0',
+  padding: '0',
+  minHeight: '100vh',
+  boxSizing: 'border-box',
 };
+
+// Menambahkan gaya responsif dengan media queries di sini
+const responsiveStyles = `
+  .container {
+    display: flex;
+    height: 100vh;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* Gaya untuk layar besar (default, di atas 768px) */
+  .left-panel {
+    flex: 0.6;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #FDFDFD;
+    color: #333;
+    padding: 0;
+  }
+
+  .right-panel {
+    flex: 0.4;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+    background-color: #f9fafb;
+    text-align: center;
+  }
+
+  /* Media Query untuk layar kecil (ponsel, di bawah 768px) */
+  @media (max-width: 768px) {
+    .container {
+      flex-direction: column; /* Mengubah arah menjadi kolom */
+    }
+    
+    .left-panel, .right-panel {
+      flex: 1; /* Setiap panel mengambil seluruh lebar */
+      width: 100%;
+      min-height: 50vh; /* Setengah layar untuk setiap panel */
+    }
+
+    .left-panel {
+        display: none; /* Menyembunyikan panel gambar di mode potret mobile */
+    }
+
+    .right-panel {
+        padding: 1.5rem;
+    }
+
+    .greeting-text {
+      font-size: 1.5rem; /* Ukuran font lebih kecil */
+      margin-bottom: 0.5rem;
+    }
+    
+    .sub-greeting-text {
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .icon-group {
+      margin-top: -30px; /* Geser ikon sedikit ke atas */
+    }
+  }
+
+  /* Media Query untuk lanskap tablet (768px - 1024px) */
+  @media (min-width: 769px) and (max-width: 1024px) {
+    .right-panel {
+      padding: 1rem;
+    }
+  }
+`;
 
 export default function Home() {
   const [email, setEmail] = useState("");
@@ -46,13 +120,11 @@ export default function Home() {
 
     let authResponse;
     if (isRegisterMode) {
-      // Registrasi
       authResponse = await supabase.auth.signUp({
         email,
         password,
       });
     } else {
-      // Login
       authResponse = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -63,26 +135,22 @@ export default function Home() {
     const { data, error } = authResponse;
 
     if (error) {
-    setMsgType("error");
-    if (error.message.includes("User already registered")) {
-      setMessage("Email ini sudah terdaftar. Silakan login.");
+      setMsgType("error");
+      if (error.message.includes("User already registered")) {
+        setMessage("Email ini sudah terdaftar. Silakan login.");
+      } else {
+        setMessage("Email atau password yang Anda masukkan salah.");
+      }
     } else {
-      // ✅ Perubahan di sini: Mengganti pesan error menjadi pesan kustom
-      setMessage("Email atau password yang Anda masukkan salah.");
-    }
-  }
- else {
       setMsgType("success");
       setMessage(isRegisterMode ? "Registrasi berhasil! Silakan lengkapi profil Anda." : "Login berhasil!");
 
       if (isRegisterMode) {
-        // Jika registrasi, buat profil kosong
         if (data.user) {
           await supabase.from("profiles").insert([{ id: data.user.id, nama_lengkap: "", pekerjaan: "" }]);
         }
         router.push("/profile");
       } else {
-        // Cek profil setelah login
         const { data: profile } = await supabase
           .from("profiles")
           .select("nama_lengkap")
@@ -99,98 +167,82 @@ export default function Home() {
   };
 
   return (
-    <div style={fullScreenWrapperStyle}>
-      <div style={containerStyle}>
-        {/* Bagian Kiri: Tampilkan Foto */}
-        <div style={leftPanelStyle}>
-          <div style={imageContainerStyle}>
-            <img src="/fotodepan.jpeg" alt="Foto Depan" style={photoStyle} />
-          </div>
-        </div>
-
-        {/* Bagian Kanan: Form Login/Register */}
-        <div style={rightPanelStyle}>
-          
-
-          {/* Logo iconkeu.png di atas tulisan "Selamat datang" */}
-          <div style={iconGroupStyle}>
-            <img src="/iconrsbambon.png" alt="Icon RS Bambon" style={smallLogoStyle} />
-            <img src="/iconkeu.png" alt="Icon Keuangan" style={smallLogoStyle} />
-          </div>
-
-          {/* ✅ Perubahan di sini: Teks dipindahkan dan ditambahkan gaya */}
-          <h2 style={rightPanelTitleStyle}>KEUANGAN RSB AMBON</h2>
-
-          <form onSubmit={handleAuth} style={formStyle}>
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              style={inputStyle}
-            />
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              style={inputStyle}
-            />
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                ...buttonStyle,
-                backgroundColor: isRegisterMode ? "#10b981" : "#2563eb",
-                opacity: loading ? 0.7 : 1,
-                cursor: loading ? "not-allowed" : "pointer",
-              }}
-            >
-              {loading ? "Memuat..." : (isRegisterMode ? "Daftar" : "Login")}
-            </button>
-          </form>
-
-          {message && (
-            <div style={{ ...messageStyle, backgroundColor: msgType === "error" ? "#fee2e2" : "#dcfce7", color: msgType === "error" ? "#b91c1c" : "#166534" }}>
-              {message}
+    <>
+      <Head>
+        <style dangerouslySetInnerHTML={{ __html: responsiveStyles }} />
+      </Head>
+      <div style={fullScreenWrapperStyle}>
+        <div className="container">
+          <div className="left-panel">
+            <div style={imageContainerStyle}>
+              <img src="/fotodepan.jpeg" alt="Foto Depan" style={photoStyle} />
             </div>
-          )}
+          </div>
 
-          <p style={switchModeStyle}>
-            {isRegisterMode ? "Sudah punya akun?" : "Belum punya akun?"}{" "}
-            <button
-              onClick={() => setIsRegisterMode(!isRegisterMode)}
-              style={switchButtonStyle}
-              disabled={loading}
-            >
-              {isRegisterMode ? "Login" : "Daftar"}
-            </button>
-          </p>
+          <div className="right-panel">
+            <h2 style={rightPanelTitleStyle}>KEUANGAN RSB AMBON</h2>
+            <div className="icon-group">
+              <img src="/iconrsbambon.png" alt="Icon RS Bambon" style={smallLogoStyle} />
+              <img src="/iconkeu.png" alt="Icon Keuangan" style={smallLogoStyle} />
+            </div>
+            
+            <h1 className="greeting-text">Selamat datang</h1>
+            <p className="sub-greeting-text">Silakan {isRegisterMode ? "daftar" : "login"} untuk melanjutkan.</p>
+            
+            <form onSubmit={handleAuth} style={formStyle}>
+              <input
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                style={inputStyle}
+              />
+              <input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                style={inputStyle}
+              />
+              <button
+                type="submit"
+                disabled={loading}
+                style={{
+                  ...buttonStyle,
+                  backgroundColor: isRegisterMode ? "#10b981" : "#2563eb",
+                  opacity: loading ? 0.7 : 1,
+                  cursor: loading ? "not-allowed" : "pointer",
+                }}
+              >
+                {loading ? "Memuat..." : (isRegisterMode ? "Daftar" : "Login")}
+              </button>
+            </form>
+            
+            {message && (
+              <div style={{ ...messageStyle, backgroundColor: msgType === "error" ? "#fee2e2" : "#dcfce7", color: msgType === "error" ? "#b91c1c" : "#166534" }}>
+                {message}
+              </div>
+            )}
+            
+            <p className="switch-mode">
+              {isRegisterMode ? "Sudah punya akun?" : "Belum punya akun?"}{" "}
+              <button
+                onClick={() => setIsRegisterMode(!isRegisterMode)}
+                style={switchButtonStyle}
+                disabled={loading}
+              >
+                {isRegisterMode ? "Login" : "Daftar"}
+              </button>
+            </p>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
 // Gaya (Styles)
-const containerStyle = {
-  display: "flex",
-  height: "100vh",
-  fontFamily: "inter, sans-serif",
-};
-
-// ---
-// Gaya panel kiri yang sudah diubah
-const leftPanelStyle = {
-  flex: 0.6,
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-  background: "#FDFDFD",
-  color: "#333",
-  padding: "0",
-};
-
+// Catatan: Gaya ini akan di override oleh media query di atas
 const imageContainerStyle = {
   width: "90%",
   height: "90%",
@@ -202,47 +254,19 @@ const photoStyle = {
   height: "100%",
   objectFit: "cover",
 };
-// ---
 
-const rightPanelStyle = {
-  flex: 0.4,
-  display: "flex",
-  flexDirection: "column",
-  justifyContent: "center",
-  alignItems: "center",
-  padding: "2rem",
-  backgroundColor: "#f9fafb",
-};
-
-// ✅ Gaya baru untuk tulisan di panel kanan
 const rightPanelTitleStyle = {
   fontSize: "1.2rem",
   fontWeight: "bold",
   textTransform: "uppercase",
-  color: "#000", // Warna biru
+  color: "#000",
   marginBottom: "10px",
   textAlign: "center",
-};
-
-const iconGroupStyle = {
-  display: "flex",
-  gap: "15px",
-  marginBottom: "20px",
 };
 
 const smallLogoStyle = {
   width: "80px",
   height: "auto",
-};
-
-const greetingStyle = {
-  fontSize: "2rem",
-  marginBottom: "1rem",
-};
-
-const subGreetingStyle = {
-  marginBottom: "2rem",
-  color: "#555",
 };
 
 const formStyle = {
@@ -278,12 +302,6 @@ const messageStyle = {
   textAlign: "center",
   fontSize: "0.9rem",
   fontWeight: "500",
-};
-
-const switchModeStyle = {
-  marginTop: "1rem",
-  color: "#555",
-  textAlign: "center",
 };
 
 const switchButtonStyle = {
