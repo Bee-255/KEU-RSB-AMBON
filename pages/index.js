@@ -175,7 +175,7 @@ export default function Home() {
         <div className="container">
           <div className="left-panel">
             <div style={imageContainerStyle}>
-              <img src="/fotodepan.jpeg" alt="Foto Depan" style={photoStyle} />
+              <img src="/fotodepan.jpeg" alt="" style={photoStyle} />
             </div>
           </div>
 
