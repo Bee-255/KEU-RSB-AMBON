@@ -1,17 +1,20 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { useRouter } from "next/router";
-import Head from "next/head"; // Import Head dari Next.js
+import Head from "next/head";
 
-const fullScreenWrapperStyle = {
-  margin: '0',
-  padding: '0',
-  minHeight: '100vh',
-  boxSizing: 'border-box',
-};
-
-// Menambahkan gaya responsif dengan media queries di sini
+// Tambahkan gaya responsif menggunakan template string
 const responsiveStyles = `
+  body {
+    margin: 0;
+    padding: 0;
+  }
+  .full-screen-wrapper {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    box-sizing: border-box;
+  }
   .container {
     display: flex;
     height: 100vh;
@@ -25,8 +28,6 @@ const responsiveStyles = `
     justify-content: center;
     align-items: center;
     background: #FDFDFD;
-    color: #333;
-    padding: 0;
   }
 
   .right-panel {
@@ -40,45 +41,95 @@ const responsiveStyles = `
     text-align: center;
   }
 
+  .image-container {
+    width: 90%;
+    height: 90%;
+    overflow: hidden;
+  }
+  
+  .photo-style {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .icon-group {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+  }
+
+  .small-logo {
+    width: 80px;
+    height: auto;
+  }
+
+  .right-panel-title {
+    font-size: 1.2rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: #2b3039ff;
+    margin-bottom: 10px;
+  }
+
   /* Media Query untuk layar kecil (ponsel, di bawah 768px) */
   @media (max-width: 768px) {
     .container {
-      flex-direction: column; /* Mengubah arah menjadi kolom */
+      flex-direction: column;
+      height: auto;
+      min-height: 100vh;
     }
     
-    .left-panel, .right-panel {
-      flex: 1; /* Setiap panel mengambil seluruh lebar */
-      width: 100%;
-      min-height: 50vh; /* Setengah layar untuk setiap panel */
-    }
-
     .left-panel {
-        display: none; /* Menyembunyikan panel gambar di mode potret mobile */
+        display: none; /* Sembunyikan panel gambar di mode potret mobile */
     }
 
     .right-panel {
+        flex: 1; /* Ambil seluruh ruang yang tersedia */
+        width: 100%;
         padding: 1.5rem;
     }
+    
+    .right-panel-title {
+      font-size: 1rem;
+      margin-top: 2rem;
+      margin-bottom: 10px;
+    }
 
-    .greeting-text {
-      font-size: 1.5rem; /* Ukuran font lebih kecil */
-      margin-bottom: 0.5rem;
+    .icon-group {
+      margin-bottom: 15px;
+    }
+
+    .small-logo {
+      width: 60px;
+    }
+
+    .greeting {
+      font-size: 1.8rem;
     }
     
-    .sub-greeting-text {
+    .sub-greeting {
       font-size: 0.9rem;
       margin-bottom: 1.5rem;
     }
 
-    .icon-group {
-      margin-top: -30px; /* Geser ikon sedikit ke atas */
+    .form-style {
+      width: 100%;
     }
   }
 
   /* Media Query untuk lanskap tablet (768px - 1024px) */
   @media (min-width: 769px) and (max-width: 1024px) {
+    .left-panel {
+      flex: 0.5;
+    }
     .right-panel {
-      padding: 1rem;
+      flex: 0.5;
+      padding: 1.5rem;
+    }
+    .image-container {
+      width: 100%;
+      height: 100%;
     }
   }
 `;
@@ -171,23 +222,23 @@ export default function Home() {
       <Head>
         <style dangerouslySetInnerHTML={{ __html: responsiveStyles }} />
       </Head>
-      <div style={fullScreenWrapperStyle}>
+      <div className="full-screen-wrapper">
         <div className="container">
           <div className="left-panel">
-            <div style={imageContainerStyle}>
-              <img src="/fotodepan.jpeg" alt="" style={photoStyle} />
+            <div className="image-container">
+              <img src="/fotodepan.jpeg" alt="Foto Depan" className="photo-style" />
             </div>
           </div>
 
           <div className="right-panel">
-            <h2 style={rightPanelTitleStyle}>KEUANGAN RSB AMBON</h2>
+            
             <div className="icon-group">
-              <img src="/iconrsbambon.png" alt="Icon RS Bambon" style={smallLogoStyle} />
-              <img src="/iconkeu.png" alt="Icon Keuangan" style={smallLogoStyle} />
+              <img src="/iconrsbambon.png" alt="Icon RS Bambon" className="small-logo" />
+              <img src="/iconkeu.png" alt="Icon Keuangan" className="small-logo" />
             </div>
             
-            <h1 className="greeting-text">Selamat datang</h1>
-            <p className="sub-greeting-text">Silakan {isRegisterMode ? "daftar" : "login"} untuk melanjutkan.</p>
+            <h3 className="greeting">KEUANGAN RSB AMBON</h3>
+            
             
             <form onSubmit={handleAuth} style={formStyle}>
               <input
@@ -242,33 +293,7 @@ export default function Home() {
 }
 
 // Gaya (Styles)
-// Catatan: Gaya ini akan di override oleh media query di atas
-const imageContainerStyle = {
-  width: "90%",
-  height: "90%",
-  overflow: "hidden",
-};
-
-const photoStyle = {
-  width: "100%",
-  height: "100%",
-  objectFit: "cover",
-};
-
-const rightPanelTitleStyle = {
-  fontSize: "1.2rem",
-  fontWeight: "bold",
-  textTransform: "uppercase",
-  color: "#000",
-  marginBottom: "10px",
-  textAlign: "center",
-};
-
-const smallLogoStyle = {
-  width: "80px",
-  height: "auto",
-};
-
+// Catatan: Gaya ini akan di-override oleh media query di atas jika memiliki nama class yang sama
 const formStyle = {
   width: "100%",
   maxWidth: "320px",
