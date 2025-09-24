@@ -99,7 +99,6 @@ export default function Home() {
   };
 
   return (
-    // Perbaikan: Tambahkan div pembungkus untuk menghilangkan margin bawaan
     <div style={fullScreenWrapperStyle}>
       <div style={containerStyle}>
         {/* Bagian Kiri: Tampilkan Foto */}
@@ -111,11 +110,16 @@ export default function Home() {
 
         {/* Bagian Kanan: Form Login/Register */}
         <div style={rightPanelStyle}>
-          {/* Logo iconkeu.png di atas tulisan "Selamat datang" */}
-          <img src="/iconkeu.png" alt="Icon Keuangan" style={smallLogoStyle} />
+          
 
-          <h1 style={greetingStyle}>Selamat datang</h1>
-          <p style={subGreetingStyle}>Silakan {isRegisterMode ? "daftar" : "login"} untuk melanjutkan.</p>
+          {/* Logo iconkeu.png di atas tulisan "Selamat datang" */}
+          <div style={iconGroupStyle}>
+            <img src="/iconrsbambon.png" alt="Icon RS Bambon" style={smallLogoStyle} />
+            <img src="/iconkeu.png" alt="Icon Keuangan" style={smallLogoStyle} />
+          </div>
+
+          {/* ✅ Perubahan di sini: Teks dipindahkan dan ditambahkan gaya */}
+          <h2 style={rightPanelTitleStyle}>KEUANGAN RSB AMBON</h2>
 
           <form onSubmit={handleAuth} style={formStyle}>
             <input
@@ -135,11 +139,10 @@ export default function Home() {
             <button
               type="submit"
               disabled={loading}
-              // Mengganti warna tombol berdasarkan isRegisterMode
               style={{
                 ...buttonStyle,
-                backgroundColor: isRegisterMode ? "#10b981" : "#2563eb", // Hijau untuk Daftar, Biru untuk Login
-                opacity: loading ? 0.7 : 1, // Opasitas saat loading
+                backgroundColor: isRegisterMode ? "#10b981" : "#2563eb",
+                opacity: loading ? 0.7 : 1,
                 cursor: loading ? "not-allowed" : "pointer",
               }}
             >
@@ -177,44 +180,59 @@ const containerStyle = {
 };
 
 // ---
-// ✅ Gaya panel kiri yang sudah diubah
+// Gaya panel kiri yang sudah diubah
 const leftPanelStyle = {
-  flex: 1,
+  flex: 0.6,
   display: "flex",
   justifyContent: "center",
   alignItems: "center",
-  background: "#FDFDFD", // Latar belakang putih
+  background: "#FDFDFD",
   color: "#333",
   padding: "0",
 };
 
 const imageContainerStyle = {
   width: "90%",
-  height: "80%",
+  height: "90%",
   overflow: "hidden",
 };
 
 const photoStyle = {
   width: "100%",
   height: "100%",
-  objectFit: "cover", // Menjaga rasio aspek foto dan mengisinya
+  objectFit: "cover",
 };
 // ---
 
 const rightPanelStyle = {
-  flex: 1,
+  flex: 0.4,
   display: "flex",
   flexDirection: "column",
   justifyContent: "center",
   alignItems: "center",
   padding: "2rem",
-  backgroundColor: "",
+  backgroundColor: "#f9fafb",
+};
+
+// ✅ Gaya baru untuk tulisan di panel kanan
+const rightPanelTitleStyle = {
+  fontSize: "1.2rem",
+  fontWeight: "bold",
+  textTransform: "uppercase",
+  color: "#000", // Warna biru
+  marginBottom: "10px",
+  textAlign: "center",
+};
+
+const iconGroupStyle = {
+  display: "flex",
+  gap: "15px",
+  marginBottom: "20px",
 };
 
 const smallLogoStyle = {
   width: "80px",
   height: "auto",
-  marginBottom: "15px",
 };
 
 const greetingStyle = {
