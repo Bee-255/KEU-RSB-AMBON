@@ -117,7 +117,7 @@ export default function Layout({ children, fullName }) {
     width: "100%",
     boxSizing: "border-box",
     backgroundColor: "rgba(255, 255, 255, 0.5)",
-    borderLeft: "4px solid #d1d5db", 
+    borderLeft: "4px solid rgba(255, 255, 255, 0.5)", 
   };
 
   const handleDashboardClick = () => {
