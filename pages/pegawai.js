@@ -71,7 +71,6 @@ const golonganByPangkatPolri = {
   "AJUN BRIGADIR POLISI": ["I/e"], "AJUN BRIGADIR POLISI DUA": ["I/d"], "BHAYANGKARA KEPALA": ["I/c"], "BHAYANGKARA SATU": ["I/b"], "BHAYANGKARA DUA": ["I/a"]
 };
 
-// Urutan pekerjaan kustom
 const pekerjaanOrder = ["Anggota Polri", "ASN", "PPPK", "TKK", "Dokter Mitra", "Tenaga Mitra"];
 
 export default function Pegawai() {
@@ -118,7 +117,6 @@ export default function Pegawai() {
       query = query.or(`nama.ilike.%${searchTerm}%,pekerjaan.ilike.%${searchTerm}%,nrp_nip_nir.ilike.%${searchTerm}%`);
     }
 
-    // Mengambil semua data untuk diurutkan di sisi klien
     const { data, count, error } = await query.order("id", { ascending: false });
 
     if (error) {
@@ -126,36 +124,34 @@ export default function Pegawai() {
       return;
     }
     
-    // Logika Pengurutan di Sisi Klien
     const sortedData = data.sort((a, b) => {
-      // 1. Urutkan berdasarkan Pekerjaan
+      // 1. Urutkan berdasarkan Pekerjaan (Sesuai urutan di pekerjaanOrder)
       const pekerjaanA = pekerjaanOrder.indexOf(a.pekerjaan);
       const pekerjaanB = pekerjaanOrder.indexOf(b.pekerjaan);
       if (pekerjaanA !== pekerjaanB) return pekerjaanA - pekerjaanB;
       
-      // 2. Urutkan berdasarkan Pangkat (tinggi ke rendah)
-      const getPangkatIndex = (pangkat, pekerjaan) => {
-          if (pekerjaan === "Anggota Polri") return allPangkatPolri.indexOf(pangkat);
-          if (pekerjaan === "ASN") return allPangkatAsn.indexOf(pangkat);
-          return 999; // Untuk yang tidak memiliki pangkat
-      };
-      const pangkatA = getPangkatIndex(a.pangkat, a.pekerjaan);
-      const pangkatB = getPangkatIndex(b.pangkat, b.pekerjaan);
-      if (pangkatA !== pangkatB) return pangkatA - pangkatB;
-      
-      // 3. Urutkan berdasarkan Status (Aktif di atas Tidak Aktif)
+      // 2. Urutkan berdasarkan Status ('Aktif' lebih dulu)
       const statusOrder = { 'Aktif': 1, 'Tidak Aktif': 2 };
       const statusA = statusOrder[a.status] || 3;
       const statusB = statusOrder[b.status] || 3;
       if (statusA !== statusB) return statusA - statusB;
 
-      // 4. Urutkan berdasarkan Nama (Abjad A-Z)
+      // 3. Urutkan berdasarkan Pangkat (dari tertinggi ke terendah)
+      const getPangkatIndex = (pangkat, pekerjaan) => {
+          if (pekerjaan === "Anggota Polri") return allPangkatPolri.indexOf(pangkat);
+          if (pekerjaan === "ASN") return allPangkatAsn.indexOf(pangkat);
+          return 999;
+      };
+      const pangkatA = getPangkatIndex(a.pangkat, a.pekerjaan);
+      const pangkatB = getPangkatIndex(b.pangkat, b.pekerjaan);
+      if (pangkatA !== pangkatB) return pangkatA - pangkatB;
+      
+      // 4. Terakhir, urutkan berdasarkan Nama (secara alfabetis)
       return a.nama.localeCompare(b.nama);
     });
 
     setTotalItems(sortedData.length);
 
-    // Menerapkan Paginasi pada data yang sudah diurutkan
     const from = (currentPage - 1) * itemsPerPage;
     const to = from + itemsPerPage;
     const paginatedData = sortedData.slice(from, to);
@@ -165,54 +161,76 @@ export default function Pegawai() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setPegawai((prev) => ({ ...prev, [name]: value, }));
+    
+    if (name === "pekerjaan") {
+      setPegawai(prev => ({ 
+        ...prev, 
+        [name]: value,
+        pangkat: "",
+        golongan: ""
+      }));
+    } else if (name === "pangkat") {
+      setPegawai(prev => ({
+        ...prev,
+        [name]: value,
+        golongan: ""
+      }));
+    } else {
+      setPegawai(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+  };
+
+  const saveOrUpdatePegawai = async () => {
+    try {
+        if (editId) {
+            const { error } = await supabase.from("pegawai").update(pegawai).eq("id", editId);
+            if (error) throw error;
+            Swal.fire("Berhasil!", "Data pegawai berhasil diperbarui.", "success");
+        } else {
+            const { error } = await supabase.from("pegawai").insert([pegawai]);
+            if (error) throw error;
+            Swal.fire("Berhasil!", "Pegawai baru berhasil ditambahkan.", "success");
+        }
+        resetForm();
+        fetchPegawai();
+    } catch (error) {
+        Swal.fire("Error!", error.message, "error");
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    let isSuccess = false;
-    let successMessage = "";
     
-    if (!editId) {
-        const { data: existingPegawai, error: checkError } = await supabase
-            .from("pegawai")
-            .select("id")
-            .or(`nama.ilike.${pegawai.nama},nrp_nip_nir.ilike.${pegawai.nrp_nip_nir}`);
-
-        if (checkError) {
-            Swal.fire("Error!", checkError.message, "error");
-            return;
-        }
-
-        if (existingPegawai && existingPegawai.length > 0) {
-            Swal.fire("Gagal!", "Data dengan Nama atau NRP/NIP/NIR yang sama sudah ada.", "error");
-            return;
-        }
-    }
-    
+    // Jika sedang dalam mode edit, langsung simpan tanpa pengecekan
     if (editId) {
-      const { error } = await supabase.from("pegawai").update(pegawai).eq("id", editId);
-      if (error) {
-        Swal.fire("Error!", error.message, "error");
+      saveOrUpdatePegawai();
+      return;
+    }
+    
+    // Pengecekan hanya untuk duplikasi NRP/NIP/NIR
+    const inputNrpNipNir = pegawai.nrp_nip_nir.trim();
+    const { data: existingPegawai, error: checkError } = await supabase
+        .from("pegawai")
+        .select("nama, nrp_nip_nir")
+        .eq("nrp_nip_nir", inputNrpNipNir);
+
+    if (checkError) {
+        console.error("Supabase error:", checkError);
+        Swal.fire("Error!", "Terjadi kesalahan saat memeriksa data. Silakan coba lagi.", "error");
         return;
-      }
-      isSuccess = true;
-      successMessage = "Data pegawai berhasil diperbarui.";
-    } else {
-      const { error } = await supabase.from("pegawai").insert([pegawai]);
-      if (error) {
-        Swal.fire("Error!", error.message, "error");
-        return;
-      }
-      isSuccess = true;
-      successMessage = "Pegawai baru berhasil ditambahkan.";
     }
 
-    if (isSuccess) {
-      Swal.fire("Berhasil!", successMessage, "success");
-      resetForm();
-      fetchPegawai();
+    if (existingPegawai && existingPegawai.length > 0) {
+        const tipeIdentitas = pegawai.pekerjaan === "Anggota Polri" ? "NRP" : pegawai.pekerjaan === "ASN" ? "NIP" : "NIR";
+        Swal.fire("Gagal!", `Data ${tipeIdentitas} sudah ada dengan nama ${existingPegawai[0].nama}.`, "error");
+        return;
     }
+    
+    // Jika tidak ada duplikasi NRP/NIP/NIR, langsung simpan
+    saveOrUpdatePegawai();
   };
 
   const handleDelete = async () => {
@@ -295,17 +313,22 @@ export default function Pegawai() {
       setPangkatOptions(allPangkatAsn);
     } else {
       setPangkatOptions([]);
-      setPegawai(prev => ({ ...prev, pangkat: "", golongan: "" }));
     }
   }, [pegawai.pekerjaan]);
 
   useEffect(() => {
+    let newGolonganOptions = [];
     if (pegawai.pekerjaan === "ASN" && pegawai.pangkat) {
-      setGolonganOptions(golonganByPangkatAsn[pegawai.pangkat] || []);
+      newGolonganOptions = golonganByPangkatAsn[pegawai.pangkat] || [];
     } else if (pegawai.pekerjaan === "Anggota Polri" && pegawai.pangkat) {
-      setGolonganOptions(golonganByPangkatPolri[pegawai.pangkat] || []);
+      newGolonganOptions = golonganByPangkatPolri[pegawai.pangkat] || [];
+    }
+
+    setGolonganOptions(newGolonganOptions);
+
+    if (newGolonganOptions.length === 1) {
+      setPegawai(prev => ({ ...prev, golongan: newGolonganOptions[0] }));
     } else {
-      setGolonganOptions([]);
       setPegawai(prev => ({ ...prev, golongan: "" }));
     }
   }, [pegawai.pekerjaan, pegawai.pangkat]);
@@ -530,21 +553,16 @@ export default function Pegawai() {
                   value={pegawai.golongan}
                   onChange={handleChange}
                   required={pegawai.pekerjaan === "ASN"}
-                  disabled={pegawai.pekerjaan !== "ASN" && pegawai.pekerjaan !== "Anggota Polri" || !pegawai.pangkat}
+                  disabled={true} // Selalu dinonaktifkan
                   style={{
                     width: "100%",
                     padding: "8px",
                     border: "1px solid #ccc",
                     borderRadius: "4px",
-                    backgroundColor:
-                      (pegawai.pekerjaan !== "ASN" && pegawai.pekerjaan !== "Anggota Polri" || !pegawai.pangkat)
-                        ? "#e9ecef"
-                        : pegawai.golongan === ""
-                        ? "#f3f4f6"
-                        : "white",
+                    backgroundColor: "#e9ecef", // Warna abu-abu
                   }}
                 >
-                  <option value="">-- Pilih Golongan --</option>
+                  <option value="">-- Terisi Otomatis --</option>
                   {golonganOptions.map((golongan) => (
                     <option key={golongan} value={golongan}>
                       {golongan}

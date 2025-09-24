@@ -102,12 +102,10 @@ export default function Home() {
     // Perbaikan: Tambahkan div pembungkus untuk menghilangkan margin bawaan
     <div style={fullScreenWrapperStyle}>
       <div style={containerStyle}>
-        {/* Bagian Kiri: Logo dan Deskripsi */}
+        {/* Bagian Kiri: Tampilkan Foto */}
         <div style={leftPanelStyle}>
-          <div style={contentStyle}>
-            <img src="/logo.svg" alt="Logo" style={logoStyle} />
-            <h2 style={titleStyle}>Aplikasi Keuangan</h2>
-            <p style={subtitleStyle}>Kelola keuanganmu dengan mudah</p>
+          <div style={imageContainerStyle}>
+            <img src="/fotodepan.jpeg" alt="Foto Depan" style={photoStyle} />
           </div>
         </div>
 
@@ -175,39 +173,33 @@ export default function Home() {
 const containerStyle = {
   display: "flex",
   height: "100vh",
-  fontFamily: "Inter, sans-serif",
+  fontFamily: "inter, sans-serif",
 };
 
+// ---
+// ✅ Gaya panel kiri yang sudah diubah
 const leftPanelStyle = {
   flex: 1,
   display: "flex",
   justifyContent: "center",
   alignItems: "center",
-  background: "linear-gradient(135deg, #2563eb, #1e40af)",
-  color: "white",
-  padding: "2rem",
+  background: "#FDFDFD", // Latar belakang putih
+  color: "#333",
+  padding: "0",
 };
 
-const contentStyle = {
-  textAlign: "center",
+const imageContainerStyle = {
+  width: "90%",
+  height: "80%",
+  overflow: "hidden",
 };
 
-const logoStyle = {
-  width: "120px",
-  marginBottom: "1rem",
+const photoStyle = {
+  width: "100%",
+  height: "100%",
+  objectFit: "cover", // Menjaga rasio aspek foto dan mengisinya
 };
-
-const titleStyle = {
-  fontSize: "1.8rem",
-  fontWeight: "bold",
-  margin: "0",
-};
-
-const subtitleStyle = {
-  marginTop: "0.5rem",
-  fontSize: "1rem",
-  opacity: "0.9",
-};
+// ---
 
 const rightPanelStyle = {
   flex: 1,
@@ -216,16 +208,14 @@ const rightPanelStyle = {
   justifyContent: "center",
   alignItems: "center",
   padding: "2rem",
-  backgroundColor: "#f9fafb",
+  backgroundColor: "",
 };
 
-// Gaya baru untuk logo kecil di atas "Selamat datang"
 const smallLogoStyle = {
-  width: "80px", // Sesuaikan ukuran sesuai keinginan
+  width: "80px",
   height: "auto",
-  marginBottom: "15px", // Beri sedikit jarak dengan teks di bawahnya
+  marginBottom: "15px",
 };
-
 
 const greetingStyle = {
   fontSize: "2rem",
@@ -258,7 +248,7 @@ const buttonStyle = {
   cursor: "pointer",
   fontWeight: "600",
   transition: "background-color 0.3s",
-  color: "white", // Pastikan warna teks tombol selalu putih
+  color: "white",
 };
 
 const messageStyle = {

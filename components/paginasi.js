@@ -3,7 +3,7 @@ import { FaStepBackward, FaStepForward, FaCaretLeft, FaCaretRight } from "react-
 
 const PaginasiKeu = ({ currentPage, totalPages, totalItems, itemsPerPage, onPageChange, onItemsPerPageChange }) => {
   // Logic untuk menentukan halaman yang akan ditampilkan
-  const maxPagesToShow = 5;
+  const maxPagesToShow = 3;
   const pageNumbers = [];
 
   // Menentukan halaman awal dan akhir untuk ditampilkan
