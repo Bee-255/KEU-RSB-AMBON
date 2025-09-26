@@ -1,0 +1,82 @@
+/* styles/button.module.css */
+
+/* --- Kelas Dasar Tombol --- */
+.rekamButton,
+.editButton,
+.hapusButton,
+.submitButton {
+  padding: 6px 10px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+  transition: all 0.2s ease-in-out;
+}
+
+/* --- Varian Tombol Rekam/Submit --- */
+.rekamButton,
+.submitButton {
+  background-color: #10b981; /* Hijau */
+  color: white;
+}
+
+.rekamButton:hover,
+.submitButton:hover {
+  background-color: #059669;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.rekamButton:active,
+.submitButton:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* --- Varian Tombol Edit --- */
+.editButton {
+  background-color: #f59e0b; /* Oranye */
+  color: white;
+}
+
+.editButton:hover {
+  background-color: #d97706;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.editButton:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* --- Varian Tombol Hapus --- */
+.hapusButton {
+  background-color: #ef4444; /* Merah */
+  color: white;
+}
+
+.hapusButton:hover {
+  background-color: #dc2626;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.hapusButton:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* ✅ Gaya untuk Tombol yang Dinonaktifkan */
+.rekamButton:disabled,
+.editButton:disabled,
+.hapusButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}

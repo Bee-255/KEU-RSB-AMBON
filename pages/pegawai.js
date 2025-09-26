@@ -6,34 +6,19 @@ import Swal from "sweetalert2";
 import { FaPlus, FaEdit, FaRegTrashAlt } from "react-icons/fa";
 import PaginasiKeu from '../components/paginasi';
 
+// ✅ Impor file CSS Modules
+import styles from "../styles/button.module.css";
+import pageStyles from "../styles/komponen.module.css";
+
 // Komponen Modal Pop-up
 const Modal = ({ children, onClose }) => {
   return (
     <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        width: "100%",
-        height: "100%",
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        zIndex: 1000,
-      }}
+      className={pageStyles.modalOverlay}
       onClick={onClose}
     >
       <div
-        style={{
-          backgroundColor: "white",
-          padding: "2rem",
-          borderRadius: "8px",
-          position: "relative",
-          maxWidth: "90%",
-          maxHeight: "90vh",
-          overflowY: "auto",
-        }}
+        className={pageStyles.modalContent}
         onClick={(e) => e.stopPropagation()}
       >
         {children}
@@ -345,43 +330,31 @@ export default function Pegawai() {
 
   // --- Tampilan (JSX) ---
   return (
-    <>
-      <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "1rem" }}></div>
-      <h2>Data Pegawai</h2>
+    <div className={pageStyles.container}>
+      <h2 className={pageStyles.header}>Data Pegawai</h2>
 
-      <div style={{ marginBottom: "1rem", display: "flex", flexWrap: "wrap", gap: "5px", alignItems: "center" }}>
+      <div className={pageStyles.buttonContainer}>
         <button
           onClick={() => {
             resetForm();
             setShowModal(true);
           }}
-          style={{
-            background: "#16a34a", color: "white",padding: "6px 10px", border: "none",
-            borderRadius: "6px", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px"
-          }}
+          className={styles.rekamButton}
         >
-          <FaPlus  /> Rekam Pegawai
+          <FaPlus  /> Rekam
         </button>
 
         <button
           onClick={handleEdit}
           disabled={!selectedPegawai}
-          style={{
-            background: "#f59e0b", color: "white",padding: "6px 10px", border: "none",
-            borderRadius: "6px", display: "flex", alignItems: "center", gap: "5px",
-            cursor: selectedPegawai ? "pointer" : "not-allowed", opacity: selectedPegawai ? 1 : 0.5
-          }}
-          
+          className={styles.editButton}
         >
           <FaEdit/> Edit
         </button>
         <button
           onClick={handleDelete}
           disabled={!selectedPegawai}
-          style={{ background: "#dc2626", color: "white",padding: "6px 10px", border: "none",
-            borderRadius: "6px", display: "flex", alignItems: "center", gap: "5px",
-            cursor: selectedPegawai ? "pointer" : "not-allowed", opacity: selectedPegawai ? 1 : 0.5
-           }}
+          className={styles.hapusButton}
         >
           <FaRegTrashAlt /> Hapus
         </button>
@@ -389,14 +362,7 @@ export default function Pegawai() {
         <select
             value={filterPekerjaan}
             onChange={handleFilterChange}
-            style={{
-                padding: "6px 10px",
-                border: "1px solid #ccc",
-                borderRadius: "6px",
-                cursor: "pointer",
-                backgroundColor: "#f3f4f6",
-                fontSize: "0.8rem",
-            }}
+            className={pageStyles.filterSelect}
         >
             <option value="">Semua Pekerjaan</option>
             {pekerjaanOrder.map((pekerjaan) => (
@@ -404,7 +370,7 @@ export default function Pegawai() {
             ))}
         </select>
 
-        <div style={{ position: "relative", maxWidth: "300px", marginLeft: "0" }}>
+        <div className={pageStyles.searchContainer}>
           <input
             type="text"
             placeholder="Cari pegawai..."
@@ -413,23 +379,12 @@ export default function Pegawai() {
               setSearchTerm(e.target.value);
               setCurrentPage(1);
             }}
-            style={{ width: "120%", padding: "8px", paddingRight: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
+            className={pageStyles.searchInput}
           />
           {searchTerm && (
             <button
               onClick={() => setSearchTerm("")}
-              style={{
-                position: "absolute",
-                right: "1px",
-                top: "50%",
-                transform: "translateY(-50%)",
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                fontSize: "0.9rem",
-                color: "#6b7280",
-                padding: "5px",
-              }}
+              className={pageStyles.searchClearButton}
             >
               &#x2715;
             </button>
@@ -442,70 +397,58 @@ export default function Pegawai() {
           <form onSubmit={handleSubmit}>
             <h3 style={{ marginTop: 0 }}>{editId ? "Edit Data Pegawai" : "Rekam Pegawai Baru"}</h3>
             
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", rowGap: "1rem", marginBottom: "1rem" }}>
-              <div>
-                <label>Nama:</label>
+            <div className={pageStyles.modalForm}>
+              <div className={pageStyles.formGroup}>
+                <label className={pageStyles.formLabel}>Nama:</label>
                 <input
                   type="text"
                   name="nama"
                   value={pegawai.nama}
                   onChange={handleChange}
                   required
-                  style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
+                  className={pageStyles.formInput}
                 />
               </div>
               
-              <div>
-              <label>Pekerjaan:</label>
-              <select
-                name="pekerjaan"
-                value={pegawai.pekerjaan}
-                onChange={handleChange}
-                required
-                style={{ 
-                  width: "100%", 
-                  padding: "8px", 
-                  border: "1px solid #ccc", 
-                  borderRadius: "4px",
-                  backgroundColor: pegawai.pekerjaan === "" ? "#f3f4f6" : "white" 
-                }}
-              >
-                <option value="">-- Pilih Pekerjaan --</option>
-                <option>Anggota Polri</option>
-                <option>ASN</option>
-                <option>PPPK</option>
-                <option>TKK</option>
-                <option>Dokter Mitra</option>
-                <option>Tenaga Mitra</option>
-              </select>
-            </div>
+              <div className={pageStyles.formGroup}>
+                <label className={pageStyles.formLabel}>Pekerjaan:</label>
+                <select
+                  name="pekerjaan"
+                  value={pegawai.pekerjaan}
+                  onChange={handleChange}
+                  required
+                  className={pageStyles.formSelect}
+                >
+                  <option value="">-- Pilih Pekerjaan --</option>
+                  <option>Anggota Polri</option>
+                  <option>ASN</option>
+                  <option>PPPK</option>
+                  <option>TKK</option>
+                  <option>Dokter Mitra</option>
+                  <option>Tenaga Mitra</option>
+                </select>
+              </div>
               
-              <div>
-                <label>NRP / NIP / NIR:</label>
+              <div className={pageStyles.formGroup}>
+                <label className={pageStyles.formLabel}>NRP / NIP / NIR:</label>
                 <input
                   type="text"
                   name="nrp_nip_nir"
                   value={pegawai.nrp_nip_nir}
                   onChange={handleChange}
                   required
-                  style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
+                  className={pageStyles.formInput}
                 />
               </div>
               
-              <div>
-                <label>Klasifikasi:</label>
+              <div className={pageStyles.formGroup}>
+                <label className={pageStyles.formLabel}>Klasifikasi:</label>
                 <select
                   name="klasifikasi"
                   value={pegawai.klasifikasi}
                   onChange={handleChange}
                   required
-                  style={{ 
-                    width: "100%", 
-                    padding: "8px", 
-                    border: "1px solid #ccc", 
-                    borderRadius: "4px",
-                    backgroundColor: pegawai.klasifikasi === "" ? "#f3f4f6" : "white" 
-                  }}
+                  className={pageStyles.formSelect}
                 >
                   <option value="">-- Pilih Klasifikasi --</option>
                   <option>Medis</option>
@@ -515,26 +458,15 @@ export default function Pegawai() {
               </div>
               
               {/* Pangkat */}
-              <div>
-                <label>Pangkat:</label>
+              <div className={pageStyles.formGroup}>
+                <label className={pageStyles.formLabel}>Pangkat:</label>
                 <select
                   name="pangkat"
                   value={pegawai.pangkat}
                   onChange={handleChange}
                   required={pegawai.pekerjaan === "Anggota Polri" || pegawai.pekerjaan === "ASN"}
                   disabled={pegawai.pekerjaan !== "Anggota Polri" && pegawai.pekerjaan !== "ASN"}
-                  style={{
-                    width: "100%",
-                    padding: "8px",
-                    border: "1px solid #ccc",
-                    borderRadius: "4px",
-                    backgroundColor:
-                      pegawai.pekerjaan !== "Anggota Polri" && pegawai.pekerjaan !== "ASN"
-                        ? "#e9ecef"
-                        : pegawai.pangkat === ""
-                        ? "#f3f4f6"
-                        : "white",
-                  }}
+                  className={`${pageStyles.formSelect} ${pegawai.pekerjaan !== "Anggota Polri" && pegawai.pekerjaan !== "ASN" ? pageStyles.readOnly : ""}`}
                 >
                   <option value="">-- Pilih Pangkat --</option>
                   {pangkatOptions.map((pangkat) => (
@@ -546,21 +478,15 @@ export default function Pegawai() {
               </div>
               
               {/* Golongan */}
-              <div>
-                <label>Golongan:</label>
+              <div className={pageStyles.formGroup}>
+                <label className={pageStyles.formLabel}>Golongan:</label>
                 <select
                   name="golongan"
                   value={pegawai.golongan}
                   onChange={handleChange}
                   required={pegawai.pekerjaan === "ASN"}
                   disabled={true} // Selalu dinonaktifkan
-                  style={{
-                    width: "100%",
-                    padding: "8px",
-                    border: "1px solid #ccc",
-                    borderRadius: "4px",
-                    backgroundColor: "#e9ecef", // Warna abu-abu
-                  }}
+                  className={`${pageStyles.formSelect} ${pageStyles.readOnly}`}
                 >
                   <option value="">-- Terisi Otomatis --</option>
                   {golonganOptions.map((golongan) => (
@@ -571,33 +497,26 @@ export default function Pegawai() {
                 </select>
               </div>
 
-              {/* BARU: Input Jabatan Struktural */}
-              <div>
-                <label>Jabatan Struktural:</label>
+              {/* Jabatan Struktural */}
+              <div className={pageStyles.formGroup}>
+                <label className={pageStyles.formLabel}>Jabatan Struktural:</label>
                 <input
                   type="text"
                   name="jabatan_struktural"
                   value={pegawai.jabatan_struktural}
                   onChange={handleChange}
-                  style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
+                  className={pageStyles.formInput}
                 />
               </div>
               
-              <div>
-                <label>Status:</label>
+              <div className={pageStyles.formGroup}>
+                <label className={pageStyles.formLabel}>Status:</label>
                 <select
                   name="status"
                   value={pegawai.status}
                   onChange={handleChange}
                   required
-                  style={{
-                    width: "100%",
-                    padding: "8px",
-                    border: "1px solid #ccc",
-                    borderRadius: "4px",
-                    backgroundColor:
-                      pegawai.status === "" ? "#f3f4f6" : "white",
-                  }}
+                  className={pageStyles.formSelect}
                 >
                   <option value="">-- Pilih Status --</option>
                   <option>Aktif</option>
@@ -605,51 +524,51 @@ export default function Pegawai() {
                 </select>
               </div>
               
-              <div>
-                <label>Bank:</label>
+              <div className={pageStyles.formGroup}>
+                <label className={pageStyles.formLabel}>Bank:</label>
                 <input
                   type="text"
                   name="bank"
                   value={pegawai.bank}
                   onChange={handleChange}
-                  style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
+                  className={pageStyles.formInput}
                 />
               </div>
               
-              <div>
-                <label>No. Rekening:</label>
+              <div className={pageStyles.formGroup}>
+                <label className={pageStyles.formLabel}>No. Rekening:</label>
                 <input
                   type="text"
                   name="no_rekening"
                   value={pegawai.no_rekening}
                   onChange={handleChange}
-                  style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
+                  className={pageStyles.formInput}
                 />
               </div>
               
-              <div>
-                <label>Nama Rekening:</label>
+              <div className={pageStyles.formGroup}>
+                <label className={pageStyles.formLabel}>Nama Rekening:</label>
                 <input
                   type="text"
                   name="nama_rekening"
                   value={pegawai.nama_rekening}
                   onChange={handleChange}
-                  style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
+                  className={pageStyles.formInput}
                 />
               </div>
             </div>
             
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+            <div className={pageStyles.formActions}>
               <button
                 type="button"
                 onClick={resetForm}
-                style={{ padding: "10px 20px", border: "1px solid #ccc", borderRadius: "6px", cursor: "pointer" }}
+                className={pageStyles.formCancel}
               >
                 Batal
               </button>
               <button
                 type="submit"
-                style={{ background: "#16a34a", color: "white", padding: "10px 20px", border: "none", borderRadius: "6px", cursor: "pointer" }}
+                className={styles.rekamButton}
               >
                 {editId ? "Update" : "Simpan"}
               </button>
@@ -659,54 +578,46 @@ export default function Pegawai() {
       )}
       
       {/* Tabel Pegawai */}
-      <table 
-        border="1" 
-        cellPadding="4" 
-        style={{ 
-          borderCollapse: "collapse", 
-          width: "100%", 
-          marginTop: "0px", 
-          fontSize: "12px",
-          tableLayout: "fixed",
-        }}
-      >
-        <thead>
-          <tr style={{ background: "#f3f4f6" }}>
-            <th style={{ width: "10px", padding: "8px", textAlign: "center" }}>No.</th>
-            <th style={{ width: "23%", padding: "8px", textAlign: "left" }}>Nama</th>
-            <th style={{ width: "10%", padding: "8px", textAlign: "left" }}>Pekerjaan</th>
-            <th style={{ width: "15%", padding: "8px", textAlign: "left" }}>Pangkat</th>
-            <th style={{ width: "15%", padding: "8px", textAlign: "left" }}>NRP / NIP / NIR</th>
-            <th style={{ width: "15%", padding: "8px", textAlign: "left" }}>Jabatan Struktural</th>
-            <th style={{ width: "10%", padding: "8px", textAlign: "left" }}>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {listPegawai.length > 0 ? (
-            listPegawai.map((p, index) => (
-              <tr
-                key={p.id}
-                onClick={() => handleRowClick(p)}
-                style={{ cursor: "pointer", backgroundColor: selectedPegawai?.id === p.id ? "#e0e7ff" : "white" }}
-              >
-                <td style={{ width: "30px", padding: "6px 0px 6px 8px", textAlign: "center" }}>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                <td style={{ width: "15%", padding: "6px 0px 6px 8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.nama}</td>
-                <td style={{ width: "10%", padding: "6px 0px 6px 8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.pekerjaan}</td>
-                <td style={{ width: "15%", padding: "6px 0px 6px 8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.pangkat}</td>
-                <td style={{ width: "15%", padding: "6px 0px 6px 8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.nrp_nip_nir}</td>
-                <td style={{ width: "15%", padding: "6px 0px 6px 8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.jabatan_struktural}</td>
-                <td style={{ width: "10%", padding: "6px 0px 6px 8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.status}</td>
-              </tr>
-            ))
-          ) : (
+      <div className={pageStyles.tableContainer}>
+        <table className={pageStyles.table}>
+          <thead className={pageStyles.tableHead}>
             <tr>
-              <td colSpan="7" style={{ textAlign: "center", padding: "1rem" }}>
-                Tidak ada data pegawai yang ditemukan.
-              </td>
+              <th>No.</th>
+              <th>Nama</th>
+              <th>Pekerjaan</th>
+              <th>Pangkat</th>
+              <th>NRP / NIP / NIR</th>
+              <th>Jabatan Struktural</th>
+              <th>Status</th>
             </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className={pageStyles.tableBody}>
+            {listPegawai.length > 0 ? (
+              listPegawai.map((p, index) => (
+                <tr
+                  key={p.id}
+                  onClick={() => handleRowClick(p)}
+                  className={`${pageStyles.tableRow} ${selectedPegawai?.id === p.id ? pageStyles.selected : ""}`}
+                >
+                  <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                  <td>{p.nama}</td>
+                  <td>{p.pekerjaan}</td>
+                  <td>{p.pangkat}</td>
+                  <td>{p.nrp_nip_nir}</td>
+                  <td>{p.jabatan_struktural}</td>
+                  <td>{p.status}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="7" className={pageStyles.tableEmpty}>
+                  Tidak ada data pegawai yang ditemukan.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
       {/* Kontrol Paginasi */}
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
@@ -720,96 +631,65 @@ export default function Pegawai() {
         />
       </div>
       
-      {/* Detail Pegawai yang Dipilih */}
-      <div style={{ 
-          marginTop: "2rem", 
-          border: "1px solid #ccc", 
-          paddingTop: "0rem",
-          paddingBottom: "1rem", 
-          paddingLeft: "0rem", 
-          paddingRight: "0rem",  
-          borderRadius: "0px 8PX", fontSize: "12px", boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)"}}>
-        <h3 
-            style={{ 
-                marginTop: 0,
-                padding: "0.5rem 1rem ",
-                backgroundColor: "#e5e7eaff",
-                borderRadius: "0px",
-                marginBottom: "1rem"
-            }}>
-            Detail Data Pegawai
-        </h3>
-        {selectedPegawai ? (
-        <div style={{ 
-            display: "grid", 
-            gridTemplateColumns: "1fr 1fr",
-            gap: "0.5rem" 
-        }}>
-            {/* Baris 1: Nama */}
-            <div style={{ display: "flex" }}>
-                <p style={{ margin: 0, width: "150px", paddingLeft: "1rem" }}><strong>Nama</strong></p>
-                <p style={{ margin: 0 }}>: {selectedPegawai.nama}</p>
-            </div>
-            {/* Baris 2: Pekerjaan */}
-            <div style={{ display: "flex" }}>
-                <p style={{ margin: 0, width: "150px", }}><strong>Pekerjaan</strong></p>
-                <p style={{ margin: 0 }}>: {selectedPegawai.pekerjaan}</p>
-            </div>
-            {/* BARU: Baris untuk Tipe Identitas */}
-            <div style={{ display: "flex" }}>
-                <p style={{ margin: 0, width: "150px", paddingLeft: "1rem" }}><strong>Tipe Identitas</strong></p>
-                <p style={{ margin: 0 }}>: {selectedPegawai.tipe_identitas}</p>
-            </div>
-            {/* Baris 3: NRP / NIP / NIR */}
-            <div style={{ display: "flex" }}>
-                <p style={{ margin: 0, width: "150px" }}><strong>NRP / NIP / NIR</strong></p>
-                <p style={{ margin: 0 }}>: {selectedPegawai.nrp_nip_nir}</p>
-            </div>
-            {/* Baris 4: Klasifikasi */}
-            <div style={{ display: "flex" }}>
-                <p style={{ margin: 0, width: "150px", paddingLeft: "1rem" }}><strong>Klasifikasi</strong></p>
-                <p style={{ margin: 0 }}>: {selectedPegawai.klasifikasi}</p>
-            </div>
-            {/* Baris 5: Pangkat */}
-            <div style={{ display: "flex" }}>
-                <p style={{ margin: 0, width: "150px" }}><strong>Pangkat</strong></p>
-                <p style={{ margin: 0 }}>: {selectedPegawai.pangkat}</p>
-            </div>
-            {/* Baris 6: Golongan */}
-            <div style={{ display: "flex" }}>
-                <p style={{ margin: 0, width: "150px", paddingLeft: "1rem" }}><strong>Golongan</strong></p>
-                <p style={{ margin: 0 }}>: {selectedPegawai.golongan}</p>
-            </div>
-            {/* BARU: Baris untuk Jabatan Struktural */}
-            <div style={{ display: "flex" }}>
-                <p style={{ margin: 0, width: "150px" }}><strong>Jabatan Struktural</strong></p>
-                <p style={{ margin: 0 }}>: {selectedPegawai.jabatan_struktural}</p>
-            </div>
-            {/* Baris 7: Status */}
-            <div style={{ display: "flex" }}>
-                <p style={{ margin: 0, width: "150px", paddingLeft: "1rem" }}><strong>Status</strong></p>
-                <p style={{ margin: 0 }}>: {selectedPegawai.status}</p>
-            </div>
-            {/* Baris 8: Bank */}
-            <div style={{ display: "flex" }}>
-                <p style={{ margin: 0, width: "150px" }}><strong>Bank</strong></p>
-                <p style={{ margin: 0 }}>: {selectedPegawai.bank}</p>
-            </div>
-            {/* Baris 9: No. Rekening */}
-            <div style={{ display: "flex" }}>
-                <p style={{ margin: 0, width: "150px", paddingLeft: "1rem" }}><strong>No. Rekening</strong></p>
-                <p style={{ margin: 0 }}>: {selectedPegawai.no_rekening}</p>
-            </div>
-            {/* Baris 10: Nama Rekening */}
-            <div style={{ display: "flex" }}>
-                <p style={{ margin: 0, width: "150px" }}><strong>Nama Rekening</strong></p>
-                <p style={{ margin: 0 }}>: {selectedPegawai.nama_rekening}</p>
-            </div>
-        </div>
-        ) : (
-            <p style={{ textAlign: "center", paddingBottom: "1rem" }}>Data Pegawai Belum Dipilih</p>
-        )}
+
+{/* Detail Pegawai yang Dipilih */}
+<div className={pageStyles.detailContainer}>
+  <div className={pageStyles.detailHeader}>Detail Data Pegawai</div>
+  {selectedPegawai ? (
+    <div className={pageStyles.detailContent}>
+      <div className={pageStyles.detailItem}>
+        <div className={pageStyles.detailLabel}>Nama</div>
+        <div className={pageStyles.detailValue}>: {selectedPegawai.nama}</div>
       </div>
-    </>
+      <div className={pageStyles.detailItem}>
+        <div className={pageStyles.detailLabel}>Pekerjaan</div>
+        <div className={pageStyles.detailValue}>: {selectedPegawai.pekerjaan}</div>
+      </div>
+      <div className={pageStyles.detailItem}>
+        <div className={pageStyles.detailLabel}>Tipe Identitas</div>
+        <div className={pageStyles.detailValue}>: {selectedPegawai.tipe_identitas}</div>
+      </div>
+      <div className={pageStyles.detailItem}>
+        <div className={pageStyles.detailLabel}>NRP / NIP / NIR</div>
+        <div className={pageStyles.detailValue}>: {selectedPegawai.nrp_nip_nir}</div>
+      </div>
+      <div className={pageStyles.detailItem}>
+        <div className={pageStyles.detailLabel}>Klasifikasi</div>
+        <div className={pageStyles.detailValue}>: {selectedPegawai.klasifikasi}</div>
+      </div>
+      <div className={pageStyles.detailItem}>
+        <div className={pageStyles.detailLabel}>Pangkat</div>
+        <div className={pageStyles.detailValue}>: {selectedPegawai.pangkat}</div>
+      </div>
+      <div className={pageStyles.detailItem}>
+        <div className={pageStyles.detailLabel}>Golongan</div>
+        <div className={pageStyles.detailValue}>: {selectedPegawai.golongan}</div>
+      </div>
+      <div className={pageStyles.detailItem}>
+        <div className={pageStyles.detailLabel}>Jabatan Struktural</div>
+        <div className={pageStyles.detailValue}>: {selectedPegawai.jabatan_struktural}</div>
+      </div>
+      <div className={pageStyles.detailItem}>
+        <div className={pageStyles.detailLabel}>Status</div>
+        <div className={pageStyles.detailValue}>: {selectedPegawai.status}</div>
+      </div>
+      <div className={pageStyles.detailItem}>
+        <div className={pageStyles.detailLabel}>Bank</div>
+        <div className={pageStyles.detailValue}>: {selectedPegawai.bank}</div>
+      </div>
+      <div className={pageStyles.detailItem}>
+        <div className={pageStyles.detailLabel}>No. Rekening</div>
+        <div className={pageStyles.detailValue}>: {selectedPegawai.no_rekening}</div>
+      </div>
+      <div className={pageStyles.detailItem}>
+        <div className={pageStyles.detailLabel}>Nama Rekening</div>
+        <div className={pageStyles.detailValue}>: {selectedPegawai.nama_rekening}</div>
+      </div>
+    </div>
+  ) : (
+    <div className={pageStyles.tableEmpty}>Data Pegawai Belum Dipilih</div>
+  )}
+</div>
+    </div>
   );
 }

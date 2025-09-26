@@ -2,37 +2,21 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import Swal from "sweetalert2";
-import { FaPlus, FaEdit, FaTrashAlt, FaAngleLeft, FaAngleRight, FaAngleDoubleLeft, FaAngleDoubleRight, FaRegTrashAlt } from "react-icons/fa"; // Menggunakan ikon dari Fa untuk konsistensi
-import { FiChevronLeft, FiChevronRight, FiSkipBack, FiSkipForward } from "react-icons/fi";
+import { FaPlus, FaEdit, FaRegTrashAlt } from "react-icons/fa";
+
+// ✅ Impor file CSS Modules
+import styles from "../styles/button.module.css";
+import pageStyles from "../styles/komponen.module.css";
 
 // Komponen Modal Pop-up
 const Modal = ({ children, onClose }) => {
   return (
     <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        width: "100%",
-        height: "100%",
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        zIndex: 1000,
-      }}
+      className={pageStyles.modalOverlay}
       onClick={onClose}
     >
       <div
-        style={{
-          backgroundColor: "white",
-          padding: "2rem",
-          borderRadius: "8px",
-          position: "relative",
-          maxWidth: "700px",
-          maxHeight: "90vh",
-          overflowY: "auto",
-        }}
+        className={pageStyles.modalContent}
         onClick={(e) => e.stopPropagation()}
       >
         {children}
@@ -62,11 +46,10 @@ const PejabatKeuangan = () => {
   const [formData, setFormData] = useState({
     nama: "",
     pangkat: "",
-    nrp_nip: "", 
+    nrp_nip: "",
     jabatan_struktural: "",
     jabatan_pengelola_keuangan: "",
     deskripsi_jabatan: "",
-    // BARU: Tambah kolom status
     status: "",
   });
 
@@ -103,13 +86,13 @@ const PejabatKeuangan = () => {
   const handlePegawaiChange = (e) => {
     const selectedName = e.target.value;
     const selectedPegawai = pegawaiList.find(p => p.nama === selectedName);
-    
+
     if (selectedPegawai) {
       setFormData({
         ...formData,
         nama: selectedName,
         pangkat: selectedPegawai.pangkat,
-        nrp_nip: selectedPegawai.nrp_nip_nir, 
+        nrp_nip: selectedPegawai.nrp_nip_nir,
         jabatan_struktural: selectedPegawai.jabatan_struktural,
       });
     } else {
@@ -132,16 +115,16 @@ const PejabatKeuangan = () => {
       deskripsi_jabatan: deskripsi,
     });
   };
-  
+
   const handleSave = async (e) => {
     e.preventDefault();
-  
+
     if (isEditing) {
       const { error } = await supabase
         .from("pejabat_keuangan")
         .update(formData)
         .eq("id", selectedPejabat.id);
-  
+
       if (error) {
         Swal.fire("Gagal!", `Data gagal diupdate: ${error.message}`, "error");
         console.error("Error updating data:", error);
@@ -152,7 +135,7 @@ const PejabatKeuangan = () => {
       }
     } else {
       const { error } = await supabase.from("pejabat_keuangan").insert([formData]);
-  
+
       if (error) {
         Swal.fire("Gagal!", `Data gagal disimpan: ${error.message}`, "error");
         console.error("Error inserting data:", error);
@@ -163,10 +146,10 @@ const PejabatKeuangan = () => {
       }
     }
   };
-  
+
   const handleDelete = async () => {
     if (!selectedPejabat) return;
-    
+
     const result = await Swal.fire({
       title: "Apakah Anda yakin?",
       text: `Anda akan menghapus data pejabat ${selectedPejabat.nama}`,
@@ -208,11 +191,10 @@ const PejabatKeuangan = () => {
     setFormData({
       nama: "",
       pangkat: "",
-      nrp_nip: "", 
+      nrp_nip: "",
       jabatan_struktural: "",
       jabatan_pengelola_keuangan: "",
       deskripsi_jabatan: "",
-      // BARU: Reset status
       status: "",
     });
     setShowModal(false);
@@ -227,294 +209,221 @@ const PejabatKeuangan = () => {
   };
 
   return (
-    <div style={{ padding: "0rem 0rem", backgroundColor: "#F3F4F6" }}>
-        <h2>Data Pejabat Keuangan</h2>
+    <div className={pageStyles.container}>
+      <h2 className={pageStyles.header}>Data Pejabat Keuangan</h2>
 
-        <div style={{ marginBottom: "1rem", display: "flex", gap: "5px", alignItems: "center" }}>
-            <button
-            onClick={() => {
-                resetForm();
-                setShowModal(true);
-            }}
-            style={{
-            background: "#16a34a", color: "white",padding: "6px 10px", border: "none",
-            borderRadius: "6px", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}
-            >
-            <FaPlus /> Tambah Pejabat
-            </button>
-            <button
-            onClick={handleEdit}
-            disabled={!selectedPejabat}
-            style={{
-            background: "#f59e0b", color: "white",padding: "6px 10px", border: "none",
-            borderRadius: "6px", display: "flex", alignItems: "center", gap: "5px",
-            cursor: selectedPejabat ? "pointer" : "not-allowed", opacity: selectedPejabat ? 1 : 0.5
+      <div className={pageStyles.buttonContainer}>
+        <button
+          onClick={() => {
+            resetForm();
+            setShowModal(true);
           }}
-            >
-            <FaEdit /> Edit
-            </button>
-            <button
-            onClick={handleDelete}
-            disabled={!selectedPejabat}
-            style={{ background: "#dc2626", color: "white",padding: "6px 10px", border: "none",
-            borderRadius: "6px", display: "flex", alignItems: "center", gap: "5px",
-            cursor: selectedPejabat ? "pointer" : "not-allowed", opacity: selectedPejabat ? 1 : 0.5
-           }}
-            >
-            <FaRegTrashAlt /> Hapus
-            </button>
-        </div>
-        
-        {showModal && (
-            <Modal onClose={resetForm}>
-            <form onSubmit={handleSave}>
-                <h3 style={{ marginTop: 0 }}>{isEditing ? "Edit Data Pejabat" : "Tambah Pejabat Baru"}</h3>
-                
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", rowGap: "1rem", marginBottom: "1rem" }}>
-                <div>
-                    <label>Nama:</label>
-                    <select
-                    name="nama"
-                    value={formData.nama}
-                    onChange={handlePegawaiChange}
-                    required
-                    style={{ 
-                        width: "100%", 
-                        padding: "8px", 
-                        border: "1px solid #ccc", 
-                        borderRadius: "4px",
-                        backgroundColor: formData.nama ? "white" : "#f0f0f0"
-                    }}
-                    >
-                        <option value="">-- Pilih Nama Pegawai --</option>
-                        {pegawaiList.map((pegawai, index) => (
-                            <option key={index} value={pegawai.nama}>{pegawai.nama}</option>
-                        ))}
-                    </select>
-                </div>
-                <div>
-                    <label>Pangkat:</label>
-                    <input
-                    type="text"
-                    name="pangkat"
-                    value={formData.pangkat}
-                    readOnly
-                    style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px", backgroundColor: "#f0f0f0" }}
-                    />
-                </div>
-                <div>
-                    <label>NRP/NIP:</label>
-                    <input
-                    type="text"
-                    name="nrp_nip"
-                    value={formData.nrp_nip}
-                    readOnly
-                    style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px", backgroundColor: "#f0f0f0" }}
-                    />
-                </div>
-                <div>
-                    <label>Jabatan Struktural:</label>
-                    <input
-                    type="text"
-                    name="jabatan_struktural"
-                    value={formData.jabatan_struktural}
-                    readOnly
-                    style={{ 
-                        width: "100%", 
-                        padding: "8px", 
-                        border: "1px solid #ccc", 
-                        borderRadius: "4px",
-                        backgroundColor: "#f0f0f0"
-                    }}
-                    />
-                </div>
-                <div style={{ display: "flex", flexDirection: "column" }}>
-                    <label>Jabatan Pengelola Keuangan:</label>
-                    <select
-                    name="jabatan_pengelola_keuangan"
-                    value={formData.jabatan_pengelola_keuangan}
-                    onChange={handleJabatanChange}
-                    required
-                    style={{ 
-                        width: "100%", 
-                        padding: "8px", 
-                        border: "1px solid #ccc", 
-                        borderRadius: "4px",
-                        backgroundColor: formData.jabatan_pengelola_keuangan ? "white" : "#f0f0f0"
-                    }}
-                    >
-                        <option value="">-- Pilih Jabatan --</option>
-                        {Object.keys(jabatanMap).map((key) => (
-                            <option key={key} value={key}>{key}</option>
-                        ))}
-                    </select>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column" }}>
-                    <label>Deskripsi Jabatan:</label>
-                    <input
-                    type="text"
-                    name="deskripsi_jabatan"
-                    value={formData.deskripsi_jabatan}
-                    readOnly
-                    style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px", backgroundColor: "#f0f0f0" }}
-                    />
-                </div>
+          className={styles.rekamButton}
+        >
+          <FaPlus /> Rekam
+        </button>
+        <button
+          onClick={handleEdit}
+          disabled={!selectedPejabat}
+          className={styles.editButton} // ✅ Cukup gunakan satu kelas
+        >
+          <FaEdit /> Edit
+        </button>
+        <button
+          onClick={handleDelete}
+          disabled={!selectedPejabat}
+          className={styles.hapusButton} // ✅ Cukup gunakan satu kelas
+        >
+          <FaRegTrashAlt /> Hapus
+        </button>
+      </div>
 
-                {/* BARU: Kolom Status */}
-                <div>
-                  <label>Status:</label>
-                  <select
-                    name="status"
-                    value={formData.status}
-                    onChange={handleInputChange}
-                    required
-                    style={{
-                      width: "100%",
-                      padding: "8px",
-                      border: "1px solid #ccc",
-                      borderRadius: "4px",
-                      backgroundColor: formData.status === "" ? "#f0f0f0" : "white",
-                    }}
-                  >
-                    <option value="">-- Pilih Status --</option>
-                    <option>Aktif</option>
-                    <option>Tidak Aktif</option>
-                  </select>
-                </div>
+      {showModal && (
+        <Modal onClose={resetForm}>
+          <form onSubmit={handleSave}>
+            <h3 style={{ marginTop: 0 }}>{isEditing ? "Edit Data Pejabat" : "Tambah Pejabat Baru"}</h3>
 
-                </div>
-                
-                <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
-                <button
-                    type="button"
-                    onClick={resetForm}
-                    style={{ padding: "10px 20px", border: "1px solid #ccc", borderRadius: "6px", cursor: "pointer" }}
+            <div className={pageStyles.modalForm}>
+              <div className={pageStyles.formGroup}>
+                <label className={pageStyles.formLabel}>Nama:</label>
+                <select
+                  name="nama"
+                  value={formData.nama}
+                  onChange={handlePegawaiChange}
+                  required
+                  className={pageStyles.formSelect}
                 >
-                    Batal
-                </button>
-                <button
-                    type="submit"
-                    style={{ background: "#16a34a", color: "white", padding: "10px 20px", border: "none", borderRadius: "6px", cursor: "pointer" }}
+                  <option value="">-- Pilih Nama Pegawai --</option>
+                  {pegawaiList.map((pegawai, index) => (
+                    <option key={index} value={pegawai.nama}>
+                      {pegawai.nama}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className={pageStyles.formGroup}>
+                <label className={pageStyles.formLabel}>Pangkat:</label>
+                <input
+                  type="text"
+                  name="pangkat"
+                  value={formData.pangkat}
+                  readOnly
+                  className={`${pageStyles.formInput} ${pageStyles.readOnly}`}
+                />
+              </div>
+              <div className={pageStyles.formGroup}>
+                <label className={pageStyles.formLabel}>NRP/NIP:</label>
+                <input
+                  type="text"
+                  name="nrp_nip"
+                  value={formData.nrp_nip}
+                  readOnly
+                  className={`${pageStyles.formInput} ${pageStyles.readOnly}`}
+                />
+              </div>
+              <div className={pageStyles.formGroup}>
+                <label className={pageStyles.formLabel}>Jabatan Struktural:</label>
+                <input
+                  type="text"
+                  name="jabatan_struktural"
+                  value={formData.jabatan_struktural}
+                  readOnly
+                  className={`${pageStyles.formInput} ${pageStyles.readOnly}`}
+                />
+              </div>
+              <div className={pageStyles.formGroup}>
+                <label className={pageStyles.formLabel}>Jabatan Pengelola Keuangan:</label>
+                <select
+                  name="jabatan_pengelola_keuangan"
+                  value={formData.jabatan_pengelola_keuangan}
+                  onChange={handleJabatanChange}
+                  required
+                  className={pageStyles.formSelect}
                 >
-                    {isEditing ? "Update" : "Simpan"}
-                </button>
-                </div>
-            </form>
-            </Modal>
-        )}
-
-        {/* Tabel Data Pejabat Keuangan */}
-        <div style={{ overflowX: "auto" }}>
-            <table 
-            border="1" 
-            cellPadding="4" 
-            style={{ 
-                borderCollapse: "collapse", 
-                width: "100%", 
-                marginTop: "0px", 
-                fontSize: "12px",
-                tableLayout: "fixed"
-            }}
-            >
-            <thead>
-                <tr style={{ background: "#f3f4f6" }}>
-                <th style={{ width: "40px", padding: "8px", textAlign: "center" }}>No.</th>
-                <th style={{ width: "30%", padding: "8px", textAlign: "left" }}>Nama</th>
-                <th style={{ width: "20%", padding: "8px", textAlign: "left" }}>Pangkat</th>
-                <th style={{ width: "30%", padding: "8px", textAlign: "left" }}>NRP/NIP</th>
-                <th style={{ width: "20%", padding: "8px", textAlign: "left" }}>Jabatan Pengelola Keuangan</th>
-                {/* BARU: Kolom status di tabel */}
-                <th style={{ width: "15%", padding: "8px", textAlign: "left" }}>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                {pejabatList.length > 0 ? (
-                pejabatList.map((pejabat, index) => (
-                    <tr
-                    key={pejabat.id}
-                    onClick={() => handleRowClick(pejabat)}
-                    style={{ cursor: "pointer", backgroundColor: selectedPejabat?.id === pejabat.id ? "#e0e7ff" : "white" }}
-                    >
-                    <td style={{ width: "50px", padding: "8px", textAlign: "center" }}>{index + 1}</td>
-                    <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{pejabat.nama}</td>
-                    <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{pejabat.pangkat}</td>
-                    <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{pejabat.nrp_nip}</td>
-                    <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{pejabat.jabatan_pengelola_keuangan}</td>
-                    {/* BARU: Menampilkan status di tabel */}
-                    <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{pejabat.status}</td>
-                    </tr>
-                ))
-                ) : (
-                <tr>
-                    <td colSpan="7" style={{ textAlign: "center", padding: "1rem" }}>
-                    Tidak ada data pejabat yang ditemukan.
-                    </td>
-                </tr>
-                )}
-            </tbody>
-            </table>
-        </div>
-        
-        {/* Detail Data Pejabat yang Dipilih */}
-        <div style={{ 
-            marginTop: "2rem", 
-            border: "1px solid #ccc", 
-            paddingTop: "0rem",
-            paddingBottom: "1rem", 
-            paddingLeft: "0rem", 
-            paddingRight: "0rem",  
-            borderRadius: "0px 8PX" }}>
-            <h3 
-                style={{ 
-                    marginTop: 0,
-                    padding: "0.5rem 1rem ",
-                    backgroundColor: "#e5e7eaff",
-                    borderRadius: "0px",
-                    marginBottom: "1rem"
-                }}>
-                Detail Data Pejabat Keuangan
-            </h3>
-            {selectedPejabat ? (
-            <div style={{ 
-                display: "grid", 
-                gridTemplateColumns: "1fr 1fr", 
-                gap: "1rem",
-                fontSize: "12px"
-            }}>
-                <div style={{ display: "flex" }}>
-                    <p style={{ margin: 0, width: "180px", paddingLeft: "1rem" }}><strong>Nama</strong></p>
-                    <p style={{ margin: 0 }}>: {selectedPejabat.nama}</p>
-                </div>
-                <div style={{ display: "flex" }}>
-                    <p style={{ margin: 0, width: "180px", paddingLeft: "1rem" }}><strong>Pangkat</strong></p>
-                    <p style={{ margin: 0 }}>: {selectedPejabat.pangkat}</p>
-                </div>
-                <div style={{ display: "flex" }}>
-                    <p style={{ margin: 0, width: "180px", paddingLeft: "1rem" }}><strong>NRP/NIP</strong></p>
-                    <p style={{ margin: 0 }}>: {selectedPejabat.nrp_nip}</p> 
-                </div>
-                <div style={{ display: "flex" }}>
-                    <p style={{ margin: 0, width: "180px", paddingLeft: "1rem" }}><strong>Jabatan Struktural</strong></p>
-                    <p style={{ margin: 0 }}>: {selectedPejabat.jabatan_struktural}</p>
-                </div>
-                <div style={{ display: "flex" }}>
-                    <p style={{ margin: 0, width: "180px", paddingLeft: "1rem" }}><strong>Jabatan Pengelola Keuangan</strong></p>
-                    <p style={{ margin: 0 }}>: {selectedPejabat.jabatan_pengelola_keuangan}</p>
-                </div>
-                <div style={{ display: "flex" }}>
-                    <p style={{ margin: 0, width: "180px", paddingLeft: "1rem" }}><strong>Deskripsi Jabatan</strong></p>
-                    <p style={{ margin: 0 }}>: {jabatanMap[selectedPejabat.jabatan_pengelola_keuangan] || ""}</p>
-                </div>
-                {/* BARU: Baris untuk Status */}
-                <div style={{ display: "flex" }}>
-                    <p style={{ margin: 0, width: "180px", paddingLeft: "1rem" }}><strong>Status</strong></p>
-                    <p style={{ margin: 0 }}>: {selectedPejabat.status}</p>
-                </div>
+                  <option value="">-- Pilih Jabatan --</option>
+                  {Object.keys(jabatanMap).map((key) => (
+                    <option key={key} value={key}>
+                      {key}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className={pageStyles.formGroup}>
+                <label className={pageStyles.formLabel}>Deskripsi Jabatan:</label>
+                <input
+                  type="text"
+                  name="deskripsi_jabatan"
+                  value={formData.deskripsi_jabatan}
+                  readOnly
+                  className={`${pageStyles.formInput} ${pageStyles.readOnly}`}
+                />
+              </div>
+              <div className={pageStyles.formGroup}>
+                <label className={pageStyles.formLabel}>Status:</label>
+                <select
+                  name="status"
+                  value={formData.status}
+                  onChange={handleInputChange}
+                  required
+                  className={pageStyles.formSelect}
+                >
+                  <option value="">-- Pilih Status --</option>
+                  <option>Aktif</option>
+                  <option>Tidak Aktif</option>
+                </select>
+              </div>
             </div>
+
+            <div className={pageStyles.formActions}>
+              <button type="button" onClick={resetForm} className={pageStyles.formCancel}>
+                Batal
+              </button>
+              <button type="submit" className={styles.rekamButton}>
+                {isEditing ? "Update" : "Simpan"}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* Tabel Data Pejabat Keuangan */}
+      <div className={pageStyles.tableContainer}>
+        <table className={pageStyles.table}>
+          <thead className={pageStyles.tableHead}>
+            <tr>
+              <th>No.</th>
+              <th>Nama</th>
+              <th>Pangkat</th>
+              <th>NRP/NIP</th>
+              <th>Jabatan Pengelola Keuangan</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody className={pageStyles.tableBody}>
+            {pejabatList.length > 0 ? (
+              pejabatList.map((pejabat, index) => (
+                <tr
+                  key={pejabat.id}
+                  onClick={() => handleRowClick(pejabat)}
+                  className={`${pageStyles.tableRow} ${selectedPejabat?.id === pejabat.id ? pageStyles.selected : ""}`}
+                >
+                  <td>{index + 1}</td>
+                  <td>{pejabat.nama}</td>
+                  <td>{pejabat.pangkat}</td>
+                  <td>{pejabat.nrp_nip}</td>
+                  <td>{pejabat.jabatan_pengelola_keuangan}</td>
+                  <td>{pejabat.status}</td>
+                </tr>
+              ))
             ) : (
-                <p style={{ textAlign: "center", paddingBottom: "1rem" }}>Data Pejabat Keuangan Belum Dipilih</p>
+              <tr>
+                <td colSpan="6" className={pageStyles.tableEmpty}>
+                  Tidak ada data pejabat yang ditemukan.
+                </td>
+              </tr>
             )}
-        </div>
+          </tbody>
+        </table>
+      </div>
+
+      {/* Detail Data Pejabat yang Dipilih */}
+<div className={pageStyles.detailContainer}>
+  <div className={pageStyles.detailHeader}>Detail Data Pejabat Keuangan</div>
+  {selectedPejabat ? (
+    <div className={pageStyles.detailContent}>
+      <div className={pageStyles.detailItem}>
+        <div className={pageStyles.detailLabel}>Nama</div>
+        <div className={pageStyles.detailValue}>: {selectedPejabat.nama}</div>
+      </div>
+      <div className={pageStyles.detailItem}>
+        <div className={pageStyles.detailLabel}>Pangkat</div>
+        <div className={pageStyles.detailValue}>: {selectedPejabat.pangkat}</div>
+      </div>
+      <div className={pageStyles.detailItem}>
+        <div className={pageStyles.detailLabel}>NRP/NIP</div>
+        <div className={pageStyles.detailValue}>: {selectedPejabat.nrp_nip}</div>
+      </div>
+      <div className={pageStyles.detailItem}>
+        <div className={pageStyles.detailLabel}>Jabatan Struktural</div>
+        <div className={pageStyles.detailValue}>: {selectedPejabat.jabatan_struktural}</div>
+      </div>
+      <div className={pageStyles.detailItem}>
+        <div className={pageStyles.detailLabel}>Jabatan Pengelola Keuangan</div>
+        <div className={pageStyles.detailValue}>: {selectedPejabat.jabatan_pengelola_keuangan}</div>
+      </div>
+      <div className={pageStyles.detailItem}>
+        <div className={pageStyles.detailLabel}>Deskripsi Jabatan</div>
+        <div className={pageStyles.detailValue}>: {jabatanMap[selectedPejabat.jabatan_pengelola_keuangan] || ""}</div>
+      </div>
+      <div className={pageStyles.detailItem}>
+        <div className={pageStyles.detailLabel}>Status</div>
+        <div className={pageStyles.detailValue}>: {selectedPejabat.status}</div>
+      </div>
+    </div>
+  ) : (
+    <div className={pageStyles.tableEmpty}>Data Pejabat Keuangan Belum Dipilih</div>
+  )}
+</div>
     </div>
   );
 };

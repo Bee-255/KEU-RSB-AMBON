@@ -221,7 +221,7 @@ export default function Layout({ children, fullName }) {
           style={{
             backgroundColor: "#2563eb",
             color: "white",
-            padding: "1rem 2rem",
+            padding: "0.5rem 1.5rem",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
@@ -414,10 +414,10 @@ export default function Layout({ children, fullName }) {
       <main 
         style={{ 
           flex: 1, 
-          padding: "1rem 2rem", 
+          padding: "3rem 1rem 0rem 2rem", 
           backgroundColor: "#F3F4F6",
           overflowY: "auto",
-          marginLeft: isSidebarVisible ? "200px" : "0",
+          marginLeft: isSidebarVisible ? "180px" : "0",
           paddingTop: "64px", 
           transition: "margin-left 0.3s cubic-bezier(.4,0,.2,1)",
           zIndex: 3,

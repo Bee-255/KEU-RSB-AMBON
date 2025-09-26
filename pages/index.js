@@ -27,7 +27,7 @@ const responsiveStyles = `
     display: flex;
     justify-content: center;
     align-items: center;
-    background: #FDFDFD;
+    background-color: #FCFCFC;
   }
 
   .right-panel {
@@ -42,8 +42,8 @@ const responsiveStyles = `
   }
 
   .image-container {
-    width: 90%;
-    height: 90%;
+    width: 70%;
+    height: 100%;
     overflow: hidden;
   }
   
