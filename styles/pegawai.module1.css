@@ -1,0 +1,234 @@
+/* styles/pegawai.module.css */
+/* BAGIAN HEADER */
+.container {
+  padding: 1rem;
+  background-color: #f8fafc;
+  min-height: 90vh;
+}
+
+.header {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 0.5rem;
+}
+
+/* BAGIAN TOMBOL  AKSI */
+.buttonContainer {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-wrap: wrap; /* Agar elemen tetap responsif */
+  gap: 5px;
+  align-items: center;
+}
+
+/* STYLE PENCARIAN */
+.searchContainer {
+  position: relative;
+  max-width: 300px;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 6px;
+  padding-right: 10px; /* Ruang untuk tombol clear */
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  background-color: white;
+}
+
+
+.searchClearButton {
+  position: absolute;
+  right: 0px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #6b7280;
+  padding: 0px;
+}
+
+/* BAGIAN FILTER */
+.filterSelect {
+    padding: 6px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    cursor: pointer;
+    background-color: white;
+    font-size: 0.8rem;
+    color: #475569;
+}
+
+
+/* TABEL DATA */
+.tableContainer {
+  overflow-x: auto;
+  background-color: white;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  margin-top: 1rem;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tableHead th {
+  background-color: #f1f5f9;
+  color: #475569;
+  font-weight: 600;
+  text-align: left;
+  padding: 8px 14px;
+  border-bottom: 2px solid #e2e8f0;
+  font-size: 0.8rem;
+}
+
+.tableBody td {
+  padding: 6px 14px;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.8rem;
+}
+
+.tableRow {
+  cursor: pointer;
+}
+
+.tableRow:hover {
+  background-color: #f8fafc;
+}
+
+.tableRow.selected {
+  background-color: #e0f2fe;
+}
+
+.tableEmpty {
+  text-align: center;
+  padding: 1rem;
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+/* --- Gaya Detail Data --- */
+.detailContainer {
+  margin-top: 1rem;
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.detailHeader {
+  font-size: 1rem;
+  font-weight: 600;
+  background-color: #f8fafc;
+  color: #1e293b;
+  padding: 0.5rem 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.detailContent {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  padding: 1.5rem;
+  font-size: 0.875rem;
+}
+
+.detailItem {
+  /* Ubah flex-direction menjadi row agar label dan value sejajar */
+  display: flex;
+  gap: 0.5rem; /* Tambahkan sedikit jarak antar label dan value */
+}
+
+.detailLabel {
+  font-weight: 600;
+  color: #64748b;
+  /* Hapus margin-bottom */
+  margin-bottom: 0;
+  width: 180px; /* Atur lebar agar rapi */
+  flex-shrink: 0;
+}
+
+.detailValue {
+  color: #334155;
+  font-weight: 500;
+  flex-grow: 1; /* Biarkan nilai mengisi sisa ruang */
+}
+
+/* --- Gaya Form di Modal --- */
+.modalForm {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  margin-left: 0.5rem;
+}
+
+.formLabel {
+  font-weight: 500;
+  color: #334155;
+  margin-bottom: 0.25rem;
+  font-size: 0.8rem;
+}
+
+.formInput,
+.formSelect {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background-color: white;
+  transition: border-color 0.2s;
+  font-size: 0.8rem;
+}
+
+.formInput:focus,
+.formSelect:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+.readOnly {
+  background-color: #f8fafc;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 1rem;
+}
+
+.formCancel {
+  background: transparent;
+  border: 1px solid #94a3b8;
+  color: #475569;
+  padding: 8px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.formCancel:hover {
+  background-color: #f9f4f1;
+}

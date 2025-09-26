@@ -8,8 +8,7 @@ import jsPDF from "jspdf";
 import { applyPlugin } from "jspdf-autotable";
 import { FaPlus, FaEdit, FaUserPlus, FaTrashAlt, FaAngleLeft, FaAngleRight, FaAngleDoubleLeft, FaAngleDoubleRight, FaRegTrashAlt, FaDownload } from "react-icons/fa";
 import { FiChevronLeft, FiChevronRight, FiSkipBack, FiSkipForward } from "react-icons/fi";
-import PaginasiKeu from '../components/paginasi'; // Import komponen PaginasiKeu
-// ✅ Impor file CSS Modules
+import PaginasiKeu from '../components/paginasi';
 import styles from "../styles/button.module.css";
 import pageStyles from "../styles/komponen.module.css";
 
@@ -61,25 +60,7 @@ const unitLayananOptions = [
 ];
 
 const unitToJenisRawat = {
-  "IGD": "Rawat Jalan", "POLI UMUM": "Rawat Jalan", "POLI JIWA": "Rawat Jalan",
-  "POLI GIGI": "Rawat Jalan", "POLI PENYAKIT DALAM": "Rawat Jalan",
-  "POLI BEDAH GIGI DAN MULUT": "Rawat Jalan", "POLI ORTHOPEDI": "Rawat Jalan",
-  "POLI KEBIDANAN/OBGYN": "Rawat Jalan", "POLI EKG": "Rawat Jalan",
-  "POLI MATA": "Rawat Jalan", "POLI PARU": "Rawat Jalan", "POLI THT": "Rawat Jalan",
-  "POLI JANTUNG": "Rawat Jalan", "POLI ANAK": "Rawat Jalan", "POLI SARAF": "Rawat Jalan",
-  "POLI KULIT DAN KELAMIN": "Rawat Jalan", "POLI BEDAH": "Rawat Jalan",
-  "VVIP": "Rawat Inap", "VIP": "Rawat Inap", "ANGGREK KELAS 1": "Rawat Inap",
-  "ANGGREK KELAS 2": "Rawat Inap", "MELATI KELAS 1": "Rawat Inap",
-  "MELATI KELAS 2": "Rawat Inap", "MELATI KELAS 3": "Rawat Inap",
-  "MUTIARA KELAS 1": "Rawat Inap", "MUTIARA KELAS 2": "Rawat Inap",
-  "MUTIARA KELAS 3": "Rawat Inap", "RUANGAN RAWAT ICU": "Rawat Inap",
-  "RUANGAN KEBIDANAN": "Rawat Inap", "RADIOLOGI": "Penunjang",
-  "LABORATORIUM": "Penunjang", "FISIOTERAPI": "Penunjang", "GIZI": "Penunjang",
-  "DOKPOL": "Penunjang", "AMBULANCE": "Penunjang", "APOTIK": "Penunjang",
-  "DIKLIT": "Penunjang", "ADMINISTRASI": "Penunjang",
-  "MCU NARKOBA DAN SKBS": "Penunjang", "PATOLOGI KLINIK": "Penunjang",
-  "RUANGAN OPERASI": "Penunjang", "MCU": "Penunjang"
-};
+  "IGD": "RAWAT JALAN", "POLI UMUM": "RAWAT JALAN", "POLI JIWA": "RAWAT JALAN","POLI GIGI": "RAWAT JALAN", "POLI PENYAKIT DALAM": "RAWAT JALAN","POLI BEDAH GIGI DAN MULUT": "RAWAT JALAN", "POLI ORTHOPEDI": "RAWAT JALAN","POLI KEBIDANAN/OBGYN": "RAWAT JALAN", "POLI EKG": "RAWAT JALAN","POLI MATA": "RAWAT JALAN", "POLI PARU": "RAWAT JALAN", "POLI THT": "RAWAT JALAN","POLI JANTUNG": "RAWAT JALAN", "POLI ANAK": "RAWAT JALAN", "POLI SARAF": "RAWAT JALAN","POLI KULIT DAN KELAMIN": "RAWAT JALAN", "POLI BEDAH": "RAWAT JALAN","VVIP": "RAWAT INAP", "VIP": "RAWAT INAP", "ANGGREK KELAS 1": "RAWAT INAP","ANGGREK KELAS 2": "RAWAT INAP", "MELATI KELAS 1": "RAWAT INAP","MELATI KELAS 2": "RAWAT INAP", "MELATI KELAS 3": "RAWAT INAP","MUTIARA KELAS 1": "RAWAT INAP", "MUTIARA KELAS 2": "RAWAT INAP","MUTIARA KELAS 3": "RAWAT INAP", "RUANGAN RAWAT ICU": "RAWAT INAP","RUANGAN KEBIDANAN": "RAWAT INAP", "RADIOLOGI": "PENUNJANG","LABORATORIUM": "PENUNJANG", "FISIOTERAPI": "PENUNJANG", "GIZI": "PENUNJANG","DOKPOL": "PENUNJANG", "AMBULANCE": "PENUNJANG", "APOTIK": "PENUNJANG","DIKLIT": "PENUNJANG", "ADMINISTRASI": "PENUNJANG","MCU NARKOBA DAN SKBS": "PENUNJANG", "PATOLOGI KLINIK": "PENUNJANG","RUANGAN OPERASI": "PENUNJANG", "MCU": "PENUNJANG"};
 
 const klasifikasiOptions = ["UMUM", "SELISIH"];
 
@@ -104,7 +85,7 @@ export default function PencatatanPasien() {
   const [selectedPasien, setSelectedPasien] = useState(null);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-
+  const [userRole, setUserRole] = useState(null); // Tambahkan state baru untuk peran pengguna
   const [selectedRekapIds, setSelectedRekapIds] = useState([]);
 
   const [pasienData, setPasienData] = useState({
@@ -127,6 +108,7 @@ export default function PencatatanPasien() {
   const [pasienPerPage, setPasienPerPage] = useState(10);
   const pasienStartIndex = (pasienPage - 1) * pasienPerPage;
   const pasienEndIndex = pasienStartIndex + pasienPerPage;
+  // 🔥🔥🔥 KODE YANG DIPERBAIKI 🔥🔥🔥
   const paginatedPasien = pasienList.slice(pasienStartIndex, pasienEndIndex);
   const totalPasienPages = Math.ceil(pasienList.length / pasienPerPage);
 
@@ -140,11 +122,12 @@ export default function PencatatanPasien() {
         setUserId(user.id);
         const { data: profiles } = await supabase
           .from("profiles")
-          .select("nama_lengkap")
+          .select("nama_lengkap, role") // 🔥 Ambil peran pengguna di sini
           .eq("id", user.id)
           .single();
         if (profiles) {
           setUserName(profiles.nama_lengkap);
+          setUserRole(profiles.role); // 🔥 Simpan peran pengguna ke state
         }
         fetchRekapitulasi(user.id);
       } else {
@@ -176,7 +159,6 @@ export default function PencatatanPasien() {
   }, [selectedRekapIds, paginatedRekap]);
 
   const fetchRekapitulasi = async (id) => {
-    console.log("Mengambil semua rekapitulasi harian...");
     let query = supabase.from("rekaman_harian").select("*");
     if (startDate && endDate) {
       query = query.gte("tanggal", startDate).lte("tanggal", endDate);
@@ -186,7 +168,6 @@ export default function PencatatanPasien() {
       console.error("Error fetching rekapitulasi:", error.message);
       return;
     }
-    console.log("Rekapitulasi yang diterima:", data);
     setRekapitulasiList(data);
   };
 
@@ -293,7 +274,7 @@ export default function PencatatanPasien() {
 
     let rekapStatus = "KASIR"; 
     if (totalPasien > 0) {
-        const allPatientsPaid = pasienData.every(p => getStatus(p.jumlah_bersih, p.total_pembayaran) === "Lunas");
+        const allPatientsPaid = pasienData.every(p => getStatus(p.jumlah_bersih, p.total_pembayaran) === "LUNAS");
         if (allPatientsPaid) {
             rekapStatus = "LUNAS";
         } else {
@@ -636,6 +617,7 @@ export default function PencatatanPasien() {
         
       {/* Grup Kiri: Tombol Aksi */}
       <div className={pageStyles.buttonContainer}>
+        {/* Tombol Rekam: Selalu aktif karena bisa diakses semua role */}
         <button
           onClick={() => {
             setNewRekapDate("");
@@ -645,6 +627,7 @@ export default function PencatatanPasien() {
         >
           <FaPlus/>Rekam
         </button>
+        {/* Tombol Tambah Pasien: Selalu aktif karena bisa diakses semua role */}
         <button
           onClick={handleAddPasienClick}
           disabled={selectedRekapIds.length === 0}
@@ -652,16 +635,18 @@ export default function PencatatanPasien() {
         >
           <FaPlus size={14}/> Pasien
         </button>
+        {/* Tombol Hapus Rekap: Dinonaktifkan jika bukan Owner */}
         <button
           onClick={handleDeleteRekap}
-          disabled={selectedRekapIds.length === 0}
+          disabled={selectedRekapIds.length === 0 || userRole !== "Owner"}
           className={styles.hapusButton}
         >
           <FaRegTrashAlt/> Hapus
         </button>
+        {/* Tombol Download: Dinonaktifkan jika bukan Operator atau Admin */}
         <button
           onClick={handleDownloadClick}
-          disabled={selectedRekapIds.length === 0}
+          disabled={selectedRekapIds.length === 0 || !(userRole === "Operator" || userRole === "Admin")}
           className={styles.downloadButton}
         >
           <FaDownload /> Download
@@ -929,16 +914,18 @@ export default function PencatatanPasien() {
       <div className={pageStyles.detailContainer}>
        <div className={pageStyles.detailHeader}>Data Pasien</div>
         <div className={pageStyles.buttonContainer} style={{ margin: "1rem" }}>
+            {/* Tombol Edit: Dinonaktifkan jika bukan Owner atau Admin, atau tidak ada pasien yang dipilih */}
             <button
                 onClick={handleEditPasien}
-                disabled={!selectedPasienId}
+                disabled={!selectedPasienId || !(userRole === "Owner" || userRole === "Admin")}
                 className={styles.editButton}
             >
                 <FaEdit/> Edit
             </button>
+            {/* Tombol Hapus: Dinonaktifkan jika bukan Owner, atau tidak ada pasien yang dipilih */}
             <button
                 onClick={handleDeletePasien}
-                disabled={!selectedPasienId}
+                disabled={!selectedPasienId || userRole !== "Owner"}
                 className={styles.hapusButton}
             >
                 <FaRegTrashAlt /> Hapus
@@ -986,6 +973,373 @@ export default function PencatatanPasien() {
           </table>
         </div>
       </div>
-  </div>
+    </div>
+  );
+
+
+  return (
+    
+    <div className={pageStyles.container}>
+      <h2 className={pageStyles.header}>Rekapitulasi Harian</h2>
+        
+      {/* Grup Kiri: Tombol Aksi */}
+      <div className={pageStyles.buttonContainer}>
+        {/* Tombol Rekam: Selalu aktif karena bisa diakses semua role */}
+        <button
+          onClick={() => {
+            setNewRekapDate("");
+            setShowRekapModal(true);
+          }}
+          className={styles.rekamButton}
+        >
+          <FaPlus/>Rekam
+        </button>
+        {/* Tombol Tambah Pasien: Selalu aktif karena bisa diakses semua role */}
+        <button
+          onClick={handleAddPasienClick}
+          disabled={selectedRekapIds.length === 0}
+          className={styles.rekamButton}
+        >
+          <FaPlus size={14}/> Pasien
+        </button>
+        {/* Tombol Hapus Rekap: Dinonaktifkan jika bukan Owner */}
+        <button
+          onClick={handleDeleteRekap}
+          disabled={selectedRekapIds.length === 0 || userRole !== "Owner"}
+          className={styles.hapusButton}
+        >
+          <FaRegTrashAlt/> Hapus
+        </button>
+        {/* Tombol Download: Dinonaktifkan jika bukan Owner, Operator atau Admin */}
+        <button
+          onClick={handleDownloadClick}
+          disabled={selectedRekapIds.length === 0 || !(userRole === "Owner" ||userRole === "Operator" || userRole === "Admin")}
+          className={styles.downloadButton}
+        >
+          <FaDownload /> Download
+        </button>
+      </div>
+    
+
+      {/* Modal Tambah Rekapitulasi Baru */}
+      {showRekapModal && (
+        <Modal onClose={() => setShowRekapModal(false)}>
+          <form onSubmit={handleRekapFormSubmit}>
+            <h3 style={{ marginTop: "1rem" }}>Tambah Rekapitulasi Baru</h3>
+            <div>
+              <label className={pageStyles.formLabel}>Tanggal:</label>
+              <input
+                type="date"
+                value={newRekapDate}
+                onChange={(e) => setNewRekapDate(e.target.value)}
+                required
+                className={pageStyles.formInput}
+              />
+            </div>
+            <div className={pageStyles.formActions}>
+              <button type="button" onClick={() => setShowRekapModal(false)} style={{ padding: "8px 16px", border: "1px solid #ccc", borderRadius: "6px", cursor: "pointer", fontSize: "14px" }}>Batal</button>
+              <button type="submit" style={{ background: "#16a34a", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "14px" }}>Simpan</button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* Modal Rekam Pasien */}
+      {showPasienModal && (
+        <Modal onClose={resetPasienForm}>
+          <form onSubmit={handlePasienFormSubmit}>
+            <h3 style={{ marginTop: 0 }}>{editPasienId ? "Edit Data Pasien" : "Rekam Pasien Baru"} ({selectedRekapIds.length > 1 ? "Beberapa Tanggal Terpilih" : formatDate(rekapitulasiList.find(r => r.id === selectedRekapIds[0])?.tanggal)})</h3>
+              <div className={pageStyles.modalForm}>
+              <div className={pageStyles.formGroup}>
+                  <label className={pageStyles.formLabel}>Nomor RM:</label>
+                  <input 
+                    type="text" 
+                    name="nomor_rm" 
+                    value={pasienData.nomor_rm} 
+                    onChange={handlePasienFormChange} 
+                    required 
+                    className={pageStyles.formInput}
+                  />
+                  </div>
+                  <div className={pageStyles.formGroup}>
+                    <label className={pageStyles.formLabel}>Nama Pasien:</label>
+                    <input 
+                      type="text" 
+                      name="nama_pasien" 
+                      value={pasienData.nama_pasien} 
+                      onChange={handlePasienFormChange} 
+                      required 
+                      className={pageStyles.formInput} 
+                    />
+                  </div>
+                  <div className={pageStyles.formGroup}>
+                    <label className={pageStyles.formLabel}>Klasifikasi:</label>
+                    <select 
+                      name="klasifikasi"  
+                      value={pasienData.klasifikasi} 
+                      onChange={handlePasienFormChange} 
+                      required 
+                      className={pageStyles.formSelect} 
+                      style={{ backgroundColor: pasienData.klasifikasi ? "white" : "#f3f4f6" }}>
+                      <option value="">-- Pilih Klasifikasi --</option>
+                      {klasifikasiOptions.map((k) => (<option key={k} value={k}>{k}</option>))}
+                    </select>
+                  </div>
+                  <div className={pageStyles.formGroup}>
+                    <label className={pageStyles.formLabel}>Unit Layanan:</label>
+                      <select 
+                        name="unit_layanan" 
+                        value={pasienData.unit_layanan} 
+                        onChange={handlePasienFormChange} 
+                        required 
+                        className={pageStyles.formSelect} 
+                        style={{ backgroundColor: pasienData.unit_layanan ? "white" : "#f3f4f6" }}>
+                        <option value="">-- Pilih Unit Layanan --</option>
+                        {unitLayananOptions.map((unit) => (<option key={unit} value={unit}>{unit}</option>))}
+                      </select>
+                  </div>
+                  <div className={pageStyles.formGroup}>
+                    <label className={pageStyles.formLabel}>Jenis Rawat:</label>
+                    <input 
+                      type="text" 
+                      name="jenis_rawat" 
+                      value={pasienData.jenis_rawat}
+                      disabled 
+                      className={`${pageStyles.formInput} ${pageStyles.readOnly}`}
+                    />
+                  </div>
+                  <div className={pageStyles.formGroup}>
+                    <label className={pageStyles.formLabel}>Jumlah Tagihan:</label>
+                    <input 
+                      type="text"
+                      name="jumlah_tagihan"
+                      value={pasienData.jumlah_tagihan}
+                      onChange={handlePasienFormChange} 
+                      className={pageStyles.formInput} 
+                    />
+                  </div>
+                  <div className={pageStyles.formGroup}>
+                    <label className={pageStyles.formLabel}>Diskon (%):</label>
+                      <input 
+                      type="text"
+                      name="diskon"
+                      value={pasienData.diskon}
+                      onChange={handlePasienFormChange}
+                      className={pageStyles.formInput}
+                    />
+                  </div>
+                  <div className={pageStyles.formGroup}>
+                    <label className={pageStyles.formLabel}>Jumlah Bersih:</label>
+                      <input
+                        type="text"
+                        name="jumlah_bersih"
+                        value={formatRupiah(pasienData.jumlah_bersih)}
+                        readOnly
+                        disabled 
+                        className={`${pageStyles.formInput} ${pageStyles.readOnly}`}
+                      />
+                  </div>
+                  <hr className={pageStyles.pemisahForm} />
+                  <div className={pageStyles.formGroup}>
+                    <label className={pageStyles.formLabel}>Bayar Tunai:</label>
+                    <input 
+                      type="text"
+                      name="bayar_tunai"
+                      value={pasienData.bayar_tunai}
+                      onChange={handlePasienFormChange}
+                      className={pageStyles.formInput}
+                    />
+                  </div>
+                  <div className={pageStyles.formGroup}>
+                    <label className={pageStyles.formLabel}>Bayar Transfer:</label>
+                    <input 
+                      type="text"
+                      name="bayar_transfer"
+                      value={pasienData.bayar_transfer}
+                      onChange={handlePasienFormChange} 
+                      className={pageStyles.formInput}
+                    />
+                  </div>
+                  <div className={pageStyles.formGroup}>
+                    <label className={pageStyles.formLabel}>Tanggal Transfer:</label>
+                      <input 
+                        type="date" 
+                        name="tanggal_transfer" 
+                        value={pasienData.tanggal_transfer} 
+                        onChange={handlePasienFormChange} 
+                        disabled={!pasienData.bayar_transfer || formatToNumber(pasienData.bayar_transfer) === 0} 
+                        className={pageStyles.formSelect} 
+                        style={{ backgroundColor: !pasienData.bayar_transfer || formatToNumber(pasienData.bayar_transfer) === 0 ? "#e9ecef" : "white" }}
+                      />
+                  </div>
+                  <div className={pageStyles.formGroup}>
+                    <label className={pageStyles.formLabel}>Total Pembayaran:</label>
+                      <input 
+                        type="text" 
+                        name="total_pembayaran" 
+                        value={formatRupiah(pasienData.total_pembayaran)} 
+                        readOnly
+                        disabled
+                        className={`${pageStyles.formInput} ${pageStyles.readOnly}`}
+                      />
+                  </div>
+                  <div className={pageStyles.formGroup}>
+                    <label className={pageStyles.formLabel}>Status:</label>
+                      <input 
+                        type="text"
+                        name="status"
+                        value={getStatus(pasienData.jumlah_bersih, pasienData.total_pembayaran)} 
+                        readOnly
+                        disabled
+                        className={`${pageStyles.formInput} ${pageStyles.readOnly}`}
+                      />
+                  </div>
+              </div>
+
+            <div className={pageStyles.formActions}>
+                <button type="button" onClick={resetPasienForm} style={{ padding: "8px 16px", border: "1px solid #ccc", borderRadius: "6px", cursor: "pointer", fontSize: "14px" }}>Batal</button>
+                <button type="submit" style={{ background: "#16a34a", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "14px" }}>{editPasienId ? "Update" : "Simpan"}</button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* Tabel data rekap harian */}
+      <div className={pageStyles.tableContainer}>
+        <table className={pageStyles.table}>
+          <thead className={pageStyles.tableHead}>
+            <tr>
+              <th style={{ width: "5%" }}>
+                <input
+                  type="checkbox"
+                  ref={selectAllRef}
+                  checked={isAllRekapSelected}
+                  onChange={handleSelectAllRekap}
+                  style={{ transform: "scale(1.3)" }}
+                />
+              </th>
+              <th>Tanggal</th>
+              <th>Nama User</th>
+              <th style={{ textAlign: "center" }}>Total Pasien</th>
+              <th style={{ textAlign: "center" }}>Total Tagihan</th>
+              <th style={{ textAlign: "center" }}>Bayar Tunai</th>
+              <th style={{ textAlign: "center" }}>Bayar Transfer</th>
+              <th style={{ textAlign: "center" }}>Total Pembayaran</th>
+              <th style={{ textAlign: "center" }}>Status</th>
+            </tr>
+          </thead>
+          <tbody className={pageStyles.tableBody}>
+            {paginatedRekap.length > 0 ? (
+              paginatedRekap.map((rekap) => (
+                <tr
+                  key={rekap.id}
+                  onClick={() => handleRekapCheckbox(rekap.id)}
+                  className={`${pageStyles.tableRow} ${selectedRekapIds.includes(rekap.id) ? pageStyles.selected : ""}`}
+                >
+                  <td>
+                    <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedRekapIds.includes(rekap.id)}
+                        onChange={() => handleRekapCheckbox(rekap.id)}
+                        style={{ transform: "scale(1.3)" }}
+                      />
+                    </div>
+                  </td>
+                  <td>{formatDate(rekap.tanggal)}</td>
+                  <td>{rekap.nama_user}</td>
+                  <td style={{ textAlign: "center" }}>{rekap.total_pasien}</td>
+                  <td style={{ textAlign: "right" }}>{formatRupiah(rekap.total_tagihan)}</td>
+                  <td style={{ textAlign: "right" }}>{formatRupiah(rekap.total_tunai)}</td>
+                  <td style={{ textAlign: "right" }}>{formatRupiah(rekap.total_transfer)}</td>
+                  <td style={{ textAlign: "right" }}>{formatRupiah(rekap.total_pembayaran)}</td>
+                  <td style={{ textAlign: "center" }}>{rekap.status}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="9" className={pageStyles.tableEmpty}>
+                  Tidak ada data rekapitulasi yang ditemukan.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Rekap Pagination */}
+      <PaginasiKeu
+        currentPage={rekapPage}
+        totalPages={totalRekapPages}
+        totalItems={rekapitulasiList.length}
+        itemsPerPage={rekapPerPage}
+        onPageChange={handleRekapPageChange}
+        onItemsPerPageChange={handleRekapItemsPerPageChange}
+      />
+
+      {/* DETAIL Data Pasien */}
+      <div className={pageStyles.detailContainer}>
+       <div className={pageStyles.detailHeader}>Data Pasien</div>
+        <div className={pageStyles.buttonContainer} style={{ margin: "1rem" }}>
+            {/* Tombol Edit: Dinonaktifkan jika bukan Owner atau Admin, atau tidak ada pasien yang dipilih */}
+            <button
+                onClick={handleEditPasien}
+                disabled={!selectedPasienId || !(userRole === "Owner" || userRole === "Admin")}
+                className={styles.editButton}
+            >
+                <FaEdit/> Edit
+            </button>
+            {/* Tombol Hapus: Dinonaktifkan jika bukan Owner, atau tidak ada pasien yang dipilih */}
+            <button
+                onClick={handleDeletePasien}
+                disabled={!selectedPasienId || userRole !== "Owner"}
+                className={styles.hapusButton}
+            >
+                <FaRegTrashAlt /> Hapus
+            </button>
+        </div>
+      
+
+        {/* Tabel Detail Data Pasien */}
+        <div className={pageStyles.tableContainer}>
+          <table className={pageStyles.table}>
+            <thead className={pageStyles.tableHead}>
+              <tr>
+                <th style={{ width: "10%", padding: "0.5rem 1.5rem" }}>Tanggal</th>
+                <th style={{ width: "20%" }}>Nama Pasien</th>
+                <th style={{ width: "15%" }}>Nomor RM</th>
+                <th style={{ width: "20%" }}>Unit Layanan</th>
+                <th style={{ width: "15%", textAlign: "right" }}>Jumlah Bersih</th>
+                <th style={{ width: "15%", textAlign: "right" }}>Total Bayar</th>
+              </tr>
+            </thead>
+            <tbody className={pageStyles.tableBody}>
+              {paginatedPasien.length > 0 ? (
+                paginatedPasien.map((p) => (
+                  <tr
+                    key={p.id}
+                    onClick={() => handlePasienRowClick(p)}
+                    className={`${pageStyles.tableRow} ${selectedPasienId === p.id ? pageStyles.selected : ""}`}
+                  >
+                    <td>{formatDate(rekapitulasiList.find(r => r.id === p.rekaman_harian_id)?.tanggal)}</td>
+                    <td>{p.nama_pasien}</td>
+                    <td>{p.nomor_rm}</td>
+                    <td>{p.unit_layanan}</td>
+                    <td style={{ textAlign: "right" }}>{formatRupiah(p.jumlah_bersih)}</td>
+                    <td style={{ textAlign: "right" }}>{formatRupiah(p.total_pembayaran)}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="6" className={pageStyles.tableEmpty}>
+                    {selectedRekapIds.length > 0 ? "Tidak ada pasien untuk tanggal yang dipilih." : "Silakan pilih tanggal rekapitulasi di atas."}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   );
 }

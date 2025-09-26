@@ -35,24 +35,28 @@ const PaginasiKeu = ({ currentPage, totalPages, totalItems, itemsPerPage, onPage
   return (
     <div style={{ marginTop: "1rem", display: "flex", justifyContent: "center", alignItems: "center", padding: "0px" }}>
       <div style={{ display: "flex", gap: "5px", alignItems: "center" }}>
-        <div style={{ display: "flex", border: "1px solid #ccc", borderRadius: "4px", overflow: "hidden", marginLeft: "10px" }}>
+        {/* Hapus border di sini */}
+        <div style={{ display: "flex", borderRadius: "4px", overflow: "hidden" }}>
           {/* Tombol Halaman Pertama */}
           <button
             onClick={() => onPageChange(1)}
             disabled={currentPage === 1}
-            style={{ 
-              padding: "8px 12px", 
-              background: "white", 
-              border: "none", 
-              cursor: "pointer", 
-              opacity: currentPage === 1 ? 0.5 : 1, 
+            style={{
+              padding: "8px 12px",
+              background: "white",
+              borderRadius: "4px 0px 0px 4px",
+              border: "1px solid #ccc",
+              borderRight: "none",
+              cursor: "pointer",
               color: "#2563eb",
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
           >
-            <FaStepBackward size={10} />
+            <div style={{ opacity: currentPage === 1 ? 0.5 : 1 }}>
+              <FaStepBackward size={10} />
+            </div>
           </button>
           {/* Tombol Halaman Sebelumnya */}
           <button
@@ -61,31 +65,39 @@ const PaginasiKeu = ({ currentPage, totalPages, totalItems, itemsPerPage, onPage
             style={{ 
               padding: "8px 8px", 
               background: "white", 
-              border: "none", 
+              border: "1px solid #ccc",
+              borderLeft: "none",
+              borderRight: "none",
               cursor: "pointer", 
-              opacity: currentPage === 1 ? 0.5 : 1, 
               color: "#2563eb",
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <FaCaretLeft size={14} />
+            <div style={{ opacity: currentPage === 1 ? 0.5 : 1 }}>
+              <FaCaretLeft size={14} />
+              </div>
           </button>
           
-          {/* Tampilan Halaman */}
+          {/* Tampilan Halaman yang aktif */}
           {pageNumbers.map(page => (
             <button
               key={page}
               onClick={() => onPageChange(page)}
               style={{
-                padding: "8px 12px",
+                padding: "6px 12px",
                 background: page === currentPage ? "#2563eb" : "white",
                 color: page === currentPage ? "white" : "#2563eb",
-                border: "none",
-                fontWeight: "bold",
+                // Set border atas dan bawah untuk tombol tidak aktif
+                // dan hilangkan border samping
+                borderTop: page === currentPage ? "none" : "1px solid #ccc",
+                borderBottom: page === currentPage ? "none" : "1px solid #ccc",
+                borderLeft: "none",
+                borderRight: "none",
+                fontWeight: page === currentPage ? "600" : "400",
                 cursor: "pointer",
-                display: 'flex',
+                display: 'outline',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
@@ -101,16 +113,20 @@ const PaginasiKeu = ({ currentPage, totalPages, totalItems, itemsPerPage, onPage
             style={{ 
               padding: "8px 12px", 
               background: "white", 
-              border: "none", 
-              cursor: "pointer", 
-              opacity: currentPage === totalPages ? 0.5 : 1, 
+              border: "1px solid #ccc",
+              borderLeft: "none",
+              borderRight: "none",
+              cursor: "pointer",
               color: "#2563eb",
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <FaCaretRight size={14} />
+            {/* Ubah logika opacity */}
+            <div style={{ opacity: currentPage === totalPages ? 0.5 : 1 }}>
+              <FaCaretRight size={14} />
+            </div>
           </button>
           {/* Tombol Halaman Terakhir */}
           <button
@@ -119,24 +135,28 @@ const PaginasiKeu = ({ currentPage, totalPages, totalItems, itemsPerPage, onPage
             style={{ 
               padding: "8px 12px", 
               background: "white", 
-              border: "none", 
-              cursor: "pointer", 
-              opacity: currentPage === totalPages ? 0.5 : 1, 
+              borderRadius: "0 4px 4px 0",
+              border: "1px solid #ccc",
+              borderLeft: "none",
+              cursor: "pointer",
               color: "#2563eb",
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <FaStepForward size={10} />
+            {/* Ubah logika opacity */}
+            <div style={{ opacity: currentPage === totalPages ? 0.5 : 1 }}>
+              <FaStepForward size={10} />
+            </div>
           </button>
         </div>
         <select
           value={itemsPerPage}
           onChange={(e) => onItemsPerPageChange(Number(e.target.value))}
-          style={{ padding: "8px 2px 8px 8px", borderRadius: "4px", border: "1px solid #ccc", backgroundColor: "white" }}
+          style={{ padding: "6px 2px 6px 4px", borderRadius: "4px", border: "1px solid #ccc", backgroundColor: "white" }}
         >
-          {[10, 20, 50, 100, 500, 1000].map(size => (
+          {[5, 10, 20, 50].map(size => (
             <option key={size} value={size}>{size}</option>
           ))}
         </select>
