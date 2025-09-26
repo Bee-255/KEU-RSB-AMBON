@@ -42,16 +42,20 @@ const responsiveStyles = `
   }
 
   .image-container {
-    width: 70%;
-    height: 100%;
-    overflow: hidden;
-  }
-  
-  .photo-style {
+    /* Anda dapat menyesuaikan tinggi container sesuai kebutuhan */
     width: 100%;
+    max-height: 100vh; /* Contoh: membatasi tinggi container agar tidak terlalu besar */
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+  .photo-style {
+    width: 60%;
     height: 100%;
-    object-fit: cover;
-  }
+    object-fit: contain; /* Ini akan memastikan seluruh gambar terlihat */
+}
 
   .icon-group {
     display: flex;

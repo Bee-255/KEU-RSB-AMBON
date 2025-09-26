@@ -9,42 +9,28 @@ import { applyPlugin } from "jspdf-autotable";
 import { FaPlus, FaEdit, FaUserPlus, FaTrashAlt, FaAngleLeft, FaAngleRight, FaAngleDoubleLeft, FaAngleDoubleRight, FaRegTrashAlt, FaDownload } from "react-icons/fa";
 import { FiChevronLeft, FiChevronRight, FiSkipBack, FiSkipForward } from "react-icons/fi";
 import PaginasiKeu from '../components/paginasi'; // Import komponen PaginasiKeu
+// ✅ Impor file CSS Modules
+import styles from "../styles/button.module.css";
+import pageStyles from "../styles/komponen.module.css";
 
 applyPlugin(jsPDF);
 
 // Komponen Modal Pop-up
-const Modal = ({ children, onClose }) => (
-  <div
-    style={{
-      position: "fixed",
-      top: 0,
-      left: 0,
-      width: "100%",
-      height: "100%",
-      backgroundColor: "rgba(0, 0, 0, 0.5)",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      zIndex: 1000,
-    }}
-    onClick={onClose}
-  >
+const Modal = ({ children, onClose }) => {
+  return (
     <div
-      style={{
-        backgroundColor: "white",
-        padding: "2rem",
-        borderRadius: "8px",
-        position: "relative",
-        maxWidth: "90%",
-        maxHeight: "90vh",
-        overflowY: "auto",
-      }}
-      onClick={(e) => e.stopPropagation()}
+      className={pageStyles.modalOverlay}
+      onClick={onClose}
     >
-      {children}
+      <div
+        className={pageStyles.modalContent}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {children}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const formatDate = (dateString) => {
   if (!dateString) return "-";
@@ -296,6 +282,7 @@ export default function PencatatanPasien() {
     return String(num).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   };
 
+  // ✅ Kode yang diperbaiki: Menambahkan logika untuk mengupdate status rekapitulasi
   const updateRekapitulasiTotals = async (rekapId) => {
     const pasienData = await fetchPasienByRekapId(rekapId);
     const totalPasien = pasienData.length;
@@ -304,19 +291,30 @@ export default function PencatatanPasien() {
     const totalTransfer = pasienData.reduce((sum, item) => sum + item.bayar_transfer, 0);
     const totalPembayaran = totalTunai + totalTransfer;
 
+    let rekapStatus = "KASIR"; 
+    if (totalPasien > 0) {
+        const allPatientsPaid = pasienData.every(p => getStatus(p.jumlah_bersih, p.total_pembayaran) === "Lunas");
+        if (allPatientsPaid) {
+            rekapStatus = "LUNAS";
+        } else {
+            rekapStatus = "BELUM LUNAS";
+        }
+    }
+
     await supabase
-      .from('rekaman_harian')
-      .update({
-          total_pasien: totalPasien,
-          total_tagihan: totalTagihan,
-          total_tunai: totalTunai,
-          total_transfer: totalTransfer,
-          total_pembayaran: totalPembayaran,
-      })
-      .eq('id', rekapId);
+        .from('rekaman_harian')
+        .update({
+            total_pasien: totalPasien,
+            total_tagihan: totalTagihan,
+            total_tunai: totalTunai,
+            total_transfer: totalTransfer,
+            total_pembayaran: totalPembayaran,
+            status: rekapStatus,
+        })
+        .eq('id', rekapId);
     fetchRekapitulasi(userId);
   };
-
+  
   const handlePasienFormSubmit = async (e) => {
     e.preventDefault();
 
@@ -630,125 +628,63 @@ export default function PencatatanPasien() {
     setPasienPage(1);
     setSelectedPasienId(null);
   };
-  
+
   return (
-    <>
-      <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "1rem" }}>
-        <h2>Rekapitulasi Harian</h2>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
-          {/* Grup Kiri: Tombol Aksi */}
-          <div style={{ display: "flex", alignItems: "center", gap: "5px", flexWrap: "wrap", fontFamily: "Arial, sans-serif" }}>
-            <button
-              onClick={() => {
-                setNewRekapDate("");
-                setShowRekapModal(true);
-              }}
-              style={{ background: "#16a34a", color: "white",padding: "6px 10px", border: "none",
-            borderRadius: "6px", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}
-            >
-              <FaPlus/>Tambah Rekap
-            </button>
-            <button
-              onClick={handleAddPasienClick}
-              disabled={selectedRekapIds.length === 0}
-              style={{
-                background: "#16a34a",
-                color: "white",
-                padding: "6px 10px",
-                border: "none",
-                borderRadius: "6px",
-                display: "flex",
-                alignItems: "center",
-                gap: "5px",
-                cursor: selectedRekapIds.length === 0 ? "not-allowed" : "pointer",
-                opacity: selectedRekapIds.length === 0 ? 0.5 : 1,
-                fontSize: "12px"
-              }}
-            >
-              <FaUserPlus size={14}/> Tambah Pasien
-            </button>
-            <button
-              onClick={handleDeleteRekap}
-              disabled={selectedRekapIds.length === 0}
-              style={{
-                background: "#dc2626",
-                color: "white",
-                padding: "6px 10px",
-                border: "none",
-                borderRadius: "6px",
-                cursor: selectedRekapIds.length === 0 ? "not-allowed" : "pointer",
-                opacity: selectedRekapIds.length === 0 ? 0.5 : 1,
-                fontSize: "12px"
-              }}
-            >
-              <FaRegTrashAlt/> Hapus
-            </button>
-            <button
-              onClick={handleDownloadClick}
-              disabled={selectedRekapIds.length === 0}
-              style={{
-                background: "#2563eb",
-                color: "white",
-                padding: "6px 10px",
-                border: "none",
-                borderRadius: "6px",
-                display: "flex",
-                alignItems: "center",
-                gap: "5px",
-                cursor: selectedRekapIds.length === 0 ? "not-allowed" : "pointer",
-                opacity: selectedRekapIds.length === 0 ? 0.5 : 1,
-                fontSize: "12px"
-              }}
-            >
-              <FaDownload /> Download
-            </button>
-          </div>
-
-          {/* Grup Kanan: Filter Tanggal */}
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", fontFamily: "Arial, sans-serif" }}>
-            <div style={{ display: "flex", flexDirection: "column", marginTop: "-25px" }}>
-              <label style={{ fontSize: "12px", marginBottom: "4px" }}>Tanggal Awal</label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                style={{ padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
-              />
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", marginTop: "-25px" }}>
-              <label style={{ fontSize: "12px", marginBottom: "4px" }}>Tanggal Akhir</label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                style={{ padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
-              />
-            </div>
-            <button
-              onClick={handleClearFilter}
-              style={{ background: "#3b82f6", color: "white", padding: "6px 10px", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "12px" }}
-            >
-              Clear
-            </button>
-          </div>
-        </div>
+    
+    <div className={pageStyles.container}>
+      <h2 className={pageStyles.header}>Rekapitulasi Harian</h2>
+        
+      {/* Grup Kiri: Tombol Aksi */}
+      <div className={pageStyles.buttonContainer}>
+        <button
+          onClick={() => {
+            setNewRekapDate("");
+            setShowRekapModal(true);
+          }}
+          className={styles.rekamButton}
+        >
+          <FaPlus/>Rekam
+        </button>
+        <button
+          onClick={handleAddPasienClick}
+          disabled={selectedRekapIds.length === 0}
+          className={styles.rekamButton}
+        >
+          <FaPlus size={14}/> Pasien
+        </button>
+        <button
+          onClick={handleDeleteRekap}
+          disabled={selectedRekapIds.length === 0}
+          className={styles.hapusButton}
+        >
+          <FaRegTrashAlt/> Hapus
+        </button>
+        <button
+          onClick={handleDownloadClick}
+          disabled={selectedRekapIds.length === 0}
+          className={styles.downloadButton}
+        >
+          <FaDownload /> Download
+        </button>
       </div>
+    
 
+      {/* Modal Tambah Rekapitulasi Baru */}
       {showRekapModal && (
         <Modal onClose={() => setShowRekapModal(false)}>
           <form onSubmit={handleRekapFormSubmit}>
-            <h3 style={{ marginTop: 0 }}>Tambah Rekapitulasi Baru</h3>
+            <h3 style={{ marginTop: "1rem" }}>Tambah Rekapitulasi Baru</h3>
             <div>
-              <label>Tanggal:</label>
+              <label className={pageStyles.formLabel}>Tanggal:</label>
               <input
                 type="date"
                 value={newRekapDate}
                 onChange={(e) => setNewRekapDate(e.target.value)}
                 required
-                style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
+                className={pageStyles.formInput}
               />
             </div>
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "1rem" }}>
+            <div className={pageStyles.formActions}>
               <button type="button" onClick={() => setShowRekapModal(false)} style={{ padding: "8px 16px", border: "1px solid #ccc", borderRadius: "6px", cursor: "pointer", fontSize: "14px" }}>Batal</button>
               <button type="submit" style={{ background: "#16a34a", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "14px" }}>Simpan</button>
             </div>
@@ -756,139 +692,228 @@ export default function PencatatanPasien() {
         </Modal>
       )}
 
+      {/* Modal Rekam Pasien */}
       {showPasienModal && (
         <Modal onClose={resetPasienForm}>
           <form onSubmit={handlePasienFormSubmit}>
             <h3 style={{ marginTop: 0 }}>{editPasienId ? "Edit Data Pasien" : "Rekam Pasien Baru"} ({selectedRekapIds.length > 1 ? "Beberapa Tanggal Terpilih" : formatDate(rekapitulasiList.find(r => r.id === selectedRekapIds[0])?.tanggal)})</h3>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", rowGap: "1rem", marginBottom: "1rem" }}>
-                <div>
-                    <label>Nomor RM:</label>
-                    <input type="text" name="nomor_rm" value={pasienData.nomor_rm} onChange={handlePasienFormChange} required style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }} />
-                </div>
-                <div>
-                    <label>Nama Pasien:</label>
-                    <input type="text" name="nama_pasien" value={pasienData.nama_pasien} onChange={handlePasienFormChange} required style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }} />
-                </div>
-                <div>
-                    <label>Klasifikasi:</label>
-                    <select name="klasifikasi" value={pasienData.klasifikasi} onChange={handlePasienFormChange} required style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px", backgroundColor: pasienData.klasifikasi ? "white" : "#f3f4f6" }}>
-                        <option value="">-- Pilih Klasifikasi --</option>
-                        {klasifikasiOptions.map((k) => (<option key={k} value={k}>{k}</option>))}
+              <div className={pageStyles.modalForm}>
+              <div className={pageStyles.formGroup}>
+                  <label className={pageStyles.formLabel}>Nomor RM:</label>
+                  <input 
+                    type="text" 
+                    name="nomor_rm" 
+                    value={pasienData.nomor_rm} 
+                    onChange={handlePasienFormChange} 
+                    required 
+                    className={pageStyles.formInput}
+                  />
+                  </div>
+                  <div className={pageStyles.formGroup}>
+                    <label className={pageStyles.formLabel}>Nama Pasien:</label>
+                    <input 
+                      type="text" 
+                      name="nama_pasien" 
+                      value={pasienData.nama_pasien} 
+                      onChange={handlePasienFormChange} 
+                      required 
+                      className={pageStyles.formInput} 
+                    />
+                  </div>
+                  <div className={pageStyles.formGroup}>
+                    <label className={pageStyles.formLabel}>Klasifikasi:</label>
+                    <select 
+                      name="klasifikasi"  
+                      value={pasienData.klasifikasi} 
+                      onChange={handlePasienFormChange} 
+                      required 
+                      className={pageStyles.formSelect} 
+                      style={{ backgroundColor: pasienData.klasifikasi ? "white" : "#f3f4f6" }}>
+                      <option value="">-- Pilih Klasifikasi --</option>
+                      {klasifikasiOptions.map((k) => (<option key={k} value={k}>{k}</option>))}
                     </select>
-                </div>
-                <div>
-                    <label>Unit Layanan:</label>
-                    <select name="unit_layanan" value={pasienData.unit_layanan} onChange={handlePasienFormChange} required style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px", backgroundColor: pasienData.unit_layanan ? "white" : "#f3f4f6" }}>
+                  </div>
+                  <div className={pageStyles.formGroup}>
+                    <label className={pageStyles.formLabel}>Unit Layanan:</label>
+                      <select 
+                        name="unit_layanan" 
+                        value={pasienData.unit_layanan} 
+                        onChange={handlePasienFormChange} 
+                        required 
+                        className={pageStyles.formSelect} 
+                        style={{ backgroundColor: pasienData.unit_layanan ? "white" : "#f3f4f6" }}>
                         <option value="">-- Pilih Unit Layanan --</option>
                         {unitLayananOptions.map((unit) => (<option key={unit} value={unit}>{unit}</option>))}
-                    </select>
-                </div>
-                <div>
-                    <label>Jenis Rawat:</label>
-                    <input type="text" name="jenis_rawat" value={pasienData.jenis_rawat} readOnly style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px", backgroundColor: "#e9ecef", cursor: "not-allowed" }} />
-                </div>
-                <div>
-                    <label>Jumlah Tagihan:</label>
-                    <input type="text" name="jumlah_tagihan" value={pasienData.jumlah_tagihan} onChange={handlePasienFormChange} style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }} />
-                </div>
-                <div>
-                    <label>Diskon (%):</label>
-                    <input type="text" name="diskon" value={pasienData.diskon} onChange={handlePasienFormChange} style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }} />
-                </div>
-                <div>
-                    <label>Jumlah Bersih:</label>
-                    <input type="text" name="jumlah_bersih" value={formatRupiah(pasienData.jumlah_bersih)} readOnly style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px", backgroundColor: "#f3f4f6" }} />
-                </div>
-                <hr style={{ gridColumn: "1 / -1", margin: "0.5rem 0", border: "1", borderTop: "1px solid #d6d3d3ff" }} />
-                <div>
-                    <label>Bayar Tunai:</label>
-                    <input type="text" name="bayar_tunai" value={pasienData.bayar_tunai} onChange={handlePasienFormChange} style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }} />
-                </div>
-                <div>
-                    <label>Bayar Transfer:</label>
-                    <input type="text" name="bayar_transfer" value={pasienData.bayar_transfer} onChange={handlePasienFormChange} style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }} />
-                </div>
-                <div>
-                    <label>Tanggal Transfer:</label>
-                    <input type="date" name="tanggal_transfer" value={pasienData.tanggal_transfer} onChange={handlePasienFormChange} disabled={!pasienData.bayar_transfer || formatToNumber(pasienData.bayar_transfer) === 0} style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px", backgroundColor: !pasienData.bayar_transfer || formatToNumber(pasienData.bayar_transfer) === 0 ? "#e9ecef" : "white" }} />
-                </div>
-                <div>
-                    <label>Total Pembayaran:</label>
-                    <input type="text" name="total_pembayaran" value={formatRupiah(pasienData.total_pembayaran)} readOnly style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px", backgroundColor: "#f3f4f6" }} />
-                </div>
-                <div>
-                    <label>Status:</label>
-                    <input type="text" name="status" value={getStatus(pasienData.jumlah_bersih, pasienData.total_pembayaran)} readOnly style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px", backgroundColor: "#f3f4f6", cursor: "not-allowed" }} />
-                </div>
-            </div>
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+                      </select>
+                  </div>
+                  <div className={pageStyles.formGroup}>
+                    <label className={pageStyles.formLabel}>Jenis Rawat:</label>
+                    <input 
+                      type="text" 
+                      name="jenis_rawat" 
+                      value={pasienData.jenis_rawat}
+                      disabled 
+                      className={`${pageStyles.formInput} ${pageStyles.readOnly}`}
+                    />
+                  </div>
+                  <div className={pageStyles.formGroup}>
+                    <label className={pageStyles.formLabel}>Jumlah Tagihan:</label>
+                    <input 
+                      type="text"
+                      name="jumlah_tagihan"
+                      value={pasienData.jumlah_tagihan}
+                      onChange={handlePasienFormChange} 
+                      className={pageStyles.formInput} 
+                    />
+                  </div>
+                  <div className={pageStyles.formGroup}>
+                    <label className={pageStyles.formLabel}>Diskon (%):</label>
+                      <input 
+                      type="text"
+                      name="diskon"
+                      value={pasienData.diskon}
+                      onChange={handlePasienFormChange}
+                      className={pageStyles.formInput}
+                    />
+                  </div>
+                  <div className={pageStyles.formGroup}>
+                    <label className={pageStyles.formLabel}>Jumlah Bersih:</label>
+                      <input
+                        type="text"
+                        name="jumlah_bersih"
+                        value={formatRupiah(pasienData.jumlah_bersih)}
+                        readOnly
+                        disabled 
+                        className={`${pageStyles.formInput} ${pageStyles.readOnly}`}
+                      />
+                  </div>
+                  <hr className={pageStyles.pemisahForm} />
+                  <div className={pageStyles.formGroup}>
+                    <label className={pageStyles.formLabel}>Bayar Tunai:</label>
+                    <input 
+                      type="text"
+                      name="bayar_tunai"
+                      value={pasienData.bayar_tunai}
+                      onChange={handlePasienFormChange}
+                      className={pageStyles.formInput}
+                    />
+                  </div>
+                  <div className={pageStyles.formGroup}>
+                    <label className={pageStyles.formLabel}>Bayar Transfer:</label>
+                    <input 
+                      type="text"
+                      name="bayar_transfer"
+                      value={pasienData.bayar_transfer}
+                      onChange={handlePasienFormChange} 
+                      className={pageStyles.formInput}
+                    />
+                  </div>
+                  <div className={pageStyles.formGroup}>
+                    <label className={pageStyles.formLabel}>Tanggal Transfer:</label>
+                      <input 
+                        type="date" 
+                        name="tanggal_transfer" 
+                        value={pasienData.tanggal_transfer} 
+                        onChange={handlePasienFormChange} 
+                        disabled={!pasienData.bayar_transfer || formatToNumber(pasienData.bayar_transfer) === 0} 
+                        className={pageStyles.formSelect} 
+                        style={{ backgroundColor: !pasienData.bayar_transfer || formatToNumber(pasienData.bayar_transfer) === 0 ? "#e9ecef" : "white" }}
+                      />
+                  </div>
+                  <div className={pageStyles.formGroup}>
+                    <label className={pageStyles.formLabel}>Total Pembayaran:</label>
+                      <input 
+                        type="text" 
+                        name="total_pembayaran" 
+                        value={formatRupiah(pasienData.total_pembayaran)} 
+                        readOnly
+                        disabled
+                        className={`${pageStyles.formInput} ${pageStyles.readOnly}`}
+                      />
+                  </div>
+                  <div className={pageStyles.formGroup}>
+                    <label className={pageStyles.formLabel}>Status:</label>
+                      <input 
+                        type="text"
+                        name="status"
+                        value={getStatus(pasienData.jumlah_bersih, pasienData.total_pembayaran)} 
+                        readOnly
+                        disabled
+                        className={`${pageStyles.formInput} ${pageStyles.readOnly}`}
+                      />
+                  </div>
+              </div>
+
+            <div className={pageStyles.formActions}>
                 <button type="button" onClick={resetPasienForm} style={{ padding: "8px 16px", border: "1px solid #ccc", borderRadius: "6px", cursor: "pointer", fontSize: "14px" }}>Batal</button>
                 <button type="submit" style={{ background: "#16a34a", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "14px" }}>{editPasienId ? "Update" : "Simpan"}</button>
             </div>
-        </form>
+          </form>
         </Modal>
       )}
 
-      <table border="1" cellPadding="4" style={{ borderCollapse: "collapse", width: "100%", marginTop: "0px", fontSize: "12px" }}>
-    <thead>
-      <tr style={{ background: "#f3f4f6" }}>
-        <th style={{ padding: "4px", textAlign: "center", width: "30px" }}>
-          <input
-            type="checkbox"
-            ref={selectAllRef}
-            checked={isAllRekapSelected}
-            onChange={handleSelectAllRekap}
-            style={{ transform: "scale(1.3)" }}
-          />
-        </th>
-        <th style={{ padding: "8px", textAlign: "left" }}>Tanggal</th>
-        <th style={{ padding: "8px", textAlign: "left" }}>Nama User</th>
-        <th style={{ padding: "8px", textAlign: "center" }}>Total Pasien</th>
-        <th style={{ padding: "8px", textAlign: "center" }}>Total Tagihan</th>
-        <th style={{ padding: "8px", textAlign: "center" }}>Bayar Tunai</th>
-        <th style={{ padding: "8px", textAlign: "center" }}>Bayar Transfer</th>
-        <th style={{ padding: "8px", textAlign: "center" }}>Total Pembayaran</th>
-        <th style={{ padding: "8px", textAlign: "center" }}>Status</th>
-      </tr>
-    </thead>
-    <tbody>
-      {paginatedRekap.length > 0 ? (
-        paginatedRekap.map((rekap) => (
-          <tr
-            key={rekap.id}
-            style={{ backgroundColor: selectedRekapIds.includes(rekap.id) ? "#e0e7ff" : "white", cursor: "pointer" }}
-          >
-            <td>
-              <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-                  <input
-                      type="checkbox"
-                      checked={selectedRekapIds.includes(rekap.id)}
-                      onChange={() => handleRekapCheckbox(rekap.id)}
-                      style={{ transform: "scale(1.3)" }}
-                  />
-              </div>
-          </td>
-            <td style={{ padding: "8px", fontWeight: "bold" }}>
-              {formatDate(rekap.tanggal)}
-            </td>
-            <td style={{ padding: "8px" }}>{rekap.nama_user}</td>
-            <td style={{ padding: "8px", textAlign: "center" }}>{rekap.total_pasien}</td>
-            <td style={{ padding: "8px", textAlign: "right" }}>{formatRupiah(rekap.total_tagihan)}</td>
-            <td style={{ padding: "8px", textAlign: "right" }}>{formatRupiah(rekap.total_tunai)}</td>
-            <td style={{ padding: "8px", textAlign: "right"}}>{formatRupiah(rekap.total_transfer)}</td>
-            <td style={{ padding: "8px", textAlign: "right"}}>{formatRupiah(rekap.total_pembayaran)}</td>
-            <td style={{ padding: "8px" }}>{rekap.status}</td>
-          </tr>
-        ))
-      ) : (
-        <tr>
-          <td colSpan="9" style={{ textAlign: "center", padding: "1rem" }}>
-            Tidak ada data rekapitulasi yang ditemukan.
-          </td>
-        </tr>
-      )}
-    </tbody>
-  </table>
+      {/* Tabel data rekap harian */}
+      <div className={pageStyles.tableContainer}>
+        <table className={pageStyles.table}>
+          <thead className={pageStyles.tableHead}>
+            <tr>
+              <th style={{ width: "5%" }}>
+                <input
+                  type="checkbox"
+                  ref={selectAllRef}
+                  checked={isAllRekapSelected}
+                  onChange={handleSelectAllRekap}
+                  style={{ transform: "scale(1.3)" }}
+                />
+              </th>
+              <th>Tanggal</th>
+              <th>Nama User</th>
+              <th style={{ textAlign: "center" }}>Total Pasien</th>
+              <th style={{ textAlign: "center" }}>Total Tagihan</th>
+              <th style={{ textAlign: "center" }}>Bayar Tunai</th>
+              <th style={{ textAlign: "center" }}>Bayar Transfer</th>
+              <th style={{ textAlign: "center" }}>Total Pembayaran</th>
+              <th style={{ textAlign: "center" }}>Status</th>
+            </tr>
+          </thead>
+          <tbody className={pageStyles.tableBody}>
+            {paginatedRekap.length > 0 ? (
+              paginatedRekap.map((rekap) => (
+                <tr
+                  key={rekap.id}
+                  onClick={() => handleRekapCheckbox(rekap.id)}
+                  className={`${pageStyles.tableRow} ${selectedRekapIds.includes(rekap.id) ? pageStyles.selected : ""}`}
+                >
+                  <td>
+                    <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedRekapIds.includes(rekap.id)}
+                        onChange={() => handleRekapCheckbox(rekap.id)}
+                        style={{ transform: "scale(1.3)" }}
+                      />
+                    </div>
+                  </td>
+                  <td>{formatDate(rekap.tanggal)}</td>
+                  <td>{rekap.nama_user}</td>
+                  <td style={{ textAlign: "center" }}>{rekap.total_pasien}</td>
+                  <td style={{ textAlign: "right" }}>{formatRupiah(rekap.total_tagihan)}</td>
+                  <td style={{ textAlign: "right" }}>{formatRupiah(rekap.total_tunai)}</td>
+                  <td style={{ textAlign: "right" }}>{formatRupiah(rekap.total_transfer)}</td>
+                  <td style={{ textAlign: "right" }}>{formatRupiah(rekap.total_pembayaran)}</td>
+                  <td style={{ textAlign: "center" }}>{rekap.status}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="9" className={pageStyles.tableEmpty}>
+                  Tidak ada data rekapitulasi yang ditemukan.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
       {/* Rekap Pagination */}
       <PaginasiKeu
@@ -900,88 +925,67 @@ export default function PencatatanPasien() {
         onItemsPerPageChange={handleRekapItemsPerPageChange}
       />
 
-      {/* Kontrol Download Data Pasien */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "1rem", marginBottom: "0rem" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <h2>Data Pasien</h2>
+      {/* DETAIL Data Pasien */}
+      <div className={pageStyles.detailContainer}>
+       <div className={pageStyles.detailHeader}>Data Pasien</div>
+        <div className={pageStyles.buttonContainer} style={{ margin: "1rem" }}>
             <button
                 onClick={handleEditPasien}
                 disabled={!selectedPasienId}
-                style={{
-                    background: "#f59e0b",
-                    color: "white",
-                    padding: "6px 10px",
-                    border: "none",
-                    borderRadius: "6px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "5px",
-                    cursor: !selectedPasienId ? "not-allowed" : "pointer",
-                    opacity: !selectedPasienId ? 0.5 : 1,
-                    fontSize: "12px"
-                }}
+                className={styles.editButton}
             >
                 <FaEdit/> Edit
             </button>
             <button
                 onClick={handleDeletePasien}
                 disabled={!selectedPasienId}
-                style={{
-                    background: "#dc2626",
-                    color: "white",
-                    padding: "6px 16px",
-                    border: "none",
-                    borderRadius: "6px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "5px",
-                    cursor: !selectedPasienId ? "not-allowed" : "pointer",
-                    opacity: !selectedPasienId ? 0.5 : 1,
-                    fontSize: "12px"
-                }}
+                className={styles.hapusButton}
             >
                 <FaRegTrashAlt /> Hapus
             </button>
         </div>
-      </div>
+      
 
-      {/* Tabel Data Pasien */}
-      <table border="1" cellPadding="4" style={{ borderCollapse: "collapse", width: "100%", marginTop: "0px", fontSize: "12px" }}>
-        <thead>
-          <tr style={{ background: "#f3f4f6" }}>
-            <th style={{ padding: "8px", textAlign: "left" }}>Tanggal</th>
-            <th style={{ padding: "8px", textAlign: "left" }}>Nama Pasien</th>
-            <th style={{ padding: "8px", textAlign: "left" }}>Nomor RM</th>
-            <th style={{ padding: "8px", textAlign: "left" }}>Unit Layanan</th>
-            <th style={{ padding: "8px", textAlign: "right" }}>Jumlah Bersih</th>
-            <th style={{ padding: "8px", textAlign: "right" }}>Total Bayar</th>
-          </tr>
-        </thead>
-        <tbody>
-          {paginatedPasien.length > 0 ? (
-            paginatedPasien.map((p) => (
-              <tr
-                key={p.id}
-                onClick={() => handlePasienRowClick(p)}
-                style={{ backgroundColor: selectedPasienId === p.id ? "#e0e7ff" : "white", cursor: "pointer" }}
-              >
-                <td style={{ padding: "6px" }}>{formatDate(rekapitulasiList.find(r => r.id === p.rekaman_harian_id)?.tanggal)}</td>
-                <td style={{ padding: "6px" }}>{p.nama_pasien}</td>
-                <td style={{ padding: "6px" }}>{p.nomor_rm}</td>
-                <td style={{ padding: "6px" }}>{p.unit_layanan}</td>
-                <td style={{ padding: "6px", textAlign: "right" }}>{formatRupiah(p.jumlah_bersih)}</td>
-                <td style={{ padding: "6px", textAlign: "right" }}>{formatRupiah(p.total_pembayaran)}</td>
+        {/* Tabel Detail Data Pasien */}
+        <div className={pageStyles.tableContainer}>
+          <table className={pageStyles.table}>
+            <thead className={pageStyles.tableHead}>
+              <tr>
+                <th style={{ width: "10%", padding: "0.5rem 1.5rem" }}>Tanggal</th>
+                <th style={{ width: "20%" }}>Nama Pasien</th>
+                <th style={{ width: "15%" }}>Nomor RM</th>
+                <th style={{ width: "20%" }}>Unit Layanan</th>
+                <th style={{ width: "15%", textAlign: "right" }}>Jumlah Bersih</th>
+                <th style={{ width: "15%", textAlign: "right" }}>Total Bayar</th>
               </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan="6" style={{ textAlign: "center", padding: "10px" }}>
-                  {selectedRekapIds.length > 0 ? "Tidak ada pasien untuk tanggal yang dipilih." : "Silakan pilih tanggal rekapitulasi di atas."}
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-    </>
+            </thead>
+            <tbody className={pageStyles.tableBody}>
+              {paginatedPasien.length > 0 ? (
+                paginatedPasien.map((p) => (
+                  <tr
+                    key={p.id}
+                    onClick={() => handlePasienRowClick(p)}
+                    className={`${pageStyles.tableRow} ${selectedPasienId === p.id ? pageStyles.selected : ""}`}
+                  >
+                    <td>{formatDate(rekapitulasiList.find(r => r.id === p.rekaman_harian_id)?.tanggal)}</td>
+                    <td>{p.nama_pasien}</td>
+                    <td>{p.nomor_rm}</td>
+                    <td>{p.unit_layanan}</td>
+                    <td style={{ textAlign: "right" }}>{formatRupiah(p.jumlah_bersih)}</td>
+                    <td style={{ textAlign: "right" }}>{formatRupiah(p.total_pembayaran)}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="6" className={pageStyles.tableEmpty}>
+                    {selectedRekapIds.length > 0 ? "Tidak ada pasien untuk tanggal yang dipilih." : "Silakan pilih tanggal rekapitulasi di atas."}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+  </div>
   );
 }

@@ -8,6 +8,9 @@ import { terbilang } from "../lib/terbilang";
 import { FiChevronLeft, FiChevronRight, FiChevronsLeft, FiChevronsRight, FiDelete, FiEdit3, FiPlus, FiDownload,FiSkipBack, FiSkipForward} from "react-icons/fi";
 import { FaPlus, FaEdit, FaTrashAlt, FaRegTrashAlt } from "react-icons/fa";
 import PaginasiKeu from '../components/paginasi';
+// ✅ Impor file CSS Modules
+import styles from "../styles/button.module.css";
+import pageStyles from "../styles/komponen.module.css";
 
 // Fungsi untuk memformat setiap kata menjadi kapital di awal
 const capitalizeWords = (str) => {
@@ -56,30 +59,11 @@ const formatTanggalIndonesia = (dateString) => {
 const Modal = ({ children, onClose }) => {
   return (
     <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        width: "100%",
-        height: "100%",
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        zIndex: 1000,
-      }}
+      className={pageStyles.modalOverlay}
       onClick={onClose}
     >
       <div
-        style={{
-          backgroundColor: "white",
-          padding: "2rem",
-          borderRadius: "8px",
-          position: "relative",
-          maxWidth: "700px",
-          maxHeight: "90vh",
-          overflowY: "auto",
-        }}
+        className={pageStyles.modalContent}
         onClick={(e) => e.stopPropagation()}
       >
         {children}
@@ -558,10 +542,10 @@ const Sppr = () => {
   };
 
   return (
-    <div style={{ padding: "0rem 0rem", backgroundColor: "#F3F4F6" }}>
-      <h2>Data Surat Perintah Pendebitan Rekening</h2>
+    <div className={pageStyles.container}>
+      <h2 className={pageStyles.header}>Data Surat Perintah Pendebitan Rekening</h2>
 
-      <div style={{ marginBottom: "1rem", display: "flex", gap: "5px", alignItems: "center" }}>
+      <div className={pageStyles.buttonContainer}>
         <button
           onClick={() => {
             resetForm();
@@ -570,33 +554,28 @@ const Sppr = () => {
             fetchPengambil();
             setShowModal(true);
           }}
-          style={{ background: "#16a34a", color: "white",padding: "6px 10px", border: "none",
-            borderRadius: "6px", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}
+          className={styles.rekamButton}
         >
-          <FaPlus/> Rekam SPPR
+          <FaPlus/> Rekam
         </button>
         <button
           onClick={handleEdit}
           disabled={!selectedSppr}
-          style={{ background: "#f59e0b", color: "white",padding: "6px 10px", border: "none",
-            borderRadius: "6px", display: "flex", alignItems: "center", gap: "5px", cursor: selectedSppr ? "pointer" : "not-allowed", opacity: selectedSppr ? 1 : 0.5 }}
+          className={styles.editButton}
         >
           <FaEdit /> Edit
         </button>
         <button
-          onClick={handleDelete}
+          onClick={handleEdit}
           disabled={!selectedSppr}
-          style={{ background: "#dc2626", color: "white",padding: "6px 10px", border: "none",
-            borderRadius: "6px", display: "flex", alignItems: "center", gap: "5px", cursor: selectedSppr ? "pointer" : "not-allowed", opacity: selectedSppr ? 1 : 0.5 }}
+          className={styles.hapusButton}
         >
           <FaRegTrashAlt /> Hapus
         </button>
         <button
-          onClick={handleDownload}
+          onClick={handleEdit}
           disabled={!selectedSppr}
-          style={{ background: "#3b82f6", color: "white", padding: "6px 10px", border: "none", 
-            borderRadius: "6px", display: "flex", alignItems: "center", gap: "5px",
-            cursor: selectedSppr ? "pointer" : "not-allowed", opacity: selectedSppr ? 1 : 0.5 }}
+          className={styles.downloadButton}
         >
           <FiDownload size={14} strokeWidth={3}/> Download PDF
         </button>
@@ -607,9 +586,9 @@ const Sppr = () => {
           <form onSubmit={handleSave}>
             <h3 style={{ marginTop: 0 }}>{isEditing ? "Edit Data SPPR" : "Rekam Data SPPR"}</h3>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", rowGap: "1rem", marginBottom: "1rem" }}>
-              <div>
-                <label>Tanggal:</label>
+            <div className={pageStyles.modalForm}>
+              <div className={pageStyles.formGroup}>
+                <label className={pageStyles.formLabel}>Tanggal:</label>
                 <input
                   type="date"
                   name="tanggal"
@@ -617,11 +596,12 @@ const Sppr = () => {
                   onChange={handleInputChange}
                   required
                   readOnly={isEditing}
-                  style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px", backgroundColor: isEditing ? "#f0f0f0" : "white" }}
+                  className={pageStyles.formInput}
                 />
               </div>
-              <div>
-                <label>Nomor Surat:</label>
+
+              <div className={pageStyles.formGroup}>
+                <label className={pageStyles.formLabel}>Nomor Surat:</label>
                 <input
                   type="text"
                   name="nomor_surat"
@@ -629,17 +609,17 @@ const Sppr = () => {
                   readOnly
                   onChange={handleInputChange}
                   required
-                  style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px", backgroundColor: "#f0f0f0" }}
+                  className={`${pageStyles.formInput} ${pageStyles.readOnly}`}
                 />
               </div>
-              <div>
-                <label>Nama KPA:</label>
+              <div className={pageStyles.formGroup}>
+                <label className={pageStyles.formLabel}>Nama KPA:</label>
                 <select
                   name="nama_kpa"
                   value={formData.nama_kpa}
                   onChange={handleInputChange}
                   required
-                  style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
+                  className={pageStyles.formSelect}
                 >
                   <option value="">-- Pilih KPA --</option>
                   {kpaList.map((kpa, index) => (
@@ -649,24 +629,23 @@ const Sppr = () => {
                   ))}
                 </select>
               </div>
-              <div>
-                <label>Pangkat KPA:</label>
+              <div className={pageStyles.formGroup}>
+                <label className={pageStyles.formLabel}>Pangkat KPA:</label>
                 <input
                   type="text"
                   name="pangkat_kpa"
                   value={formData.pangkat_kpa}
-                  readOnly
-                  style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px", backgroundColor: "#f0f0f0" }}
+                  className={`${pageStyles.formInput} ${pageStyles.readOnly}`}
                 />
               </div>
-              <div>
-                <label>Nama Bendahara:</label>
+              <div className={pageStyles.formGroup}>
+                <label className={pageStyles.formLabel}>Nama Bendahara:</label>
                 <select
                   name="nama_bendahara"
                   value={formData.nama_bendahara}
                   onChange={handleInputChange}
                   required
-                  style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
+                  className={pageStyles.formInput}
                 >
                   <option value="">-- Pilih Bendahara --</option>
                   {bendaharaList.map((bendahara, index) => (
@@ -676,24 +655,24 @@ const Sppr = () => {
                   ))}
                 </select>
               </div>
-              <div>
-                <label>Pangkat Bendahara:</label>
+               <div className={pageStyles.formGroup}>
+                <label className={pageStyles.formLabel}>Pangkat Bendahara:</label>
                 <input
                   type="text"
                   name="pangkat_bendahara"
                   value={formData.pangkat_bendahara}
                   readOnly
-                  style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px", backgroundColor: "#f0f0f0" }}
+                  className={`${pageStyles.formInput} ${pageStyles.readOnly}`}
                 />
               </div>
-              <div>
-                <label>Nama Pengambil:</label>
+              <div className={pageStyles.formGroup}>
+                <label className={pageStyles.formLabel}>Nama Pengambil:</label>
                 <select
                   name="nama_pengambil"
                   value={formData.nama_pengambil}
                   onChange={handleInputChange}
                   required
-                  style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
+                  className={pageStyles.formSelect}
                 >
                   <option value="">-- Pilih Pengambil --</option>
                   {pengambilList.map((pengambil, index) => (
@@ -703,56 +682,47 @@ const Sppr = () => {
                   ))}
                 </select>
               </div>
-              <div>
-                <label>Pangkat & NRP:</label>
+              <div className={pageStyles.formGroup}>
+                <label className={pageStyles.formLabel}>Pangkat Pengambil:</label>
                 <input
                   type="text"
                   name="pangkat_nrp"
                   value={formData.pangkat_nrp}
                   readOnly
-                  style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px", backgroundColor: "#f0f0f0" }}
+                  className={`${pageStyles.formInput} ${pageStyles.readOnly}`}
                 />
               </div>
-              <div style={{ gridColumn: "span 2", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
-                <div>
-                  <label>Jumlah Penarikan (Rp):</label>
+              <div className={pageStyles.formGroupFull}>
+                <div className={pageStyles.formGroupNested}>
+                  <label className={pageStyles.formLabel}>Jumlah Penarikan (Rp):</label>
                   <input
                     type="text"
                     name="jumlah_penarikan"
                     value={formatAngka(formData.jumlah_penarikan)}
                     onChange={handleInputChange}
-                    style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
+                    className={pageStyles.formInput}
                   />
                 </div>
-                <div>
-                  <label>Terbilang:</label>
-                  <div
-                    style={{
-                      padding: "8px",
-                      border: "1px solid #ccc",
-                      borderRadius: "4px",
-                      backgroundColor: "#f9f9f9",
-                      fontSize: "14px",
-                      textAlign: "justify",
-                    }}
-                  >
+                <div className={pageStyles.formGroupNested}>
+                  <label className={pageStyles.formLabel}>Terbilang:</label>
+                  <div className={pageStyles.formReadOnly}>
                     {capitalizeWords(terbilang(parseInt(formData.jumlah_penarikan) || 0))} Rupiah
                   </div>
                 </div>
               </div>
             </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+            <div className={pageStyles.formActions}>
               <button
                 type="button"
                 onClick={resetForm}
-                style={{ padding: "10px 20px", border: "1px solid #ccc", borderRadius: "6px", cursor: "pointer" }}
+                className={pageStyles.formCancel}
               >
                 Batal
               </button>
               <button
                 type="submit"
-                style={{ background: "#16a34a", color: "white", padding: "10px 20px", border: "none", borderRadius: "6px", cursor: "pointer" }}
+                className={styles.rekamButton}
               >
                 {isEditing ? "Update" : "Simpan"}
               </button>
@@ -762,43 +732,33 @@ const Sppr = () => {
       )}
 
       {/* Tabel Data SPPR */}
-      <div style={{ overflowX: "auto" }}>
-        <table
-          border="1"
-          cellPadding="4"
-          style={{
-            borderCollapse: "collapse",
-            width: "100%",
-            marginTop: "0px",
-            fontSize: "12px",
-            tableLayout: "fixed"
-          }}
-        >
-          <thead>
-            <tr style={{ background: "#f3f4f6" }}>
-              <th style={{ width: "5%", padding: "8px", textAlign: "center" }}>No.</th>
-              <th style={{ width: "30%", padding: "8px", textAlign: "left" }}>Tanggal</th>
-              <th style={{ width: "40%", padding: "8px", textAlign: "left" }}>Nomor Surat</th>
-              <th style={{ width: "30%", padding: "8px", textAlign: "left" }}>Jumlah Penarikan</th>
+      <div className={pageStyles.tableContainer}>
+        <table className={pageStyles.table}>
+          <thead className={pageStyles.tableHead}>
+            <tr>
+              <th style={{ width: "5%" }}>No.</th>
+              <th style={{ width: "30%" }}>Tanggal</th>
+              <th style={{ width: "40%" }}>Nomor Surat</th>
+              <th style={{ width: "30%" }}>Jumlah Penarikan</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className={pageStyles.tableBody}>
             {paginatedSppr.length > 0 ? (
               paginatedSppr.map((sppr, index) => (
                 <tr
                   key={sppr.id}
                   onClick={() => handleRowClick(sppr)}
-                  style={{ cursor: "pointer", backgroundColor: selectedSppr?.id === sppr.id ? "#e0e7ff" : "white" }}
+                  className={`${pageStyles.tableRow} ${selectedSppr?.id === sppr.id ? pageStyles.selected : ""}`}
                 >
-                  <td style={{ width: "50px", padding: "8px", textAlign: "center" }}>{startIndex + index + 1}</td>
-                  <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{formatTanggal(sppr.tanggal)}</td>
-                  <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{sppr.nomor_surat}</td>
-                  <td style={{ padding: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{formatAngka(sppr.jumlah_penarikan)}</td>
+                  <td>{startIndex + index + 1}</td>
+                  <td>{formatTanggal(sppr.tanggal)}</td>
+                  <td>{sppr.nomor_surat}</td>
+                  <td>{formatAngka(sppr.jumlah_penarikan)}</td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="4" style={{ textAlign: "center", padding: "1rem" }}>
+                <td colSpan="4" className={pageStyles.tableEmpty}>
                   Tidak ada data SPPR yang ditemukan.
                 </td>
               </tr>
@@ -818,76 +778,53 @@ const Sppr = () => {
       />
 
       {/* Detail Data SPPR yang Dipilih */}
-      <div style={{
-        marginTop: "2rem",
-        border: "1px solid #ccc",
-        paddingTop: "0rem",
-        paddingBottom: "1rem",
-        paddingLeft: "0rem",
-        paddingRight: "0rem",
-        borderRadius: "0px 0px 8px 8px", fontSize: "12px", boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)"
-      }}>
-        <h3
-          style={{
-            marginTop: 0,
-            padding: "0.5rem 1rem ",
-            backgroundColor: "#e5e7eaff",
-            borderRadius: "0px",
-            marginBottom: "1rem"
-          }}>
-          Detail Data SPPR
-        </h3>
+      <div className={pageStyles.detailContainer}>
+        <div className={pageStyles.detailHeader}>Detail Data SPPR</div>
         {selectedSppr ? (
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: "1rem", fontSize: "14px"
-          }}>
-            <div style={{ display: "flex" }}>
-              <p style={{ margin: 0, width: "150px", paddingLeft: "1rem" }}><strong>Tanggal</strong></p>
-              <p style={{ margin: 0, whiteSpace: "normal", wordWrap: "break-word" }}>: {formatTanggal(selectedSppr.tanggal)}</p>
+          <div className={pageStyles.detailContent}>
+            <div className={pageStyles.detailItem}>
+              <div className={pageStyles.detailLabel}>Tanggal</div>
+              <div className={pageStyles.detailValue}>: {formatTanggal(selectedSppr.tanggal)}</div>
             </div>
-            <div style={{ display: "flex" }}>
-              <p style={{ margin: 0, width: "150px" }}><strong>Nomor Surat</strong></p>
-              <p style={{ margin: 0, whiteSpace: "normal", wordWrap: "break-word" }}>: {selectedSppr.nomor_surat}</p>
+            <div className={pageStyles.detailItem}>
+              <div className={pageStyles.detailLabel}>Nomor Surat</div>
+              <div className={pageStyles.detailValue}>: {selectedSppr.nomor_surat}</div>
             </div>
-            <div style={{ display: "flex" }}>
-              <p style={{ margin: 0, width: "150px", paddingLeft: "1rem" }}><strong>Nama KPA</strong></p>
-              <p style={{ margin: 0, whiteSpace: "normal", wordWrap: "break-word" }}>: {selectedSppr.nama_kpa}</p>
+            <div className={pageStyles.detailItem}>
+              <div className={pageStyles.detailLabel}>Nama KPA</div>
+              <div className={pageStyles.detailValue}>: {selectedSppr.nama_kpa}</div>
             </div>
-            <div style={{ display: "flex" }}>
-              <p style={{ margin: 0, width: "150px" }}><strong>Pangkat KPA</strong></p>
-              <p style={{ margin: 0, whiteSpace: "normal", wordWrap: "break-word" }}>: {selectedSppr.pangkat_kpa}</p>
+            <div className={pageStyles.detailItem}>
+              <div className={pageStyles.detailLabel}>Pangkat KPA</div>
+              <div className={pageStyles.detailValue}>: {selectedSppr.pangkat_kpa}</div>
             </div>
-            <div style={{ display: "flex" }}>
-              <p style={{ margin: 0, width: "150px", paddingLeft: "1rem" }}><strong>Nama Bendahara</strong></p>
-              <p style={{ margin: 0, whiteSpace: "normal", wordWrap: "break-word" }}>: {selectedSppr.nama_bendahara}</p>
+            <div className={pageStyles.detailItem}>
+              <div className={pageStyles.detailLabel}>Nama Bendahara</div>
+              <div className={pageStyles.detailValue}>: {selectedSppr.nama_bendahara}</div>
             </div>
-            <div style={{ display: "flex" }}>
-              <p style={{ margin: 0, width: "150px" }}><strong>Pangkat Bendahara</strong></p>
-              <p style={{ margin: 0, whiteSpace: "normal", wordWrap: "break-word" }}>: {selectedSppr.pangkat_bendahara}</p>
+            <div className={pageStyles.detailItem}>
+              <div className={pageStyles.detailLabel}>Pangkat Bendahara</div>
+              <div className={pageStyles.detailValue}>: {selectedSppr.pangkat_bendahara}</div>
             </div>
-            <div style={{ display: "flex" }}>
-              <p style={{ margin: 0, width: "150px", paddingLeft: "1rem" }}><strong>Nama Pengambil</strong></p>
-              <p style={{ margin: 0, whiteSpace: "normal", wordWrap: "break-word" }}>: {selectedSppr.nama_pengambil}</p>
+            <div className={pageStyles.detailItem}>
+              <div className={pageStyles.detailLabel}>Nama Pengambil</div>
+              <div className={pageStyles.detailValue}>: {selectedSppr.nama_pengambil}</div>
             </div>
-            <div style={{ display: "flex" }}>
-              <p style={{ margin: 0, width: "150px" }}><strong>Pangkat & NRP</strong></p>
-              <p style={{ margin: 0, whiteSpace: "normal", wordWrap: "break-word" }}>: {selectedSppr.pangkat_nrp}</p>
+            <div className={pageStyles.detailItem}>
+              <div className={pageStyles.detailLabel}>Pangkat & NRP</div>
+              <div className={pageStyles.detailValue}>: {selectedSppr.pangkat_nrp}</div>
             </div>
-            <div style={{ gridColumn: "span 2", display: "flex", flexDirection: "column", gap: "1rem" }}>
-              <div style={{ display: "flex" }}>
-                <p style={{ margin: 0, width: "150px", paddingLeft: "1rem" }}><strong>Jumlah Penarikan</strong></p>
-                <p style={{ margin: 0, whiteSpace: "normal", wordWrap: "break-word" }}>: {formatAngka(selectedSppr.jumlah_penarikan)}</p>
-              </div>
-              <div style={{ display: "flex" }}>
-                <p style={{ margin: 0, width: "150px", paddingLeft: "1rem" }}><strong>Terbilang</strong></p>
-                <p style={{ margin: 0, whiteSpace: "normal", wordWrap: "break-word" }}>: {capitalizeWords(terbilang(selectedSppr.jumlah_penarikan))} Rupiah</p>
-              </div>
+            <div className={pageStyles.detailItemFull}>
+              <div className={pageStyles.detailLabel}>Jumlah Penarikan</div>
+              <div className={pageStyles.detailValue}>: {formatAngka(selectedSppr.jumlah_penarikan)}</div>
+            </div>
+            <div className={pageStyles.detailItemFull}>
+              <div className={pageStyles.detailLabel}>Terbilang</div>
+              <div className={pageStyles.detailValue}>: {capitalizeWords(terbilang(selectedSppr.jumlah_penarikan))} Rupiah</div>
             </div>
           </div>
         ) : (
-          <p style={{ textAlign: "center", paddingBottom: "1rem" }}>Data SPPR Belum Dipilih</p>
+          <div className={pageStyles.tableEmpty}>Data SPPR Belum Dipilih</div>
         )}
       </div>
     </div>

@@ -266,7 +266,7 @@ export default function Layout({ children, fullName }) {
             padding: "0",
             boxSizing: "border-box",
             position: "fixed",
-            top: "64px",
+            top: "50px",
             bottom: "0",
             left: isSidebarVisible ? "0" : "-200px",
             zIndex: 500,
@@ -414,11 +414,10 @@ export default function Layout({ children, fullName }) {
       <main 
         style={{ 
           flex: 1, 
-          padding: "3rem 1rem 0rem 2rem", 
+          padding: "3.5rem 1rem 0rem 2rem", 
           backgroundColor: "#F3F4F6",
           overflowY: "auto",
           marginLeft: isSidebarVisible ? "180px" : "0",
-          paddingTop: "64px", 
           transition: "margin-left 0.3s cubic-bezier(.4,0,.2,1)",
           zIndex: 3,
         }}

@@ -1,9 +1,11 @@
-/* styles/pegawai.module.css */
-/* BAGIAN HEADER */
+
+/* BAGIAN HEADER & Container Utama */
 .container {
-  padding: 1rem;
+  padding: 1rem 1rem 0rem 1rem;
   background-color: #f8fafc;
   min-height: 90vh;
+  font-family: 'Inter', sans-serif;
+  color: #334155;
 }
 
 .header {
@@ -15,16 +17,15 @@
   padding-bottom: 0.5rem;
 }
 
-/* BAGIAN TOMBOL  AKSI */
+/* BAGIAN TOMBOL AKSI & PENCARIAN */
 .buttonContainer {
   margin-bottom: 1rem;
   display: flex;
-  flex-wrap: wrap; /* Agar elemen tetap responsif */
+  flex-wrap: wrap;
   gap: 5px;
   align-items: center;
 }
 
-/* STYLE PENCARIAN */
 .searchContainer {
   position: relative;
   max-width: 300px;
@@ -33,13 +34,12 @@
 .searchInput {
   width: 100%;
   padding: 6px;
-  padding-right: 10px; /* Ruang untuk tombol clear */
+  padding-right: 10px;
   border: 1px solid #cbd5e1;
   border-radius: 6px;
   font-size: 0.8rem;
   background-color: white;
 }
-
 
 .searchClearButton {
   position: absolute;
@@ -54,17 +54,15 @@
   padding: 0px;
 }
 
-/* BAGIAN FILTER */
 .filterSelect {
-    padding: 6px;
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
-    cursor: pointer;
-    background-color: white;
-    font-size: 0.8rem;
-    color: #475569;
+  padding: 6px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  cursor: pointer;
+  background-color: white;
+  font-size: 0.8rem;
+  color: #475569;
 }
-
 
 /* TABEL DATA */
 .tableContainer {
@@ -147,28 +145,25 @@
 }
 
 .detailItem {
-  /* Ubah flex-direction menjadi row agar label dan value sejajar */
   display: flex;
-  gap: 0.5rem; /* Tambahkan sedikit jarak antar label dan value */
+  gap: 0.5rem;
 }
 
 .detailLabel {
   font-weight: 600;
   color: #64748b;
-  /* Hapus margin-bottom */
   margin-bottom: 0;
-  width: 180px; /* Atur lebar agar rapi */
+  width: 180px;
   flex-shrink: 0;
 }
 
 .detailValue {
   color: #334155;
   font-weight: 500;
-  flex-grow: 1; /* Biarkan nilai mengisi sisa ruang */
+  flex-grow: 1;
 }
 
 /* --- Gaya Form di Modal --- */
-/* --- GAYA MODAL & FORM YANG SUDAH TERPADU --- */
 .modalOverlay {
   position: fixed;
   top: 0;
@@ -187,7 +182,6 @@
   padding: 2rem;
   border-radius: 8px;
   position: relative;
-  /* Diperlebar dari 1000px menjadi 1200px */
   max-width: 600px;
   width: 90%;
   max-height: 90vh;
@@ -196,29 +190,22 @@
 
 .modalForm {
   display: grid;
-  /* Tetap 2 kolom tapi dengan lebar container yang lebih besar */
   grid-template-columns: 1fr 1fr;
-  /* Mengurangi gap untuk memanfaatkan ruang lebih lebar */
   column-gap: 2rem;
   row-gap: 1rem;
   margin-bottom: 0rem;
 }
 
-/* Kelompok form yang membutuhkan lebar penuh */
-.formGroupFull {
-  grid-column: 1 / -1;
-}
-
 .formGroup {
   display: flex;
   flex-direction: column;
-  margin-left: 0;
 }
 
+/* Menggabungkan properti yang sama untuk semua elemen form */
 .formLabel {
   font-weight: 500;
   color: #334155;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.2rem;
   font-size: 0.875rem;
 }
 
@@ -247,6 +234,32 @@
   outline: none;
   border-color: #2563eb;
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+/* Kelompok form yang membutuhkan lebar penuh */
+.formGroupFull {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.formGroupNested {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Gaya untuk div terbilang yang tidak dapat diubah */
+.formReadOnly {
+  padding: 0.75rem 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background-color: #f8fafc;
+  font-size: 0.875rem;
+  color: #64748b;
+  font-family: 'Inter', sans-serif;
+  text-align: justify;
+
 }
 
 .readOnly {
@@ -290,4 +303,18 @@
 
 .formSubmit:hover {
   background-color: #1d4ed8;
+}
+
+/* Gaya khusus untuk item detail yang membutuhkan lebar penuh */
+.detailItemFull {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* PEMISAH DI FORM */
+.pemisahForm {
+  grid-column: 1 / -1;
+  margin: 0.5rem 0;
+  border: 0.2px solid #d6d3d3ff
 }
