@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/router";
 import { supabase } from "../lib/supabaseClient";
 import Swal from "sweetalert2";
@@ -85,7 +85,7 @@ export default function PencatatanPasien() {
   const [selectedPasien, setSelectedPasien] = useState(null);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [userRole, setUserRole] = useState(null); // Tambahkan state baru untuk peran pengguna
+  const [userRole, setUserRole] = useState(null);
   const [selectedRekapIds, setSelectedRekapIds] = useState([]);
 
   const [pasienData, setPasienData] = useState({
@@ -108,57 +108,14 @@ export default function PencatatanPasien() {
   const [pasienPerPage, setPasienPerPage] = useState(10);
   const pasienStartIndex = (pasienPage - 1) * pasienPerPage;
   const pasienEndIndex = pasienStartIndex + pasienPerPage;
-  // 🔥🔥🔥 KODE YANG DIPERBAIKI 🔥🔥🔥
   const paginatedPasien = pasienList.slice(pasienStartIndex, pasienEndIndex);
   const totalPasienPages = Math.ceil(pasienList.length / pasienPerPage);
 
   const [isAllRekapSelected, setIsAllRekapSelected] = useState(false);
   const selectAllRef = useRef(null);
 
-  useEffect(() => {
-    const fetchUserAndData = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserId(user.id);
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("nama_lengkap, role") // 🔥 Ambil peran pengguna di sini
-          .eq("id", user.id)
-          .single();
-        if (profiles) {
-          setUserName(profiles.nama_lengkap);
-          setUserRole(profiles.role); // 🔥 Simpan peran pengguna ke state
-        }
-        fetchRekapitulasi(user.id);
-      } else {
-        router.push("/");
-      }
-    };
-    fetchUserAndData();
-  }, [router, startDate, endDate]);
-
-  useEffect(() => {
-    const fetchAllSelectedPasien = async () => {
-      if (selectedRekapIds.length > 0) {
-        setPasienPage(1);
-        const pasienData = await fetchPasienByRekapIds(selectedRekapIds);
-        setPasienList(pasienData);
-      } else {
-        setPasienList([]);
-      }
-    };
-    fetchAllSelectedPasien();
-  }, [selectedRekapIds]);
-
-  useEffect(() => {
-    if (selectAllRef.current) {
-      const isIndeterminate = selectedRekapIds.length > 0 && selectedRekapIds.length < paginatedRekap.length;
-      selectAllRef.current.indeterminate = isIndeterminate;
-      setIsAllRekapSelected(selectedRekapIds.length === paginatedRekap.length && paginatedRekap.length > 0);
-    }
-  }, [selectedRekapIds, paginatedRekap]);
-
-  const fetchRekapitulasi = async (id) => {
+  // 🔥 PERBAIKAN: Pindahkan fetchRekapitulasi ke dalam useCallback
+  const fetchRekapitulasi = useCallback(async (id) => {
     let query = supabase.from("rekaman_harian").select("*");
     if (startDate && endDate) {
       query = query.gte("tanggal", startDate).lte("tanggal", endDate);
@@ -169,7 +126,7 @@ export default function PencatatanPasien() {
       return;
     }
     setRekapitulasiList(data);
-  };
+  }, [startDate, endDate]);
 
   const fetchPasienByRekapId = async (rekapId) => {
     const { data, error } = await supabase
@@ -197,6 +154,51 @@ export default function PencatatanPasien() {
     }
     return data;
   };
+
+  // 🔥 PERBAIKAN: Gunakan useCallback untuk fetchAllSelectedPasien
+  const fetchAllSelectedPasien = useCallback(async () => {
+    if (selectedRekapIds.length > 0) {
+      setPasienPage(1);
+      const pasienData = await fetchPasienByRekapIds(selectedRekapIds);
+      setPasienList(pasienData);
+    } else {
+      setPasienList([]);
+    }
+  }, [selectedRekapIds]);
+
+  useEffect(() => {
+    const fetchUserAndData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("nama_lengkap, role")
+          .eq("id", user.id)
+          .single();
+        if (profiles) {
+          setUserName(profiles.nama_lengkap);
+          setUserRole(profiles.role);
+        }
+        fetchRekapitulasi(user.id);
+      } else {
+        router.push("/");
+      }
+    };
+    fetchUserAndData();
+  }, [router, fetchRekapitulasi]); // 🔥 PERBAIKAN: Tambahkan fetchRekapitulasi ke dependencies
+
+  useEffect(() => {
+    fetchAllSelectedPasien();
+  }, [fetchAllSelectedPasien]); // 🔥 PERBAIKAN: Tambahkan fetchAllSelectedPasien ke dependencies
+
+  useEffect(() => {
+    if (selectAllRef.current) {
+      const isIndeterminate = selectedRekapIds.length > 0 && selectedRekapIds.length < paginatedRekap.length;
+      selectAllRef.current.indeterminate = isIndeterminate;
+      setIsAllRekapSelected(selectedRekapIds.length === paginatedRekap.length && paginatedRekap.length > 0);
+    }
+  }, [selectedRekapIds, paginatedRekap]);
 
   const handleRekapFormSubmit = async (e) => {
     e.preventDefault();
@@ -263,7 +265,6 @@ export default function PencatatanPasien() {
     return String(num).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   };
 
-  // ✅ Kode yang diperbaiki: Menambahkan logika untuk mengupdate status rekapitulasi
   const updateRekapitulasiTotals = async (rekapId) => {
     const pasienData = await fetchPasienByRekapId(rekapId);
     const totalPasien = pasienData.length;
