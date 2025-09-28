@@ -307,7 +307,7 @@ export default function Home() {
 
 const formStyle = {
   width: "100%",
-  maxWidth: "400px",
+  maxWidth: "50%",
 };
 
 const inputStyle = {
