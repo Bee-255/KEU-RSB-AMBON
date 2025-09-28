@@ -91,153 +91,8 @@ export default function Pegawai() {
   const totalPages = Math.ceil(totalItems / itemsPerPage);
 
   // --- Fungsi-fungsi Utama ---
-  // Fungsi fetchPegawai dipindahkan ke dalam useEffect untuk mengatasi peringatan
-  // const fetchPegawai = async () => { ... } 
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    
-    if (name === "pekerjaan") {
-      setPegawai(prev => ({ 
-        ...prev, 
-        [name]: value,
-        pangkat: "",
-        golongan: ""
-      }));
-    } else if (name === "pangkat") {
-      setPegawai(prev => ({
-        ...prev,
-        [name]: value,
-        golongan: ""
-      }));
-    } else {
-      setPegawai(prev => ({
-        ...prev,
-        [name]: value
-      }));
-    }
-  };
-
-  const saveOrUpdatePegawai = async () => {
-    try {
-        if (editId) {
-            const { error } = await supabase.from("pegawai").update(pegawai).eq("id", editId);
-            if (error) throw error;
-            Swal.fire("Berhasil!", "Data pegawai berhasil diperbarui.", "success");
-        } else {
-            const { error } = await supabase.from("pegawai").insert([pegawai]);
-            if (error) throw error;
-            Swal.fire("Berhasil!", "Pegawai baru berhasil ditambahkan.", "success");
-        }
-        resetForm();
-        // Memanggil fetchPegawai setelah operasi berhasil
-        // Dengan useCallback, fungsi ini tidak menyebabkan re-render berlebihan
-        fetchPegawai(); 
-    } catch (error) {
-        Swal.fire("Error!", error.message, "error");
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (editId) {
-      saveOrUpdatePegawai();
-      return;
-    }
-    
-    const inputNrpNipNir = pegawai.nrp_nip_nir.trim();
-    const { data: existingPegawai, error: checkError } = await supabase
-        .from("pegawai")
-        .select("nama, nrp_nip_nir")
-        .eq("nrp_nip_nir", inputNrpNipNir);
-
-    if (checkError) {
-        console.error("Supabase error:", checkError);
-        Swal.fire("Error!", "Terjadi kesalahan saat memeriksa data. Silakan coba lagi.", "error");
-        return;
-    }
-
-    if (existingPegawai && existingPegawai.length > 0) {
-        const tipeIdentitas = pegawai.pekerjaan === "Anggota Polri" ? "NRP" : pegawai.pekerjaan === "ASN" ? "NIP" : "NIR";
-        Swal.fire("Gagal!", `Data ${tipeIdentitas} sudah ada dengan nama ${existingPegawai[0].nama}.`, "error");
-        return;
-    }
-    
-    saveOrUpdatePegawai();
-  };
-
-  const handleDelete = async () => {
-    if (!selectedPegawai) return;
-    const result = await Swal.fire({
-      title: "Apakah Anda yakin?",
-      text: `Anda akan menghapus data ${selectedPegawai.nama}`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#dc2626",
-      cancelButtonColor: "#6b7280",
-      confirmButtonText: "Ya, hapus!",
-      cancelButtonText: "Batal",
-    });
-    
-    if (result.isConfirmed) {
-      try {
-        const { error } = await supabase.from("pegawai").delete().eq("id", selectedPegawai.id);
-        if (error) throw error;
-        Swal.fire("Terhapus!", "Data pegawai telah dihapus.", "success");
-        setSelectedPegawai(null);
-        fetchPegawai();
-      } catch (error) {
-        console.error("Error:", error);
-        Swal.fire("Error!", "Terjadi kesalahan saat menghapus data.", "error");
-      }
-    }
-  };
-
-  const handleEdit = () => {
-    if (!selectedPegawai) return;
-    setPegawai(selectedPegawai);
-    setEditId(selectedPegawai.id);
-    setShowModal(true);
-  };
-
-  const resetForm = () => {
-    setPegawai({
-      nama: "", pekerjaan: "", nrp_nip_nir: "", klasifikasi: "", pangkat: "",
-      tipe_identitas: "", golongan: "", jabatan_struktural: "", status: "",
-      bank: "-", no_rekening: "-", nama_rekening: "-",
-    });
-    setEditId(null);
-    setShowModal(false);
-  };
   
-  const handlePageChange = (pageNumber) => {
-    setCurrentPage(pageNumber);
-    setSelectedPegawai(null);
-  };
-
-  const handleItemsPerPageChange = (size) => {
-    setItemsPerPage(size);
-    setCurrentPage(1);
-    setSelectedPegawai(null);
-  };
-
-  const handleRowClick = (p) => {
-    if (selectedPegawai?.id === p.id) {
-      setSelectedPegawai(null);
-    } else {
-      setSelectedPegawai(p);
-    }
-  };
-  
-  const handleFilterChange = (e) => {
-      setFilterPekerjaan(e.target.value);
-      setCurrentPage(1);
-  };
-
-  // --- Efek Samping (useEffect) ---
-
-  // ✅ SOLUSI 1: Gunakan useCallback untuk fungsi yang digunakan di useEffect
+  // ✅ PERBAIKAN: Gunakan useCallback untuk fetchPegawai
   const fetchPegawai = useCallback(async () => {
     let query = supabase.from("pegawai").select("*");
 
@@ -285,11 +140,155 @@ export default function Pegawai() {
     const paginatedData = sortedData.slice(from, to);
     
     setListPegawai(paginatedData);
-  }, [currentPage, itemsPerPage, searchTerm, filterPekerjaan]); // Tambahkan semua dependency di sini
+  }, [currentPage, itemsPerPage, searchTerm, filterPekerjaan]); // ✅ Tambahkan semua dependency di sini
 
+  // ✅ PERBAIKAN: Membungkus saveOrUpdatePegawai dengan useCallback
+  const saveOrUpdatePegawai = useCallback(async () => {
+    try {
+        if (editId) {
+            const { error } = await supabase.from("pegawai").update(pegawai).eq("id", editId);
+            if (error) throw error;
+            Swal.fire("Berhasil!", "Data pegawai berhasil diperbarui.", "success");
+        } else {
+            const { error } = await supabase.from("pegawai").insert([pegawai]);
+            if (error) throw error;
+            Swal.fire("Berhasil!", "Pegawai baru berhasil ditambahkan.", "success");
+        }
+        resetForm();
+        fetchPegawai(); 
+    } catch (error) {
+        Swal.fire("Error!", error.message, "error");
+    }
+  }, [editId, pegawai, fetchPegawai]); // ✅ Tambahkan dependencies
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    
+    if (name === "pekerjaan") {
+      setPegawai(prev => ({ 
+        ...prev, 
+        [name]: value,
+        pangkat: "",
+        golongan: ""
+      }));
+    } else if (name === "pangkat") {
+      setPegawai(prev => ({
+        ...prev,
+        [name]: value,
+        golongan: ""
+      }));
+    } else {
+      setPegawai(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (editId) {
+      saveOrUpdatePegawai();
+      return;
+    }
+    
+    const inputNrpNipNir = pegawai.nrp_nip_nir.trim();
+    const { data: existingPegawai, error: checkError } = await supabase
+        .from("pegawai")
+        .select("nama, nrp_nip_nir")
+        .eq("nrp_nip_nir", inputNrpNipNir);
+
+    if (checkError) {
+        console.error("Supabase error:", checkError);
+        Swal.fire("Error!", "Terjadi kesalahan saat memeriksa data. Silakan coba lagi.", "error");
+        return;
+    }
+
+    if (existingPegawai && existingPegawai.length > 0) {
+        const tipeIdentitas = pegawai.pekerjaan === "Anggota Polri" ? "NRP" : pegawai.pekerjaan === "ASN" ? "NIP" : "NIR";
+        Swal.fire("Gagal!", `Data ${tipeIdentitas} sudah ada dengan nama ${existingPegawai[0].nama}.`, "error");
+        return;
+    }
+    
+    saveOrUpdatePegawai();
+  };
+
+  // ✅ PERBAIKAN: Membungkus handleDelete dengan useCallback
+  const handleDelete = useCallback(async () => {
+    if (!selectedPegawai) return;
+    const result = await Swal.fire({
+      title: "Apakah Anda yakin?",
+      text: `Anda akan menghapus data ${selectedPegawai.nama}`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Ya, hapus!",
+      cancelButtonText: "Batal",
+    });
+    
+    if (result.isConfirmed) {
+      try {
+        const { error } = await supabase.from("pegawai").delete().eq("id", selectedPegawai.id);
+        if (error) throw error;
+        Swal.fire("Terhapus!", "Data pegawai telah dihapus.", "success");
+        setSelectedPegawai(null);
+        fetchPegawai();
+      } catch (error) {
+        console.error("Error:", error);
+        Swal.fire("Error!", "Terjadi kesalahan saat menghapus data.", "error");
+      }
+    }
+  }, [selectedPegawai, fetchPegawai]); // ✅ Tambahkan dependencies
+
+  const handleEdit = () => {
+    if (!selectedPegawai) return;
+    setPegawai(selectedPegawai);
+    setEditId(selectedPegawai.id);
+    setShowModal(true);
+  };
+
+  const resetForm = () => {
+    setPegawai({
+      nama: "", pekerjaan: "", nrp_nip_nir: "", klasifikasi: "", pangkat: "",
+      tipe_identitas: "", golongan: "", jabatan_struktural: "", status: "",
+      bank: "-", no_rekening: "-", nama_rekening: "-",
+    });
+    setEditId(null);
+    setShowModal(false);
+  };
+  
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    setSelectedPegawai(null);
+  };
+
+  const handleItemsPerPageChange = (size) => {
+    setItemsPerPage(size);
+    setCurrentPage(1);
+    setSelectedPegawai(null);
+  };
+
+  const handleRowClick = (p) => {
+    if (selectedPegawai?.id === p.id) {
+      setSelectedPegawai(null);
+    } else {
+      setSelectedPegawai(p);
+    }
+  };
+  
+  const handleFilterChange = (e) => {
+      setFilterPekerjaan(e.target.value);
+      setCurrentPage(1);
+  };
+
+  // --- Efek Samping (useEffect) ---
+
+  // ✅ PERBAIKAN: Panggil fetchPegawai di useEffect dengan dependency yang benar
   useEffect(() => {
     fetchPegawai();
-  }, [fetchPegawai]); // Panggil fetchPegawai di dalam dependency array
+  }, [fetchPegawai]); // ✅ Sekarang fetchPegawai sudah dibungkus useCallback
 
   useEffect(() => {
     if (pegawai.pekerjaan === "Anggota Polri") {
