@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { useRouter } from "next/router";
 import Head from "next/head";
+import Image from 'next/image';
 
 // Tambahkan gaya responsif menggunakan template string
 const responsiveStyles = `
@@ -230,15 +231,15 @@ export default function Home() {
         <div className="container">
           <div className="left-panel">
             <div className="image-container">
-              <img src="/fotodepan.jpeg" alt="Foto Depan" className="photo-style" />
+              <image src="/fotodepan.jpeg" alt="Foto Depan" className="photo-style" />
             </div>
           </div>
 
           <div className="right-panel">
             
             <div className="icon-group">
-              <img src="/iconrsbambon.png" alt="Icon RS Bambon" className="small-logo" />
-              <img src="/iconkeu.png" alt="Icon Keuangan" className="small-logo" />
+              <image src="/iconrsbambon.png" alt="Icon RS Bambon" className="small-logo" />
+              <image src="/iconkeu.png" alt="Icon Keuangan" className="small-logo" />
             </div>
             
             <h3 className="greeting">KEUANGAN RSB AMBON</h3>
