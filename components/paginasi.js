@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { FaStepBackward, FaStepForward, FaCaretLeft, FaCaretRight } from "react-icons/fa";
 
 const PaginasiKeu = ({ currentPage, totalPages, totalItems, itemsPerPage, onPageChange, onItemsPerPageChange }) => {
+  // Tambahkan state untuk melacak halaman yang sedang di-hover
+  const [hoveredPage, setHoveredPage] = useState(null);
+
   // Logic untuk menentukan halaman yang akan ditampilkan
   const maxPagesToShow = 3;
   const pageNumbers = [];
@@ -23,7 +26,7 @@ const PaginasiKeu = ({ currentPage, totalPages, totalItems, itemsPerPage, onPage
   for (let i = startPage; i <= endPage; i++) {
     pageNumbers.push(i);
   }
-  
+
   // Jika total halaman kurang dari maxPagesToShow, tampilkan semua
   if (totalPages <= maxPagesToShow) {
       pageNumbers.length = 0; // Kosongkan array
@@ -62,13 +65,13 @@ const PaginasiKeu = ({ currentPage, totalPages, totalItems, itemsPerPage, onPage
           <button
             onClick={() => onPageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            style={{ 
-              padding: "8px 8px", 
-              background: "white", 
+            style={{
+              padding: "8px 8px",
+              background: "white",
               border: "1px solid #ccc",
               borderLeft: "none",
               borderRight: "none",
-              cursor: "pointer", 
+              cursor: "pointer",
               color: "#2563eb",
               display: 'flex',
               alignItems: 'center',
@@ -77,20 +80,22 @@ const PaginasiKeu = ({ currentPage, totalPages, totalItems, itemsPerPage, onPage
           >
             <div style={{ opacity: currentPage === 1 ? 0.5 : 1 }}>
               <FaCaretLeft size={14} />
-              </div>
+            </div>
           </button>
-          
+
           {/* Tampilan Halaman yang aktif */}
           {pageNumbers.map(page => (
             <button
               key={page}
               onClick={() => onPageChange(page)}
+              // Tambahkan event handler untuk hover
+              onMouseEnter={() => setHoveredPage(page)}
+              onMouseLeave={() => setHoveredPage(null)}
               style={{
                 padding: "6px 12px",
-                background: page === currentPage ? "#2563eb" : "white",
+                // Logika hover: jika di-hover, ganti background
+                background: page === currentPage ? "#2563eb" : (hoveredPage === page ? "#ebe9e5ff" : "white"),
                 color: page === currentPage ? "white" : "#2563eb",
-                // Set border atas dan bawah untuk tombol tidak aktif
-                // dan hilangkan border samping
                 borderTop: page === currentPage ? "none" : "1px solid #ccc",
                 borderBottom: page === currentPage ? "none" : "1px solid #ccc",
                 borderLeft: "none",
@@ -110,9 +115,9 @@ const PaginasiKeu = ({ currentPage, totalPages, totalItems, itemsPerPage, onPage
           <button
             onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
-            style={{ 
-              padding: "8px 12px", 
-              background: "white", 
+            style={{
+              padding: "8px 12px",
+              background: "white",
               border: "1px solid #ccc",
               borderLeft: "none",
               borderRight: "none",
@@ -123,7 +128,6 @@ const PaginasiKeu = ({ currentPage, totalPages, totalItems, itemsPerPage, onPage
               justifyContent: 'center',
             }}
           >
-            {/* Ubah logika opacity */}
             <div style={{ opacity: currentPage === totalPages ? 0.5 : 1 }}>
               <FaCaretRight size={14} />
             </div>
@@ -132,9 +136,9 @@ const PaginasiKeu = ({ currentPage, totalPages, totalItems, itemsPerPage, onPage
           <button
             onClick={() => onPageChange(totalPages)}
             disabled={currentPage === totalPages}
-            style={{ 
-              padding: "8px 12px", 
-              background: "white", 
+            style={{
+              padding: "8px 12px",
+              background: "white",
               borderRadius: "0 4px 4px 0",
               border: "1px solid #ccc",
               borderLeft: "none",
@@ -145,7 +149,6 @@ const PaginasiKeu = ({ currentPage, totalPages, totalItems, itemsPerPage, onPage
               justifyContent: 'center',
             }}
           >
-            {/* Ubah logika opacity */}
             <div style={{ opacity: currentPage === totalPages ? 0.5 : 1 }}>
               <FaStepForward size={10} />
             </div>
