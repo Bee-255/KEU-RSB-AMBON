@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { useRouter } from "next/router";
 import Head from "next/head";
-import Image from 'next/image';
+import Image from 'next/image'; // <--- Impor Image kembali
 
 // Tambahkan gaya responsif menggunakan template string
 const responsiveStyles = `
@@ -64,10 +64,11 @@ const responsiveStyles = `
     margin-bottom: 20px;
   }
 
-  .small-logo {
+  /* Catatan: Properti width dan height untuk small-logo akan diatur langsung di komponen Image */
+  /* .small-logo {
     width: 80px;
     height: auto;
-  }
+  } */
 
   .right-panel-title {
     font-size: 1.2rem;
@@ -105,9 +106,9 @@ const responsiveStyles = `
       margin-bottom: 15px;
     }
 
-    .small-logo {
-      width: 60px;
-    }
+    /* .small-logo {
+      width: 60px; // Ini akan diatur oleh properti width di komponen Image
+    } */
 
     .greeting {
       font-size: 1.8rem;
@@ -231,15 +232,38 @@ export default function Home() {
         <div className="container">
           <div className="left-panel">
             <div className="image-container">
-              <image src="/fotodepan.jpeg" alt="Foto Depan" className="photo-style" />
+              {/* Menggunakan komponen Image dari Next.js */}
+              <Image
+                src="/fotodepan.jpeg"
+                alt="Foto Depan"
+                className="photo-style"
+                width={700} // Contoh lebar, sesuaikan dengan lebar asli gambar Anda
+                height={900} // Contoh tinggi, sesuaikan dengan tinggi asli gambar Anda
+                sizes="(max-width: 768px) 0vw, 60vw" // Penting untuk responsif
+                priority // Jika gambar ini penting dan harus dimuat pertama
+              />
             </div>
           </div>
 
           <div className="right-panel">
             
             <div className="icon-group">
-              <image src="/iconrsbambon.png" alt="Icon RS Bambon" className="small-logo" />
-              <image src="/iconkeu.png" alt="Icon Keuangan" className="small-logo" />
+              {/* Menggunakan komponen Image dari Next.js */}
+              <Image
+                src="/iconrsbambon.png"
+                alt="Icon RS Bambon"
+                className="small-logo"
+                width={80} // Sesuaikan dengan ukuran ikon
+                height={80} // Sesuaikan dengan ukuran ikon
+              />
+              {/* Menggunakan komponen Image dari Next.js */}
+              <Image
+                src="/iconkeu.png"
+                alt="Icon Keuangan"
+                className="small-logo"
+                width={80} // Sesuaikan dengan ukuran ikon
+                height={80} // Sesuaikan dengan ukuran ikon
+              />
             </div>
             
             <h3 className="greeting">KEUANGAN RSB AMBON</h3>
