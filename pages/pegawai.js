@@ -1,6 +1,6 @@
 // components/Pegawai.js
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "../lib/supabaseClient";
 import Swal from "sweetalert2";
 import { FaPlus, FaEdit, FaRegTrashAlt } from "react-icons/fa";
@@ -91,58 +91,8 @@ export default function Pegawai() {
   const totalPages = Math.ceil(totalItems / itemsPerPage);
 
   // --- Fungsi-fungsi Utama ---
-  const fetchPegawai = async () => {
-    let query = supabase.from("pegawai").select("*");
-
-    if (filterPekerjaan) {
-        query = query.filter('pekerjaan', 'eq', filterPekerjaan);
-    }
-
-    if (searchTerm) {
-      query = query.or(`nama.ilike.%${searchTerm}%,pekerjaan.ilike.%${searchTerm}%,nrp_nip_nir.ilike.%${searchTerm}%`);
-    }
-
-    const { data, count, error } = await query.order("id", { ascending: false });
-
-    if (error) {
-      console.error("Error fetching pegawai:", error.message);
-      return;
-    }
-    
-    const sortedData = data.sort((a, b) => {
-      // 1. Urutkan berdasarkan Pekerjaan (Sesuai urutan di pekerjaanOrder)
-      const pekerjaanA = pekerjaanOrder.indexOf(a.pekerjaan);
-      const pekerjaanB = pekerjaanOrder.indexOf(b.pekerjaan);
-      if (pekerjaanA !== pekerjaanB) return pekerjaanA - pekerjaanB;
-      
-      // 2. Urutkan berdasarkan Status ('Aktif' lebih dulu)
-      const statusOrder = { 'Aktif': 1, 'Tidak Aktif': 2 };
-      const statusA = statusOrder[a.status] || 3;
-      const statusB = statusOrder[b.status] || 3;
-      if (statusA !== statusB) return statusA - statusB;
-
-      // 3. Urutkan berdasarkan Pangkat (dari tertinggi ke terendah)
-      const getPangkatIndex = (pangkat, pekerjaan) => {
-          if (pekerjaan === "Anggota Polri") return allPangkatPolri.indexOf(pangkat);
-          if (pekerjaan === "ASN") return allPangkatAsn.indexOf(pangkat);
-          return 999;
-      };
-      const pangkatA = getPangkatIndex(a.pangkat, a.pekerjaan);
-      const pangkatB = getPangkatIndex(b.pangkat, b.pekerjaan);
-      if (pangkatA !== pangkatB) return pangkatA - pangkatB;
-      
-      // 4. Terakhir, urutkan berdasarkan Nama (secara alfabetis)
-      return a.nama.localeCompare(b.nama);
-    });
-
-    setTotalItems(sortedData.length);
-
-    const from = (currentPage - 1) * itemsPerPage;
-    const to = from + itemsPerPage;
-    const paginatedData = sortedData.slice(from, to);
-    
-    setListPegawai(paginatedData);
-  };
+  // Fungsi fetchPegawai dipindahkan ke dalam useEffect untuk mengatasi peringatan
+  // const fetchPegawai = async () => { ... } 
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -180,7 +130,9 @@ export default function Pegawai() {
             Swal.fire("Berhasil!", "Pegawai baru berhasil ditambahkan.", "success");
         }
         resetForm();
-        fetchPegawai();
+        // Memanggil fetchPegawai setelah operasi berhasil
+        // Dengan useCallback, fungsi ini tidak menyebabkan re-render berlebihan
+        fetchPegawai(); 
     } catch (error) {
         Swal.fire("Error!", error.message, "error");
     }
@@ -189,13 +141,11 @@ export default function Pegawai() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Jika sedang dalam mode edit, langsung simpan tanpa pengecekan
     if (editId) {
       saveOrUpdatePegawai();
       return;
     }
     
-    // Pengecekan hanya untuk duplikasi NRP/NIP/NIR
     const inputNrpNipNir = pegawai.nrp_nip_nir.trim();
     const { data: existingPegawai, error: checkError } = await supabase
         .from("pegawai")
@@ -214,7 +164,6 @@ export default function Pegawai() {
         return;
     }
     
-    // Jika tidak ada duplikasi NRP/NIP/NIR, langsung simpan
     saveOrUpdatePegawai();
   };
 
@@ -287,9 +236,60 @@ export default function Pegawai() {
   };
 
   // --- Efek Samping (useEffect) ---
+
+  // ✅ SOLUSI 1: Gunakan useCallback untuk fungsi yang digunakan di useEffect
+  const fetchPegawai = useCallback(async () => {
+    let query = supabase.from("pegawai").select("*");
+
+    if (filterPekerjaan) {
+        query = query.filter('pekerjaan', 'eq', filterPekerjaan);
+    }
+
+    if (searchTerm) {
+      query = query.or(`nama.ilike.%${searchTerm}%,pekerjaan.ilike.%${searchTerm}%,nrp_nip_nir.ilike.%${searchTerm}%`);
+    }
+
+    const { data, count, error } = await query.order("id", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching pegawai:", error.message);
+      return;
+    }
+    
+    const sortedData = data.sort((a, b) => {
+      const pekerjaanA = pekerjaanOrder.indexOf(a.pekerjaan);
+      const pekerjaanB = pekerjaanOrder.indexOf(b.pekerjaan);
+      if (pekerjaanA !== pekerjaanB) return pekerjaanA - pekerjaanB;
+      
+      const statusOrder = { 'Aktif': 1, 'Tidak Aktif': 2 };
+      const statusA = statusOrder[a.status] || 3;
+      const statusB = statusOrder[b.status] || 3;
+      if (statusA !== statusB) return statusA - statusB;
+
+      const getPangkatIndex = (pangkat, pekerjaan) => {
+          if (pekerjaan === "Anggota Polri") return allPangkatPolri.indexOf(pangkat);
+          if (pekerjaan === "ASN") return allPangkatAsn.indexOf(pangkat);
+          return 999;
+      };
+      const pangkatA = getPangkatIndex(a.pangkat, a.pekerjaan);
+      const pangkatB = getPangkatIndex(b.pangkat, b.pekerjaan);
+      if (pangkatA !== pangkatB) return pangkatA - pangkatB;
+      
+      return a.nama.localeCompare(b.nama);
+    });
+
+    setTotalItems(sortedData.length);
+
+    const from = (currentPage - 1) * itemsPerPage;
+    const to = from + itemsPerPage;
+    const paginatedData = sortedData.slice(from, to);
+    
+    setListPegawai(paginatedData);
+  }, [currentPage, itemsPerPage, searchTerm, filterPekerjaan]); // Tambahkan semua dependency di sini
+
   useEffect(() => {
     fetchPegawai();
-  }, [currentPage, itemsPerPage, searchTerm, filterPekerjaan]);
+  }, [fetchPegawai]); // Panggil fetchPegawai di dalam dependency array
 
   useEffect(() => {
     if (pegawai.pekerjaan === "Anggota Polri") {
