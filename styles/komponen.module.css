@@ -318,3 +318,56 @@
   margin: 0.5rem 0;
   border: 0.2px solid #d6d3d3ff
 }
+
+/* --- Gaya Detail Data SPPR --- */
+.detailContainerSPPR {
+  margin-top: 1rem;
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.detailHeaderSPPR {
+  font-size: 1rem;
+  font-weight: 600;
+  background-color: #f8fafc;
+  color: #1e293b;
+  padding: 0.5rem 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.detailContentSPPR {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  padding: 1.5rem;
+  font-size: 0.875rem;
+}
+
+.detailItemSPPR {
+  display: flex;
+  gap: rem;
+}
+
+.detailLabelSPPR {
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 0;
+  width: 120px;
+  flex-shrink: 0;
+}
+
+.detailValueSPPR {
+  color: #334155;
+  font-weight: 500;
+  flex-grow: 1;
+}
+
+/* Gaya khusus untuk item detail SPPR yang membutuhkan lebar penuh */
+.detailItemFullSPPR {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 0rem;
+}
