@@ -64,7 +64,7 @@ const responsiveStyles = `
   }
 
   .right-panel-title {
-    font-size: 1.5rem;
+    font-size: 1rem;
     font-weight: bold;
     text-transform: uppercase;
     color: #2b3039ff;
@@ -90,7 +90,7 @@ const responsiveStyles = `
     }
     
     .right-panel-title {
-      font-size: 1.2rem;
+      font-size: 1rem;
       margin-top: 2rem;
       margin-bottom: 10px;
     }
@@ -100,7 +100,7 @@ const responsiveStyles = `
     }
 
     .greeting {
-      font-size: 2rem;
+      font-size: 1rem;
     }
     
     .sub-greeting {
