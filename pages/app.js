@@ -2,9 +2,8 @@ import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { useRouter } from "next/router";
 import Head from "next/head";
-import Image from 'next/image'; // <--- Impor Image kembali
+import Image from 'next/image';
 
-// Tambahkan gaya responsif menggunakan template string
 const responsiveStyles = `
   body {
     margin: 0;
@@ -22,9 +21,9 @@ const responsiveStyles = `
     font-family: 'Inter', sans-serif;
   }
 
-  /* Gaya untuk layar besar (default, di atas 768px) */
+  /* Gaya untuk layar besar (di atas 768px) */
   .left-panel {
-    flex: 0.6;
+    flex: 0.5; /* Diubah: Mengurangi lebar panel kiri */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -32,30 +31,30 @@ const responsiveStyles = `
   }
 
   .right-panel {
-    flex: 0.4;
+    flex: 0.5; /* Diubah: Menambah lebar panel kanan */
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: 2rem;
+    padding-right: 15rem;
     background-color: #f9fafb;
     text-align: center;
   }
 
   .image-container {
-    /* Anda dapat menyesuaikan tinggi container sesuai kebutuhan */
     width: 100%;
-    max-height: 100vh; /* Contoh: membatasi tinggi container agar tidak terlalu besar */
-    overflow: hidden;
+    max-height: 100vh;
+    overflow: visible;
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
   .photo-style {
-    width: 60%;
+    width: 80%;
     height: 100%;
-    object-fit: contain; /* Ini akan memastikan seluruh gambar terlihat */
+    object-fit: contain;
+    margin-right: -120px; /* Menambahkan margin kanan */
 }
 
   .icon-group {
@@ -64,14 +63,8 @@ const responsiveStyles = `
     margin-bottom: 20px;
   }
 
-  /* Catatan: Properti width dan height untuk small-logo akan diatur langsung di komponen Image */
-  /* .small-logo {
-    width: 80px;
-    height: auto;
-  } */
-
   .right-panel-title {
-    font-size: 1.2rem;
+    font-size: 1.5rem;
     font-weight: bold;
     text-transform: uppercase;
     color: #2b3039ff;
@@ -87,17 +80,17 @@ const responsiveStyles = `
     }
     
     .left-panel {
-        display: none; /* Sembunyikan panel gambar di mode potret mobile */
+        display: none;
     }
 
     .right-panel {
-        flex: 1; /* Ambil seluruh ruang yang tersedia */
-        width: 100%;
+        flex: 1; /* Diperbaiki: Mengambil seluruh lebar */
+        width: 100%; /* Diperbaiki: Mengambil seluruh lebar */
         padding: 1.5rem;
     }
     
     .right-panel-title {
-      font-size: 1rem;
+      font-size: 1.2rem;
       margin-top: 2rem;
       margin-bottom: 10px;
     }
@@ -106,12 +99,8 @@ const responsiveStyles = `
       margin-bottom: 15px;
     }
 
-    /* .small-logo {
-      width: 60px; // Ini akan diatur oleh properti width di komponen Image
-    } */
-
     .greeting {
-      font-size: 1.8rem;
+      font-size: 2rem;
     }
     
     .sub-greeting {
@@ -124,7 +113,7 @@ const responsiveStyles = `
     }
   }
 
-  /* Media Query untuk lanskap tablet (768px - 1024px) */
+  /* Media Query untuk lanskap tablet (769px - 1024px) */
   @media (min-width: 769px) and (max-width: 1024px) {
     .left-panel {
       flex: 0.5;
@@ -149,7 +138,6 @@ export default function Home() {
   const [isRegisterMode, setIsRegisterMode] = useState(false);
   const router = useRouter();
 
-  // Redirect user jika sudah login
   useEffect(() => {
     const checkUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -232,15 +220,14 @@ export default function Home() {
         <div className="container">
           <div className="left-panel">
             <div className="image-container">
-              {/* Menggunakan komponen Image dari Next.js */}
               <Image
                 src="/fotodepan.jpeg"
                 alt="Foto Depan"
                 className="photo-style"
-                width={700} // Contoh lebar, sesuaikan dengan lebar asli gambar Anda
-                height={900} // Contoh tinggi, sesuaikan dengan tinggi asli gambar Anda
-                sizes="(max-width: 768px) 0vw, 60vw" // Penting untuk responsif
-                priority // Jika gambar ini penting dan harus dimuat pertama
+                width={700}
+                height={900}
+                sizes="(max-width: 768px) 0vw, 50vw"
+                priority
               />
             </div>
           </div>
@@ -248,26 +235,23 @@ export default function Home() {
           <div className="right-panel">
             
             <div className="icon-group">
-              {/* Menggunakan komponen Image dari Next.js */}
               <Image
                 src="/iconrsbambon.png"
                 alt="Icon RS Bambon"
                 className="small-logo"
-                width={80} // Sesuaikan dengan ukuran ikon
-                height={80} // Sesuaikan dengan ukuran ikon
+                width={80}
+                height={80}
               />
-              {/* Menggunakan komponen Image dari Next.js */}
               <Image
                 src="/iconkeu.png"
                 alt="Icon Keuangan"
                 className="small-logo"
-                width={80} // Sesuaikan dengan ukuran ikon
-                height={80} // Sesuaikan dengan ukuran ikon
+                width={80}
+                height={80}
               />
             </div>
             
             <h3 className="greeting">KEUANGAN RSB AMBON</h3>
-            
             
             <form onSubmit={handleAuth} style={formStyle}>
               <input
@@ -321,11 +305,9 @@ export default function Home() {
   );
 }
 
-// Gaya (Styles)
-// Catatan: Gaya ini akan di-override oleh media query di atas jika memiliki nama class yang sama
 const formStyle = {
   width: "100%",
-  maxWidth: "320px",
+  maxWidth: "400px",
 };
 
 const inputStyle = {
@@ -352,7 +334,7 @@ const messageStyle = {
   padding: "10px",
   borderRadius: "8px",
   width: "100%",
-  maxWidth: "320px",
+  maxWidth: "400px",
   textAlign: "center",
   fontSize: "0.9rem",
   fontWeight: "500",
