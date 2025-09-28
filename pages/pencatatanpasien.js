@@ -643,10 +643,10 @@ export default function PencatatanPasien() {
         >
           <FaRegTrashAlt/> Hapus
         </button>
-        {/* Tombol Download: Dinonaktifkan jika bukan Owner, Operator atau Admin */}
+        {/* Tombol Download: Dinonaktifkan jika bukan Operator atau Admin */}
         <button
           onClick={handleDownloadClick}
-          disabled={selectedRekapIds.length === 0 || !(userRole === "Owner" ||userRole === "Operator" || userRole === "Admin")}
+          disabled={selectedRekapIds.length === 0 || !(userRole === "Operator" || userRole === "Admin")}
           className={styles.downloadButton}
         >
           <FaDownload /> Download
