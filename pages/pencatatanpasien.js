@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/router";
 import { supabase } from "../lib/supabaseClient";
 import Swal from "sweetalert2";
@@ -85,7 +85,7 @@ export default function PencatatanPasien() {
   const [selectedPasien, setSelectedPasien] = useState(null);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [userRole, setUserRole] = useState(null); // Tambahkan state baru untuk peran pengguna
+  const [userRole, setUserRole] = useState(null);
   const [selectedRekapIds, setSelectedRekapIds] = useState([]);
 
   const [pasienData, setPasienData] = useState({
@@ -108,13 +108,96 @@ export default function PencatatanPasien() {
   const [pasienPerPage, setPasienPerPage] = useState(10);
   const pasienStartIndex = (pasienPage - 1) * pasienPerPage;
   const pasienEndIndex = pasienStartIndex + pasienPerPage;
-  // 🔥🔥🔥 KODE YANG DIPERBAIKI 🔥🔥🔥
   const paginatedPasien = pasienList.slice(pasienStartIndex, pasienEndIndex);
   const totalPasienPages = Math.ceil(pasienList.length / pasienPerPage);
 
   const [isAllRekapSelected, setIsAllRekapSelected] = useState(false);
   const selectAllRef = useRef(null);
 
+  // Perbaikan: Gunakan useCallback untuk menstabilkan fungsi dan hindari loop useEffect
+  const fetchRekapitulasi = useCallback(async () => {
+    let query = supabase.from("rekaman_harian").select("*");
+    if (startDate && endDate) {
+      query = query.gte("tanggal", startDate).lte("tanggal", endDate);
+    }
+    const { data, error } = await query.order("tanggal", { ascending: false });
+    if (error) {
+      console.error("Error fetching rekapitulasi:", error.message);
+      return;
+    }
+    setRekapitulasiList(data);
+  }, [startDate, endDate]);
+
+  const fetchPasienByRekapId = useCallback(async (rekapId) => {
+    const { data, error } = await supabase
+      .from("pasien_harian")
+      .select("*")
+      .eq("rekaman_harian_id", rekapId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching pasien:", error.message);
+      return [];
+    }
+    return data;
+  }, []);
+
+  const fetchPasienByRekapIds = useCallback(async (rekapIds) => {
+    if (!rekapIds.length) return [];
+    const { data, error } = await supabase
+      .from("pasien_harian")
+      .select("*")
+      .in("rekaman_harian_id", rekapIds);
+    if (error) {
+      Swal.fire("Error", error.message, "error");
+      return [];
+    }
+    return data;
+  }, []);
+
+  const getStatus = useCallback((jumlahBersih, totalPembayaran) => {
+    if (totalPembayaran === jumlahBersih) {
+        return "Lunas";
+    } else if (totalPembayaran < jumlahBersih) {
+        return "Kurang bayar";
+    } else {
+        return "Lebih bayar";
+    }
+  }, []);
+
+  const updateRekapitulasiTotals = useCallback(async (rekapId) => {
+    const pasienData = await fetchPasienByRekapId(rekapId);
+    const totalPasien = pasienData.length;
+    const totalTagihan = pasienData.reduce((sum, item) => sum + item.jumlah_tagihan, 0);
+    const totalTunai = pasienData.reduce((sum, item) => sum + item.bayar_tunai, 0);
+    const totalTransfer = pasienData.reduce((sum, item) => sum + item.bayar_transfer, 0);
+    const totalPembayaran = totalTunai + totalTransfer;
+
+    let rekapStatus = "KASIR"; 
+    if (totalPasien > 0) {
+        const allPatientsPaid = pasienData.every(p => getStatus(p.jumlah_bersih, p.total_pembayaran) === "LUNAS");
+        if (allPatientsPaid) {
+            rekapStatus = "LUNAS";
+        } else {
+            rekapStatus = "BELUM LUNAS";
+        }
+    }
+
+    await supabase
+        .from('rekaman_harian')
+        .update({
+            total_pasien: totalPasien,
+            total_tagihan: totalTagihan,
+            total_tunai: totalTunai,
+            total_transfer: totalTransfer,
+            total_pembayaran: totalPembayaran,
+            status: rekapStatus,
+        })
+        .eq('id', rekapId);
+    fetchRekapitulasi();
+  }, [fetchPasienByRekapId, fetchRekapitulasi, getStatus]);
+
+  // useEffect untuk pengambilan data awal
   useEffect(() => {
     const fetchUserAndData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -122,20 +205,20 @@ export default function PencatatanPasien() {
         setUserId(user.id);
         const { data: profiles } = await supabase
           .from("profiles")
-          .select("nama_lengkap, role") // 🔥 Ambil peran pengguna di sini
+          .select("nama_lengkap, role")
           .eq("id", user.id)
           .single();
         if (profiles) {
           setUserName(profiles.nama_lengkap);
-          setUserRole(profiles.role); // 🔥 Simpan peran pengguna ke state
+          setUserRole(profiles.role);
         }
-        fetchRekapitulasi(user.id);
+        fetchRekapitulasi();
       } else {
         router.push("/");
       }
     };
     fetchUserAndData();
-  }, [router, startDate, endDate]);
+  }, [router, fetchRekapitulasi]);
 
   useEffect(() => {
     const fetchAllSelectedPasien = async () => {
@@ -148,7 +231,7 @@ export default function PencatatanPasien() {
       }
     };
     fetchAllSelectedPasien();
-  }, [selectedRekapIds]);
+  }, [selectedRekapIds, fetchPasienByRekapIds]);
 
   useEffect(() => {
     if (selectAllRef.current) {
@@ -157,46 +240,6 @@ export default function PencatatanPasien() {
       setIsAllRekapSelected(selectedRekapIds.length === paginatedRekap.length && paginatedRekap.length > 0);
     }
   }, [selectedRekapIds, paginatedRekap]);
-
-  const fetchRekapitulasi = async (id) => {
-    let query = supabase.from("rekaman_harian").select("*");
-    if (startDate && endDate) {
-      query = query.gte("tanggal", startDate).lte("tanggal", endDate);
-    }
-    const { data, error } = await query.order("tanggal", { ascending: false });
-    if (error) {
-      console.error("Error fetching rekapitulasi:", error.message);
-      return;
-    }
-    setRekapitulasiList(data);
-  };
-
-  const fetchPasienByRekapId = async (rekapId) => {
-    const { data, error } = await supabase
-      .from("pasien_harian")
-      .select("*")
-      .eq("rekaman_harian_id", rekapId)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("Error fetching pasien:", error.message);
-      return [];
-    }
-    return data;
-  };
-
-  const fetchPasienByRekapIds = async (rekapIds) => {
-    if (!rekapIds.length) return [];
-    const { data, error } = await supabase
-      .from("pasien_harian")
-      .select("*")
-      .in("rekaman_harian_id", rekapIds);
-    if (error) {
-      Swal.fire("Error", error.message, "error");
-      return [];
-    }
-    return data;
-  };
 
   const handleRekapFormSubmit = async (e) => {
     e.preventDefault();
@@ -222,7 +265,7 @@ export default function PencatatanPasien() {
       Swal.fire("Berhasil!", "Rekapitulasi harian berhasil dibuat.", "success");
       setShowRekapModal(false);
       setNewRekapDate("");
-      fetchRekapitulasi(userId);
+      fetchRekapitulasi();
     }
   };
 
@@ -261,39 +304,6 @@ export default function PencatatanPasien() {
   const formatRupiahDisplay = (num) => {
     if (num === null || isNaN(num) || num === "") return "";
     return String(num).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-  };
-
-  // ✅ Kode yang diperbaiki: Menambahkan logika untuk mengupdate status rekapitulasi
-  const updateRekapitulasiTotals = async (rekapId) => {
-    const pasienData = await fetchPasienByRekapId(rekapId);
-    const totalPasien = pasienData.length;
-    const totalTagihan = pasienData.reduce((sum, item) => sum + item.jumlah_tagihan, 0);
-    const totalTunai = pasienData.reduce((sum, item) => sum + item.bayar_tunai, 0);
-    const totalTransfer = pasienData.reduce((sum, item) => sum + item.bayar_transfer, 0);
-    const totalPembayaran = totalTunai + totalTransfer;
-
-    let rekapStatus = "KASIR"; 
-    if (totalPasien > 0) {
-        const allPatientsPaid = pasienData.every(p => getStatus(p.jumlah_bersih, p.total_pembayaran) === "LUNAS");
-        if (allPatientsPaid) {
-            rekapStatus = "LUNAS";
-        } else {
-            rekapStatus = "BELUM LUNAS";
-        }
-    }
-
-    await supabase
-        .from('rekaman_harian')
-        .update({
-            total_pasien: totalPasien,
-            total_tagihan: totalTagihan,
-            total_tunai: totalTunai,
-            total_transfer: totalTransfer,
-            total_pembayaran: totalPembayaran,
-            status: rekapStatus,
-        })
-        .eq('id', rekapId);
-    fetchRekapitulasi(userId);
   };
   
   const handlePasienFormSubmit = async (e) => {
@@ -354,16 +364,6 @@ export default function PencatatanPasien() {
       await updateRekapitulasiTotals(rekapIdToSubmit);
       const updatedPasienList = await fetchPasienByRekapIds(selectedRekapIds);
       setPasienList(updatedPasienList);
-    }
-  };
-
-  const getStatus = (jumlahBersih, totalPembayaran) => {
-    if (totalPembayaran === jumlahBersih) {
-        return "Lunas";
-    } else if (totalPembayaran < jumlahBersih) {
-        return "Kurang bayar";
-    } else {
-        return "Lebih bayar";
     }
   };
 
@@ -442,7 +442,7 @@ export default function PencatatanPasien() {
         Swal.fire("Terhapus!", "Data rekapitulasi telah dihapus.", "success");
         setSelectedRekapIds([]);
         setPasienList([]);
-        fetchRekapitulasi(userId);
+        fetchRekapitulasi();
       } catch (error) {
         console.error("Error:", error);
         Swal.fire("Error!", "Terjadi kesalahan saat menghapus data.", "error");
@@ -609,373 +609,6 @@ export default function PencatatanPasien() {
     setPasienPage(1);
     setSelectedPasienId(null);
   };
-
-  return (
-    
-    <div className={pageStyles.container}>
-      <h2 className={pageStyles.header}>Rekapitulasi Harian</h2>
-        
-      {/* Grup Kiri: Tombol Aksi */}
-      <div className={pageStyles.buttonContainer}>
-        {/* Tombol Rekam: Selalu aktif karena bisa diakses semua role */}
-        <button
-          onClick={() => {
-            setNewRekapDate("");
-            setShowRekapModal(true);
-          }}
-          className={styles.rekamButton}
-        >
-          <FaPlus/>Rekam
-        </button>
-        {/* Tombol Tambah Pasien: Selalu aktif karena bisa diakses semua role */}
-        <button
-          onClick={handleAddPasienClick}
-          disabled={selectedRekapIds.length === 0}
-          className={styles.rekamButton}
-        >
-          <FaPlus size={14}/> Pasien
-        </button>
-        {/* Tombol Hapus Rekap: Dinonaktifkan jika bukan Owner */}
-        <button
-          onClick={handleDeleteRekap}
-          disabled={selectedRekapIds.length === 0 || userRole !== "Owner"}
-          className={styles.hapusButton}
-        >
-          <FaRegTrashAlt/> Hapus
-        </button>
-        {/* Tombol Download: Dinonaktifkan jika bukan Operator atau Admin */}
-        <button
-          onClick={handleDownloadClick}
-          disabled={selectedRekapIds.length === 0 || !(userRole === "Operator" || userRole === "Admin")}
-          className={styles.downloadButton}
-        >
-          <FaDownload /> Download
-        </button>
-      </div>
-    
-
-      {/* Modal Tambah Rekapitulasi Baru */}
-      {showRekapModal && (
-        <Modal onClose={() => setShowRekapModal(false)}>
-          <form onSubmit={handleRekapFormSubmit}>
-            <h3 style={{ marginTop: "1rem" }}>Tambah Rekapitulasi Baru</h3>
-            <div>
-              <label className={pageStyles.formLabel}>Tanggal:</label>
-              <input
-                type="date"
-                value={newRekapDate}
-                onChange={(e) => setNewRekapDate(e.target.value)}
-                required
-                className={pageStyles.formInput}
-              />
-            </div>
-            <div className={pageStyles.formActions}>
-              <button type="button" onClick={() => setShowRekapModal(false)} style={{ padding: "8px 16px", border: "1px solid #ccc", borderRadius: "6px", cursor: "pointer", fontSize: "14px" }}>Batal</button>
-              <button type="submit" style={{ background: "#16a34a", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "14px" }}>Simpan</button>
-            </div>
-          </form>
-        </Modal>
-      )}
-
-      {/* Modal Rekam Pasien */}
-      {showPasienModal && (
-        <Modal onClose={resetPasienForm}>
-          <form onSubmit={handlePasienFormSubmit}>
-            <h3 style={{ marginTop: 0 }}>{editPasienId ? "Edit Data Pasien" : "Rekam Pasien Baru"} ({selectedRekapIds.length > 1 ? "Beberapa Tanggal Terpilih" : formatDate(rekapitulasiList.find(r => r.id === selectedRekapIds[0])?.tanggal)})</h3>
-              <div className={pageStyles.modalForm}>
-              <div className={pageStyles.formGroup}>
-                  <label className={pageStyles.formLabel}>Nomor RM:</label>
-                  <input 
-                    type="text" 
-                    name="nomor_rm" 
-                    value={pasienData.nomor_rm} 
-                    onChange={handlePasienFormChange} 
-                    required 
-                    className={pageStyles.formInput}
-                  />
-                  </div>
-                  <div className={pageStyles.formGroup}>
-                    <label className={pageStyles.formLabel}>Nama Pasien:</label>
-                    <input 
-                      type="text" 
-                      name="nama_pasien" 
-                      value={pasienData.nama_pasien} 
-                      onChange={handlePasienFormChange} 
-                      required 
-                      className={pageStyles.formInput} 
-                    />
-                  </div>
-                  <div className={pageStyles.formGroup}>
-                    <label className={pageStyles.formLabel}>Klasifikasi:</label>
-                    <select 
-                      name="klasifikasi"  
-                      value={pasienData.klasifikasi} 
-                      onChange={handlePasienFormChange} 
-                      required 
-                      className={pageStyles.formSelect} 
-                      style={{ backgroundColor: pasienData.klasifikasi ? "white" : "#f3f4f6" }}>
-                      <option value="">-- Pilih Klasifikasi --</option>
-                      {klasifikasiOptions.map((k) => (<option key={k} value={k}>{k}</option>))}
-                    </select>
-                  </div>
-                  <div className={pageStyles.formGroup}>
-                    <label className={pageStyles.formLabel}>Unit Layanan:</label>
-                      <select 
-                        name="unit_layanan" 
-                        value={pasienData.unit_layanan} 
-                        onChange={handlePasienFormChange} 
-                        required 
-                        className={pageStyles.formSelect} 
-                        style={{ backgroundColor: pasienData.unit_layanan ? "white" : "#f3f4f6" }}>
-                        <option value="">-- Pilih Unit Layanan --</option>
-                        {unitLayananOptions.map((unit) => (<option key={unit} value={unit}>{unit}</option>))}
-                      </select>
-                  </div>
-                  <div className={pageStyles.formGroup}>
-                    <label className={pageStyles.formLabel}>Jenis Rawat:</label>
-                    <input 
-                      type="text" 
-                      name="jenis_rawat" 
-                      value={pasienData.jenis_rawat}
-                      disabled 
-                      className={`${pageStyles.formInput} ${pageStyles.readOnly}`}
-                    />
-                  </div>
-                  <div className={pageStyles.formGroup}>
-                    <label className={pageStyles.formLabel}>Jumlah Tagihan:</label>
-                    <input 
-                      type="text"
-                      name="jumlah_tagihan"
-                      value={pasienData.jumlah_tagihan}
-                      onChange={handlePasienFormChange} 
-                      className={pageStyles.formInput} 
-                    />
-                  </div>
-                  <div className={pageStyles.formGroup}>
-                    <label className={pageStyles.formLabel}>Diskon (%):</label>
-                      <input 
-                      type="text"
-                      name="diskon"
-                      value={pasienData.diskon}
-                      onChange={handlePasienFormChange}
-                      className={pageStyles.formInput}
-                    />
-                  </div>
-                  <div className={pageStyles.formGroup}>
-                    <label className={pageStyles.formLabel}>Jumlah Bersih:</label>
-                      <input
-                        type="text"
-                        name="jumlah_bersih"
-                        value={formatRupiah(pasienData.jumlah_bersih)}
-                        readOnly
-                        disabled 
-                        className={`${pageStyles.formInput} ${pageStyles.readOnly}`}
-                      />
-                  </div>
-                  <hr className={pageStyles.pemisahForm} />
-                  <div className={pageStyles.formGroup}>
-                    <label className={pageStyles.formLabel}>Bayar Tunai:</label>
-                    <input 
-                      type="text"
-                      name="bayar_tunai"
-                      value={pasienData.bayar_tunai}
-                      onChange={handlePasienFormChange}
-                      className={pageStyles.formInput}
-                    />
-                  </div>
-                  <div className={pageStyles.formGroup}>
-                    <label className={pageStyles.formLabel}>Bayar Transfer:</label>
-                    <input 
-                      type="text"
-                      name="bayar_transfer"
-                      value={pasienData.bayar_transfer}
-                      onChange={handlePasienFormChange} 
-                      className={pageStyles.formInput}
-                    />
-                  </div>
-                  <div className={pageStyles.formGroup}>
-                    <label className={pageStyles.formLabel}>Tanggal Transfer:</label>
-                      <input 
-                        type="date" 
-                        name="tanggal_transfer" 
-                        value={pasienData.tanggal_transfer} 
-                        onChange={handlePasienFormChange} 
-                        disabled={!pasienData.bayar_transfer || formatToNumber(pasienData.bayar_transfer) === 0} 
-                        className={pageStyles.formSelect} 
-                        style={{ backgroundColor: !pasienData.bayar_transfer || formatToNumber(pasienData.bayar_transfer) === 0 ? "#e9ecef" : "white" }}
-                      />
-                  </div>
-                  <div className={pageStyles.formGroup}>
-                    <label className={pageStyles.formLabel}>Total Pembayaran:</label>
-                      <input 
-                        type="text" 
-                        name="total_pembayaran" 
-                        value={formatRupiah(pasienData.total_pembayaran)} 
-                        readOnly
-                        disabled
-                        className={`${pageStyles.formInput} ${pageStyles.readOnly}`}
-                      />
-                  </div>
-                  <div className={pageStyles.formGroup}>
-                    <label className={pageStyles.formLabel}>Status:</label>
-                      <input 
-                        type="text"
-                        name="status"
-                        value={getStatus(pasienData.jumlah_bersih, pasienData.total_pembayaran)} 
-                        readOnly
-                        disabled
-                        className={`${pageStyles.formInput} ${pageStyles.readOnly}`}
-                      />
-                  </div>
-              </div>
-
-            <div className={pageStyles.formActions}>
-                <button type="button" onClick={resetPasienForm} style={{ padding: "8px 16px", border: "1px solid #ccc", borderRadius: "6px", cursor: "pointer", fontSize: "14px" }}>Batal</button>
-                <button type="submit" style={{ background: "#16a34a", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "14px" }}>{editPasienId ? "Update" : "Simpan"}</button>
-            </div>
-          </form>
-        </Modal>
-      )}
-
-      {/* Tabel data rekap harian */}
-      <div className={pageStyles.tableContainer}>
-        <table className={pageStyles.table}>
-          <thead className={pageStyles.tableHead}>
-            <tr>
-              <th style={{ width: "5%" }}>
-                <input
-                  type="checkbox"
-                  ref={selectAllRef}
-                  checked={isAllRekapSelected}
-                  onChange={handleSelectAllRekap}
-                  style={{ transform: "scale(1.3)" }}
-                />
-              </th>
-              <th>Tanggal</th>
-              <th>Nama User</th>
-              <th style={{ textAlign: "center" }}>Total Pasien</th>
-              <th style={{ textAlign: "center" }}>Total Tagihan</th>
-              <th style={{ textAlign: "center" }}>Bayar Tunai</th>
-              <th style={{ textAlign: "center" }}>Bayar Transfer</th>
-              <th style={{ textAlign: "center" }}>Total Pembayaran</th>
-              <th style={{ textAlign: "center" }}>Status</th>
-            </tr>
-          </thead>
-          <tbody className={pageStyles.tableBody}>
-            {paginatedRekap.length > 0 ? (
-              paginatedRekap.map((rekap) => (
-                <tr
-                  key={rekap.id}
-                  onClick={() => handleRekapCheckbox(rekap.id)}
-                  className={`${pageStyles.tableRow} ${selectedRekapIds.includes(rekap.id) ? pageStyles.selected : ""}`}
-                >
-                  <td>
-                    <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-                      <input
-                        type="checkbox"
-                        checked={selectedRekapIds.includes(rekap.id)}
-                        onChange={() => handleRekapCheckbox(rekap.id)}
-                        style={{ transform: "scale(1.3)" }}
-                      />
-                    </div>
-                  </td>
-                  <td>{formatDate(rekap.tanggal)}</td>
-                  <td>{rekap.nama_user}</td>
-                  <td style={{ textAlign: "center" }}>{rekap.total_pasien}</td>
-                  <td style={{ textAlign: "right" }}>{formatRupiah(rekap.total_tagihan)}</td>
-                  <td style={{ textAlign: "right" }}>{formatRupiah(rekap.total_tunai)}</td>
-                  <td style={{ textAlign: "right" }}>{formatRupiah(rekap.total_transfer)}</td>
-                  <td style={{ textAlign: "right" }}>{formatRupiah(rekap.total_pembayaran)}</td>
-                  <td style={{ textAlign: "center" }}>{rekap.status}</td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="9" className={pageStyles.tableEmpty}>
-                  Tidak ada data rekapitulasi yang ditemukan.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Rekap Pagination */}
-      <PaginasiKeu
-        currentPage={rekapPage}
-        totalPages={totalRekapPages}
-        totalItems={rekapitulasiList.length}
-        itemsPerPage={rekapPerPage}
-        onPageChange={handleRekapPageChange}
-        onItemsPerPageChange={handleRekapItemsPerPageChange}
-      />
-
-      {/* DETAIL Data Pasien */}
-      <div className={pageStyles.detailContainer}>
-       <div className={pageStyles.detailHeader}>Data Pasien</div>
-        <div className={pageStyles.buttonContainer} style={{ margin: "1rem" }}>
-            {/* Tombol Edit: Dinonaktifkan jika bukan Owner atau Admin, atau tidak ada pasien yang dipilih */}
-            <button
-                onClick={handleEditPasien}
-                disabled={!selectedPasienId || !(userRole === "Owner" || userRole === "Admin")}
-                className={styles.editButton}
-            >
-                <FaEdit/> Edit
-            </button>
-            {/* Tombol Hapus: Dinonaktifkan jika bukan Owner, atau tidak ada pasien yang dipilih */}
-            <button
-                onClick={handleDeletePasien}
-                disabled={!selectedPasienId || userRole !== "Owner"}
-                className={styles.hapusButton}
-            >
-                <FaRegTrashAlt /> Hapus
-            </button>
-        </div>
-      
-
-        {/* Tabel Detail Data Pasien */}
-        <div className={pageStyles.tableContainer}>
-          <table className={pageStyles.table}>
-            <thead className={pageStyles.tableHead}>
-              <tr>
-                <th style={{ width: "10%", padding: "0.5rem 1.5rem" }}>Tanggal</th>
-                <th style={{ width: "20%" }}>Nama Pasien</th>
-                <th style={{ width: "15%" }}>Nomor RM</th>
-                <th style={{ width: "20%" }}>Unit Layanan</th>
-                <th style={{ width: "15%", textAlign: "right" }}>Jumlah Bersih</th>
-                <th style={{ width: "15%", textAlign: "right" }}>Total Bayar</th>
-              </tr>
-            </thead>
-            <tbody className={pageStyles.tableBody}>
-              {paginatedPasien.length > 0 ? (
-                paginatedPasien.map((p) => (
-                  <tr
-                    key={p.id}
-                    onClick={() => handlePasienRowClick(p)}
-                    className={`${pageStyles.tableRow} ${selectedPasienId === p.id ? pageStyles.selected : ""}`}
-                  >
-                    <td>{formatDate(rekapitulasiList.find(r => r.id === p.rekaman_harian_id)?.tanggal)}</td>
-                    <td>{p.nama_pasien}</td>
-                    <td>{p.nomor_rm}</td>
-                    <td>{p.unit_layanan}</td>
-                    <td style={{ textAlign: "right" }}>{formatRupiah(p.jumlah_bersih)}</td>
-                    <td style={{ textAlign: "right" }}>{formatRupiah(p.total_pembayaran)}</td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="6" className={pageStyles.tableEmpty}>
-                    {selectedRekapIds.length > 0 ? "Tidak ada pasien untuk tanggal yang dipilih." : "Silakan pilih tanggal rekapitulasi di atas."}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  );
-
 
   return (
     
