@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { useRouter } from "next/router";
 import Head from "next/head";
+import Image from 'next/image';
 
 // Tambahkan gaya responsif menggunakan template string
 const responsiveStyles = `
@@ -27,7 +28,7 @@ const responsiveStyles = `
     display: flex;
     justify-content: center;
     align-items: center;
-    background: #FDFDFD;
+    background-color: #FCFCFC;
   }
 
   .right-panel {
@@ -42,16 +43,20 @@ const responsiveStyles = `
   }
 
   .image-container {
-    width: 90%;
-    height: 90%;
-    overflow: hidden;
-  }
-  
-  .photo-style {
+    /* Anda dapat menyesuaikan tinggi container sesuai kebutuhan */
     width: 100%;
+    max-height: 100vh; /* Contoh: membatasi tinggi container agar tidak terlalu besar */
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+  .photo-style {
+    width: 60%;
     height: 100%;
-    object-fit: cover;
-  }
+    object-fit: contain; /* Ini akan memastikan seluruh gambar terlihat */
+}
 
   .icon-group {
     display: flex;
@@ -226,15 +231,15 @@ export default function Home() {
         <div className="container">
           <div className="left-panel">
             <div className="image-container">
-              <img src="/fotodepan.jpeg" alt="Foto Depan" className="photo-style" />
+              <image src="/fotodepan.jpeg" alt="Foto Depan" className="photo-style" />
             </div>
           </div>
 
           <div className="right-panel">
             
             <div className="icon-group">
-              <img src="/iconrsbambon.png" alt="Icon RS Bambon" className="small-logo" />
-              <img src="/iconkeu.png" alt="Icon Keuangan" className="small-logo" />
+              <image src="/iconrsbambon.png" alt="Icon RS Bambon" className="small-logo" />
+              <image src="/iconkeu.png" alt="Icon Keuangan" className="small-logo" />
             </div>
             
             <h3 className="greeting">KEUANGAN RSB AMBON</h3>
