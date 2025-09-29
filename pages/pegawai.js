@@ -1,16 +1,12 @@
-// components/Pegawai.js
-
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "../lib/supabaseClient";
 import Swal from "sweetalert2";
 import { FaPlus, FaEdit, FaRegTrashAlt } from "react-icons/fa";
 import PaginasiKeu from '../components/paginasi';
 
-// ✅ Impor file CSS Modules
 import styles from "../styles/button.module.css";
 import pageStyles from "../styles/komponen.module.css";
 
-// Komponen Modal Pop-up
 const Modal = ({ children, onClose }) => {
   return (
     <div
@@ -27,7 +23,6 @@ const Modal = ({ children, onClose }) => {
   );
 };
 
-// Data Pangkat dan Golongan Statis
 const allPangkatPolri = [
   "KOMISARIS BESAR POLISI", "AJUN KOMISARIS BESAR POLISI", "KOMISARIS POLISI", "AJUN KOMISARIS POLISI",
   "INSPEKTUR POLISI SATU", "INSPEKTUR POLISI DUA", "AIPTU", "AIPDA",
@@ -87,12 +82,11 @@ export default function Pegawai() {
   const [listPegawai, setListPegawai] = useState([]);
   const [pangkatOptions, setPangkatOptions] = useState([]);
   const [golonganOptions, setGolonganOptions] = useState([]);
+  
+  const [userRole, setUserRole] = useState(null); 
 
   const totalPages = Math.ceil(totalItems / itemsPerPage);
 
-  // --- Fungsi-fungsi Utama ---
-  
-  // ✅ PERBAIKAN: Gunakan useCallback untuk fetchPegawai
   const fetchPegawai = useCallback(async () => {
     let query = supabase.from("pegawai").select("*");
 
@@ -140,9 +134,8 @@ export default function Pegawai() {
     const paginatedData = sortedData.slice(from, to);
     
     setListPegawai(paginatedData);
-  }, [currentPage, itemsPerPage, searchTerm, filterPekerjaan]); // ✅ Tambahkan semua dependency di sini
+  }, [currentPage, itemsPerPage, searchTerm, filterPekerjaan]); 
 
-  // ✅ PERBAIKAN: Membungkus saveOrUpdatePegawai dengan useCallback
   const saveOrUpdatePegawai = useCallback(async () => {
     try {
         if (editId) {
@@ -159,7 +152,7 @@ export default function Pegawai() {
     } catch (error) {
         Swal.fire("Error!", error.message, "error");
     }
-  }, [editId, pegawai, fetchPegawai]); // ✅ Tambahkan dependencies
+  }, [editId, pegawai, fetchPegawai]); 
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -214,7 +207,6 @@ export default function Pegawai() {
     saveOrUpdatePegawai();
   };
 
-  // ✅ PERBAIKAN: Membungkus handleDelete dengan useCallback
   const handleDelete = useCallback(async () => {
     if (!selectedPegawai) return;
     const result = await Swal.fire({
@@ -240,7 +232,7 @@ export default function Pegawai() {
         Swal.fire("Error!", "Terjadi kesalahan saat menghapus data.", "error");
       }
     }
-  }, [selectedPegawai, fetchPegawai]); // ✅ Tambahkan dependencies
+  }, [selectedPegawai, fetchPegawai]);
 
   const handleEdit = () => {
     if (!selectedPegawai) return;
@@ -283,12 +275,28 @@ export default function Pegawai() {
       setCurrentPage(1);
   };
 
-  // --- Efek Samping (useEffect) ---
+  const fetchUserRole = useCallback(async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+          const { data, error } = await supabase
+              .from('profiles')
+              .select('role')
+              .eq('id', user.id)
+              .single();
 
-  // ✅ PERBAIKAN: Panggil fetchPegawai di useEffect dengan dependency yang benar
+          if (error) {
+              console.error("Error fetching user role:", error.message);
+              setUserRole(null);
+          } else {
+              setUserRole(data.role);
+          }
+      }
+  }, []);
+
   useEffect(() => {
     fetchPegawai();
-  }, [fetchPegawai]); // ✅ Sekarang fetchPegawai sudah dibungkus useCallback
+    fetchUserRole(); 
+  }, [fetchPegawai, fetchUserRole]);
 
   useEffect(() => {
     if (pegawai.pekerjaan === "Anggota Polri") {
@@ -327,37 +335,39 @@ export default function Pegawai() {
     }
   }, [pegawai.pekerjaan]);
 
-  // --- Tampilan (JSX) ---
+  const isAllowedToEditOrDelete = userRole === "Owner" || userRole === "Admin";
+  
   return (
     <div className={pageStyles.container}>
       <h2 className={pageStyles.header}>Data Pegawai</h2>
 
       <div className={pageStyles.buttonContainer}>
-        <button
-          onClick={() => {
-            resetForm();
-            setShowModal(true);
-          }}
-          className={styles.rekamButton}
-        >
-          <FaPlus  /> Rekam
-        </button>
-
-        <button
-          onClick={handleEdit}
-          disabled={!selectedPegawai}
-          className={styles.editButton}
-        >
-          <FaEdit/> Edit
-        </button>
-        <button
-          onClick={handleDelete}
-          disabled={!selectedPegawai}
-          className={styles.hapusButton}
-        >
-          <FaRegTrashAlt /> Hapus
-        </button>
-
+          <button
+            onClick={() => {
+              resetForm();
+              setShowModal(true);
+            }}
+            disabled={!isAllowedToEditOrDelete}
+            className={styles.rekamButton}
+          >
+            <FaPlus /> Rekam
+          </button>
+        
+          <button
+            onClick={handleEdit}
+            disabled={!selectedPegawai || !isAllowedToEditOrDelete}
+            className={styles.editButton}
+          >
+            <FaEdit /> Edit
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={!selectedPegawai || !isAllowedToEditOrDelete}
+            className={styles.hapusButton}
+          >
+            <FaRegTrashAlt /> Hapus
+          </button>
+        
         <select
             value={filterPekerjaan}
             onChange={handleFilterChange}
@@ -395,7 +405,7 @@ export default function Pegawai() {
         <Modal onClose={resetForm}>
           <form onSubmit={handleSubmit}>
             <h3 style={{ marginTop: 0 }}>{editId ? "Edit Data Pegawai" : "Rekam Pegawai Baru"}</h3>
-            
+
             <div className={pageStyles.modalForm}>
               <div className={pageStyles.formGroup}>
                 <label className={pageStyles.formLabel}>Nama:</label>
@@ -408,7 +418,7 @@ export default function Pegawai() {
                   className={pageStyles.formInput}
                 />
               </div>
-              
+
               <div className={pageStyles.formGroup}>
                 <label className={pageStyles.formLabel}>Pekerjaan:</label>
                 <select
@@ -427,7 +437,20 @@ export default function Pegawai() {
                   <option>Tenaga Mitra</option>
                 </select>
               </div>
-              
+
+              <div className={pageStyles.formGroup}>
+                <label className={pageStyles.formLabel}>Tipe Identitas:</label>
+                <input
+                  type="text"
+                  name="tipe_identitas"
+                  value={pegawai.tipe_identitas}
+                  onChange={handleChange}
+                  readOnly
+                  disabled
+                  className={`${pageStyles.formInput} ${pageStyles.readOnly}`}
+                />
+              </div>
+
               <div className={pageStyles.formGroup}>
                 <label className={pageStyles.formLabel}>NRP / NIP / NIR:</label>
                 <input
@@ -439,24 +462,7 @@ export default function Pegawai() {
                   className={pageStyles.formInput}
                 />
               </div>
-              
-              <div className={pageStyles.formGroup}>
-                <label className={pageStyles.formLabel}>Klasifikasi:</label>
-                <select
-                  name="klasifikasi"
-                  value={pegawai.klasifikasi}
-                  onChange={handleChange}
-                  required
-                  className={pageStyles.formSelect}
-                >
-                  <option value="">-- Pilih Klasifikasi --</option>
-                  <option>Medis</option>
-                  <option>Paramedis</option>
-                  <option>Non Medis</option>
-                </select>
-              </div>
-              
-              {/* Pangkat */}
+
               <div className={pageStyles.formGroup}>
                 <label className={pageStyles.formLabel}>Pangkat:</label>
                 <select
@@ -475,8 +481,7 @@ export default function Pegawai() {
                   ))}
                 </select>
               </div>
-              
-              {/* Golongan */}
+
               <div className={pageStyles.formGroup}>
                 <label className={pageStyles.formLabel}>Golongan:</label>
                 <select
@@ -484,7 +489,7 @@ export default function Pegawai() {
                   value={pegawai.golongan}
                   onChange={handleChange}
                   required={pegawai.pekerjaan === "ASN"}
-                  disabled={true} // Selalu dinonaktifkan
+                  disabled={true}
                   className={`${pageStyles.formSelect} ${pageStyles.readOnly}`}
                 >
                   <option value="">-- Terisi Otomatis --</option>
@@ -496,7 +501,6 @@ export default function Pegawai() {
                 </select>
               </div>
 
-              {/* Jabatan Struktural */}
               <div className={pageStyles.formGroup}>
                 <label className={pageStyles.formLabel}>Jabatan Struktural:</label>
                 <input
@@ -506,6 +510,22 @@ export default function Pegawai() {
                   onChange={handleChange}
                   className={pageStyles.formInput}
                 />
+              </div>
+
+              <div className={pageStyles.formGroup}>
+                <label className={pageStyles.formLabel}>Klasifikasi:</label>
+                <select
+                  name="klasifikasi"
+                  value={pegawai.klasifikasi}
+                  onChange={handleChange}
+                  required
+                  className={pageStyles.formSelect}
+                >
+                  <option value="">-- Pilih Klasifikasi --</option>
+                  <option>Medis</option>
+                  <option>Paramedis</option>
+                  <option>Non Medis</option>
+                </select>
               </div>
               
               <div className={pageStyles.formGroup}>
@@ -522,7 +542,7 @@ export default function Pegawai() {
                   <option>Tidak Aktif</option>
                 </select>
               </div>
-              
+
               <div className={pageStyles.formGroup}>
                 <label className={pageStyles.formLabel}>Bank:</label>
                 <input
@@ -533,7 +553,7 @@ export default function Pegawai() {
                   className={pageStyles.formInput}
                 />
               </div>
-              
+
               <div className={pageStyles.formGroup}>
                 <label className={pageStyles.formLabel}>No. Rekening:</label>
                 <input
@@ -544,7 +564,7 @@ export default function Pegawai() {
                   className={pageStyles.formInput}
                 />
               </div>
-              
+
               <div className={pageStyles.formGroup}>
                 <label className={pageStyles.formLabel}>Nama Rekening:</label>
                 <input
@@ -556,7 +576,7 @@ export default function Pegawai() {
                 />
               </div>
             </div>
-            
+
             <div className={pageStyles.formActions}>
               <button
                 type="button"
@@ -576,7 +596,6 @@ export default function Pegawai() {
         </Modal>
       )}
       
-      {/* Tabel Pegawai */}
       <div className={pageStyles.tableContainer}>
         <table className={pageStyles.table}>
           <thead className={pageStyles.tableHead}>
@@ -618,7 +637,6 @@ export default function Pegawai() {
         </table>
       </div>
 
-      {/* Kontrol Paginasi */}
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
         <PaginasiKeu
           currentPage={currentPage}
@@ -631,7 +649,6 @@ export default function Pegawai() {
       </div>
       
 
-      {/* Detail Pegawai yang Dipilih */}
       <div className={pageStyles.detailContainer}>
         <div className={pageStyles.detailHeader}>Detail Data Pegawai</div>
         {selectedPegawai ? (

@@ -202,9 +202,22 @@ export default function PencatatanPasien() {
 
   const handleRekapFormSubmit = async (e) => {
     e.preventDefault();
+    const today = new Date().setHours(0, 0, 0, 0);
+    const selectedDate = new Date(newRekapDate).setHours(0, 0, 0, 0);
+  
     if (!newRekapDate) {
       Swal.fire("Peringatan!", "Tanggal wajib diisi.", "warning");
       return;
+    }
+  
+    if (selectedDate > today) {
+        Swal.fire("Peringatan!", "Tanggal tidak boleh lebih dari hari ini.", "warning");
+        return;
+    }
+
+    if (selectedDate < today) {
+        Swal.fire("Peringatan!", "Tanggal tidak boleh kurang dari hari ini.", "warning");
+        return;
     }
 
     const { data, error } = await supabase
@@ -490,6 +503,10 @@ export default function PencatatanPasien() {
       Swal.fire("Info", "Pilih setidaknya satu rekapitulasi harian untuk menambahkan pasien.", "info");
       return;
     }
+    if (selectedRekapIds.length > 1) {
+      Swal.fire("Info", "Hanya bisa menambah pasien untuk satu rekapitulasi harian saja.", "info");
+      return;
+    }
     resetPasienForm();
     setShowPasienModal(true);
   };
@@ -631,7 +648,7 @@ export default function PencatatanPasien() {
         {/* Tombol Tambah Pasien: Selalu aktif karena bisa diakses semua role */}
         <button
           onClick={handleAddPasienClick}
-          disabled={selectedRekapIds.length === 0}
+          disabled={selectedRekapIds.length !== 1}
           className={styles.rekamButton}
         >
           <FaPlus size={14}/> Pasien
@@ -867,7 +884,6 @@ export default function PencatatanPasien() {
               paginatedRekap.map((rekap) => (
                 <tr
                   key={rekap.id}
-                  onClick={() => handleRekapCheckbox(rekap.id)}
                   className={`${pageStyles.tableRow} ${selectedRekapIds.includes(rekap.id) ? pageStyles.selected : ""}`}
                 >
                   <td>
@@ -918,7 +934,7 @@ export default function PencatatanPasien() {
             {/* Tombol Edit: Dinonaktifkan jika bukan Owner atau Admin, atau tidak ada pasien yang dipilih */}
             <button
                 onClick={handleEditPasien}
-                disabled={!selectedPasienId || !(userRole === "Owner" || userRole === "Admin")}
+                disabled={!selectedPasienId || !(userRole === "Owner" || userRole === "Admin"  || userRole === "Kasir")}
                 className={styles.editButton}
             >
                 <FaEdit/> Edit
@@ -941,10 +957,12 @@ export default function PencatatanPasien() {
               <tr>
                 <th style={{ width: "10%", padding: "0.5rem 1.5rem" }}>Tanggal</th>
                 <th style={{ width: "20%" }}>Nama Pasien</th>
-                <th style={{ width: "15%" }}>Nomor RM</th>
-                <th style={{ width: "20%" }}>Unit Layanan</th>
-                <th style={{ width: "15%", textAlign: "right" }}>Jumlah Bersih</th>
-                <th style={{ width: "15%", textAlign: "right" }}>Total Bayar</th>
+                <th style={{ width: "10%" }}>Nomor RM</th>
+                <th style={{ width: "10%" }}>Unit Layanan</th>
+                <th style={{ width: "10%", textAlign: "right" }}>Jumlah Tagihan</th>
+                <th style={{ width: "5%", textAlign: "right" }}>Diskon</th>
+                <th style={{ width: "10%", textAlign: "right" }}>Jumlah Bersih</th>
+                <th style={{ width: "10%", textAlign: "right" }}>Total Bayar</th>
               </tr>
             </thead>
             <tbody className={pageStyles.tableBody}>
@@ -959,6 +977,8 @@ export default function PencatatanPasien() {
                     <td>{p.nama_pasien}</td>
                     <td>{p.nomor_rm}</td>
                     <td>{p.unit_layanan}</td>
+                    <td style={{ textAlign: "right" }}>{formatRupiah(p.jumlah_tagihan)}</td>
+                    <td style={{ textAlign: "right" }}>{(p.diskon) + "%"}</td>
                     <td style={{ textAlign: "right" }}>{formatRupiah(p.jumlah_bersih)}</td>
                     <td style={{ textAlign: "right" }}>{formatRupiah(p.total_pembayaran)}</td>
                   </tr>

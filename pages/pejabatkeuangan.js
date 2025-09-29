@@ -1,4 +1,3 @@
-// pejabatkeuangan.js
 import React, { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import Swal from "sweetalert2";
@@ -41,25 +40,46 @@ const PejabatKeuangan = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [selectedPejabat, setSelectedPejabat] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  // ✅ Tambahkan state untuk user role
+  const [userRole, setUserRole] = useState(null);
 
   // State untuk form input
   const [formData, setFormData] = useState({
-    nama: "",
-    pangkat: "",
-    nrp_nip: "",
-    jabatan_struktural: "",
+    pegawai_id: "",
     jabatan_pengelola_keuangan: "",
     deskripsi_jabatan: "",
     status: "",
   });
 
+  const getLoggedInUserRole = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+      if (profile) {
+        setUserRole(profile.role);
+      }
+    }
+  };
+
   useEffect(() => {
     fetchPejabat();
     fetchPegawai();
+    getLoggedInUserRole(); // Panggil fungsi ini saat komponen dimuat
   }, []);
 
   const fetchPejabat = async () => {
-    const { data, error } = await supabase.from("pejabat_keuangan").select("*").order("created_at", { ascending: false });
+    const { data, error } = await supabase
+      .from("pejabat_keuangan")
+      .select(`
+        *,
+        pegawai (nama, pangkat, nrp_nip_nir, jabatan_struktural, tipe_identitas)
+      `)
+      .order("created_at", { ascending: false });
+    
     if (error) {
       console.error("Gagal mengambil data pejabat:", error);
       Swal.fire("Error", "Gagal mengambil data pejabat. Periksa koneksi atau nama tabel.", "error");
@@ -69,7 +89,7 @@ const PejabatKeuangan = () => {
   };
 
   const fetchPegawai = async () => {
-    const { data, error } = await supabase.from("pegawai").select("nama, pangkat, nrp_nip_nir, jabatan_struktural");
+    const { data, error } = await supabase.from("pegawai").select("id, nama, pangkat, nrp_nip_nir, jabatan_struktural, tipe_identitas");
     if (error) {
       console.error("Gagal mengambil data pegawai:", error);
       Swal.fire("Error", "Gagal mengambil data pegawai. Periksa koneksi atau nama tabel.", "error");
@@ -84,24 +104,18 @@ const PejabatKeuangan = () => {
   };
 
   const handlePegawaiChange = (e) => {
-    const selectedName = e.target.value;
-    const selectedPegawai = pegawaiList.find(p => p.nama === selectedName);
+    const selectedId = e.target.value;
+    const selectedPegawai = pegawaiList.find(p => p.id === selectedId);
 
     if (selectedPegawai) {
       setFormData({
         ...formData,
-        nama: selectedName,
-        pangkat: selectedPegawai.pangkat,
-        nrp_nip: selectedPegawai.nrp_nip_nir,
-        jabatan_struktural: selectedPegawai.jabatan_struktural,
+        pegawai_id: selectedId,
       });
     } else {
       setFormData({
         ...formData,
-        nama: "",
-        pangkat: "",
-        nrp_nip: "",
-        jabatan_struktural: "",
+        pegawai_id: "",
       });
     }
   };
@@ -122,7 +136,12 @@ const PejabatKeuangan = () => {
     if (isEditing) {
       const { error } = await supabase
         .from("pejabat_keuangan")
-        .update(formData)
+        .update({
+          pegawai_id: formData.pegawai_id,
+          jabatan_pengelola_keuangan: formData.jabatan_pengelola_keuangan,
+          deskripsi_jabatan: formData.deskripsi_jabatan,
+          status: formData.status
+        })
         .eq("id", selectedPejabat.id);
 
       if (error) {
@@ -134,7 +153,14 @@ const PejabatKeuangan = () => {
         resetForm();
       }
     } else {
-      const { error } = await supabase.from("pejabat_keuangan").insert([formData]);
+      const { error } = await supabase.from("pejabat_keuangan").insert([
+        {
+          pegawai_id: formData.pegawai_id,
+          jabatan_pengelola_keuangan: formData.jabatan_pengelola_keuangan,
+          deskripsi_jabatan: formData.deskripsi_jabatan,
+          status: formData.status
+        }
+      ]);
 
       if (error) {
         Swal.fire("Gagal!", `Data gagal disimpan: ${error.message}`, "error");
@@ -152,7 +178,7 @@ const PejabatKeuangan = () => {
 
     const result = await Swal.fire({
       title: "Apakah Anda yakin?",
-      text: `Anda akan menghapus data pejabat ${selectedPejabat.nama}`,
+      text: `Anda akan menghapus data pejabat ${selectedPejabat.pegawai.nama}`,
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#dc2626",
@@ -179,8 +205,10 @@ const PejabatKeuangan = () => {
     if (!selectedPejabat) return;
     setIsEditing(true);
     setFormData({
-      ...selectedPejabat,
+      pegawai_id: selectedPejabat.pegawai_id,
+      jabatan_pengelola_keuangan: selectedPejabat.jabatan_pengelola_keuangan,
       deskripsi_jabatan: jabatanMap[selectedPejabat.jabatan_pengelola_keuangan] || "",
+      status: selectedPejabat.status,
     });
     setShowModal(true);
   };
@@ -189,10 +217,7 @@ const PejabatKeuangan = () => {
     setIsEditing(false);
     setSelectedPejabat(null);
     setFormData({
-      nama: "",
-      pangkat: "",
-      nrp_nip: "",
-      jabatan_struktural: "",
+      pegawai_id: "",
       jabatan_pengelola_keuangan: "",
       deskripsi_jabatan: "",
       status: "",
@@ -208,6 +233,9 @@ const PejabatKeuangan = () => {
     }
   };
 
+  // ✅ Logika otorisasi
+  const isAllowedToEditOrDelete = userRole === "Owner" || userRole === "Admin";
+
   return (
     <div className={pageStyles.container}>
       <h2 className={pageStyles.header}>Data Pejabat Keuangan</h2>
@@ -218,21 +246,22 @@ const PejabatKeuangan = () => {
             resetForm();
             setShowModal(true);
           }}
+          disabled={!isAllowedToEditOrDelete}
           className={styles.rekamButton}
         >
           <FaPlus /> Rekam
         </button>
         <button
           onClick={handleEdit}
-          disabled={!selectedPejabat}
-          className={styles.editButton} // ✅ Cukup gunakan satu kelas
+          disabled={!selectedPejabat || !isAllowedToEditOrDelete}
+          className={styles.editButton}
         >
           <FaEdit /> Edit
         </button>
         <button
           onClick={handleDelete}
-          disabled={!selectedPejabat}
-          className={styles.hapusButton} // ✅ Cukup gunakan satu kelas
+          disabled={!selectedPejabat || !isAllowedToEditOrDelete}
+          className={styles.hapusButton}
         >
           <FaRegTrashAlt /> Hapus
         </button>
@@ -247,15 +276,15 @@ const PejabatKeuangan = () => {
               <div className={pageStyles.formGroup}>
                 <label className={pageStyles.formLabel}>Nama:</label>
                 <select
-                  name="nama"
-                  value={formData.nama}
+                  name="pegawai_id"
+                  value={formData.pegawai_id}
                   onChange={handlePegawaiChange}
                   required
                   className={pageStyles.formSelect}
                 >
                   <option value="">-- Pilih Nama Pegawai --</option>
-                  {pegawaiList.map((pegawai, index) => (
-                    <option key={index} value={pegawai.nama}>
+                  {pegawaiList.map((pegawai) => (
+                    <option key={pegawai.id} value={pegawai.id}>
                       {pegawai.nama}
                     </option>
                   ))}
@@ -266,7 +295,17 @@ const PejabatKeuangan = () => {
                 <input
                   type="text"
                   name="pangkat"
-                  value={formData.pangkat}
+                  value={pegawaiList.find(p => p.id === formData.pegawai_id)?.pangkat || ""}
+                  readOnly
+                  className={`${pageStyles.formInput} ${pageStyles.readOnly}`}
+                />
+              </div>
+              <div className={pageStyles.formGroup}>
+                <label className={pageStyles.formLabel}>Tipe NRP/NIP:</label>
+                <input
+                  type="text"
+                  name="tipe_nrp_nip"
+                  value={pegawaiList.find(p => p.id === formData.pegawai_id)?.tipe_identitas || ""}
                   readOnly
                   className={`${pageStyles.formInput} ${pageStyles.readOnly}`}
                 />
@@ -276,7 +315,7 @@ const PejabatKeuangan = () => {
                 <input
                   type="text"
                   name="nrp_nip"
-                  value={formData.nrp_nip}
+                  value={pegawaiList.find(p => p.id === formData.pegawai_id)?.nrp_nip_nir || ""}
                   readOnly
                   className={`${pageStyles.formInput} ${pageStyles.readOnly}`}
                 />
@@ -286,7 +325,7 @@ const PejabatKeuangan = () => {
                 <input
                   type="text"
                   name="jabatan_struktural"
-                  value={formData.jabatan_struktural}
+                  value={pegawaiList.find(p => p.id === formData.pegawai_id)?.jabatan_struktural || ""}
                   readOnly
                   className={`${pageStyles.formInput} ${pageStyles.readOnly}`}
                 />
@@ -368,9 +407,9 @@ const PejabatKeuangan = () => {
                   className={`${pageStyles.tableRow} ${selectedPejabat?.id === pejabat.id ? pageStyles.selected : ""}`}
                 >
                   <td>{index + 1}</td>
-                  <td>{pejabat.nama}</td>
-                  <td>{pejabat.pangkat}</td>
-                  <td>{pejabat.nrp_nip}</td>
+                  <td>{pejabat.pegawai.nama}</td>
+                  <td>{pejabat.pegawai.pangkat}</td>
+                  <td>{pejabat.pegawai.nrp_nip_nir}</td>
                   <td>{pejabat.jabatan_pengelola_keuangan}</td>
                   <td>{pejabat.status}</td>
                 </tr>
@@ -387,43 +426,47 @@ const PejabatKeuangan = () => {
       </div>
 
       {/* Detail Data Pejabat yang Dipilih */}
-<div className={pageStyles.detailContainer}>
-  <div className={pageStyles.detailHeader}>Detail Data Pejabat Keuangan</div>
-  {selectedPejabat ? (
-    <div className={pageStyles.detailContent}>
-      <div className={pageStyles.detailItem}>
-        <div className={pageStyles.detailLabel}>Nama</div>
-        <div className={pageStyles.detailValue}>: {selectedPejabat.nama}</div>
+      <div className={pageStyles.detailContainer}>
+        <div className={pageStyles.detailHeader}>Detail Data Pejabat Keuangan</div>
+        {selectedPejabat ? (
+          <div className={pageStyles.detailContent}>
+            <div className={pageStyles.detailItem}>
+              <div className={pageStyles.detailLabel}>Nama</div>
+              <div className={pageStyles.detailValue}>: {selectedPejabat.pegawai.nama}</div>
+            </div>
+            <div className={pageStyles.detailItem}>
+              <div className={pageStyles.detailLabel}>Pangkat</div>
+              <div className={pageStyles.detailValue}>: {selectedPejabat.pegawai.pangkat}</div>
+            </div>
+            <div className={pageStyles.detailItem}>
+              <div className={pageStyles.detailLabel}>Tipe NRP/NIP</div>
+              <div className={pageStyles.detailValue}>: {selectedPejabat.pegawai.tipe_identitas}</div>
+            </div>
+            <div className={pageStyles.detailItem}>
+              <div className={pageStyles.detailLabel}>NRP/NIP</div>
+              <div className={pageStyles.detailValue}>: {selectedPejabat.pegawai.nrp_nip_nir}</div>
+            </div>
+            <div className={pageStyles.detailItem}>
+              <div className={pageStyles.detailLabel}>Jabatan Struktural</div>
+              <div className={pageStyles.detailValue}>: {selectedPejabat.pegawai.jabatan_struktural}</div>
+            </div>
+            <div className={pageStyles.detailItem}>
+              <div className={pageStyles.detailLabel}>Jabatan Pengelola Keuangan</div>
+              <div className={pageStyles.detailValue}>: {selectedPejabat.jabatan_pengelola_keuangan}</div>
+            </div>
+            <div className={pageStyles.detailItem}>
+              <div className={pageStyles.detailLabel}>Deskripsi Jabatan</div>
+              <div className={pageStyles.detailValue}>: {jabatanMap[selectedPejabat.jabatan_pengelola_keuangan] || ""}</div>
+            </div>
+            <div className={pageStyles.detailItem}>
+              <div className={pageStyles.detailLabel}>Status</div>
+              <div className={pageStyles.detailValue}>: {selectedPejabat.status}</div>
+            </div>
+          </div>
+        ) : (
+          <div className={pageStyles.tableEmpty}>Data Pejabat Keuangan Belum Dipilih</div>
+        )}
       </div>
-      <div className={pageStyles.detailItem}>
-        <div className={pageStyles.detailLabel}>Pangkat</div>
-        <div className={pageStyles.detailValue}>: {selectedPejabat.pangkat}</div>
-      </div>
-      <div className={pageStyles.detailItem}>
-        <div className={pageStyles.detailLabel}>NRP/NIP</div>
-        <div className={pageStyles.detailValue}>: {selectedPejabat.nrp_nip}</div>
-      </div>
-      <div className={pageStyles.detailItem}>
-        <div className={pageStyles.detailLabel}>Jabatan Struktural</div>
-        <div className={pageStyles.detailValue}>: {selectedPejabat.jabatan_struktural}</div>
-      </div>
-      <div className={pageStyles.detailItem}>
-        <div className={pageStyles.detailLabel}>Jabatan Pengelola Keuangan</div>
-        <div className={pageStyles.detailValue}>: {selectedPejabat.jabatan_pengelola_keuangan}</div>
-      </div>
-      <div className={pageStyles.detailItem}>
-        <div className={pageStyles.detailLabel}>Deskripsi Jabatan</div>
-        <div className={pageStyles.detailValue}>: {jabatanMap[selectedPejabat.jabatan_pengelola_keuangan] || ""}</div>
-      </div>
-      <div className={pageStyles.detailItem}>
-        <div className={pageStyles.detailLabel}>Status</div>
-        <div className={pageStyles.detailValue}>: {selectedPejabat.status}</div>
-      </div>
-    </div>
-  ) : (
-    <div className={pageStyles.tableEmpty}>Data Pejabat Keuangan Belum Dipilih</div>
-  )}
-</div>
     </div>
   );
 };

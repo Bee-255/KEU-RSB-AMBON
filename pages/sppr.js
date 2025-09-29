@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/router";
 import { supabase } from "../lib/supabaseClient";
 import Swal from "sweetalert2";
@@ -103,7 +103,7 @@ const Sppr = () => {
     }
   };
   
-  const fetchSPPR = async () => {
+  const fetchSPPR = useCallback(async () => {
     const { data, error } = await supabase.from("sppr").select("*").order("created_at", { ascending: false });
     if (error) {
       console.error("Gagal mengambil data:", error);
@@ -111,7 +111,7 @@ const Sppr = () => {
     } else {
       setSpprList(data);
     }
-  };
+  }, []);
   
   const fetchPejabatAndPegawai = async () => {
     const { data: kpaData } = await supabase
@@ -380,70 +380,63 @@ const Sppr = () => {
     const endIndex = startIndex + rowsPerPage;
     const paginatedSppr = spprList.slice(startIndex, endIndex);
     
-    // Otorisasi berdasarkan peran pengguna
-    const showRekam = userRole === "Owner" || userRole === "Operator";
-    const showEditHapus = (userRole === "Owner" || userRole === "Admin" || userRole === "Operator");
-    const showSetujui = userRole === "Owner" || userRole === "Admin";
-    const showDownload = userRole === "Owner" || userRole === "Admin" || userRole === "Operator";
+    const isAllowedToRekam = userRole === "Owner" || userRole === "Operator";
+    const isAllowedToEditOrDelete = userRole === "Owner" || userRole === "Admin" || userRole === "Operator";
+    const isAllowedToApprove = userRole === "Owner" || userRole === "Admin";
+    const isAllowedToDownload = userRole === "Owner" || userRole === "Admin" || userRole === "Operator" || userRole === "Kasir";
     
-    // Kondisi untuk menonaktifkan tombol jika statusnya "DISETUJUI"
-    const isEditingOrDeletingDisabled = selectedSppr?.status_sppr === "DISETUJUI";
-    const isApprovingDisabled = !selectedSppr || selectedSppr?.status_sppr === "DISETUJUI";
-    const isDownloadingDisabled = !selectedSppr;
+    const isEditingOrDeletingDisabled = !isAllowedToEditOrDelete || !selectedSppr || selectedSppr?.status_sppr === "DISETUJUI";
+    const isApprovingDisabled = !isAllowedToApprove || !selectedSppr || selectedSppr?.status_sppr === "DISETUJUI";
+    const isDownloadingDisabled = !isAllowedToDownload || !selectedSppr;
 
     // === Tampilan (Render) ===
     return (
       <div className={pageStyles.container}>
         <h2 className={pageStyles.header}>Data Surat Perintah Pendebitan Rekening</h2>
         <div className={pageStyles.buttonContainer}>
-          {showRekam && (
-            <button
-              onClick={() => {
-                resetForm();
-                fetchPejabatAndPegawai();
-                setShowModal(true);
-              }}
-              className={styles.rekamButton}
-            >
-              <FaPlus/> Rekam
-            </button>
-          )}
-          {showEditHapus && (
-            <button
-              onClick={handleEdit}
-              disabled={!selectedSppr || isEditingOrDeletingDisabled}
-              className={styles.editButton}
-            >
-              <FaEdit /> Edit
-            </button>
-          )}
-          {showEditHapus && (
-            <button
-              onClick={handleDelete}
-              disabled={!selectedSppr || isEditingOrDeletingDisabled}
-              className={styles.hapusButton}
-            >
-              <FaRegTrashAlt /> Hapus
-            </button>
-          )}
-          {showSetujui && (
-            <button
-              onClick={handleApprove}
-              disabled={isApprovingDisabled}
-              className={styles.rekamButton}
-            >
-              <MdDoneAll size={16}/> Setujui
-            </button>
-          )}
-          {showDownload && (
-            <button
-              onClick={handleDownload}
-              disabled={isDownloadingDisabled}
-              className={styles.downloadButton}
-            >
-              <FiDownload size={14} strokeWidth={3}/> Download PDF
-            </button>
-          )}
+          <button
+            onClick={() => {
+              resetForm();
+              fetchPejabatAndPegawai();
+              setShowModal(true);
+            }}
+            disabled={!isAllowedToRekam}
+            className={styles.rekamButton}
+          >
+            <FaPlus/> Rekam
+          </button>
+        
+          <button
+            onClick={handleEdit}
+            disabled={isEditingOrDeletingDisabled}
+            className={styles.editButton}
+          >
+            <FaEdit /> Edit
+          </button>
+        
+          <button
+            onClick={handleDelete}
+            disabled={isEditingOrDeletingDisabled}
+            className={styles.hapusButton}
+          >
+            <FaRegTrashAlt /> Hapus
+          </button>
+        
+          <button
+            onClick={handleApprove}
+            disabled={isApprovingDisabled}
+            className={styles.rekamButton}
+          >
+            <MdDoneAll size={16}/> Setujui
+          </button>
+        
+          <button
+            onClick={handleDownload}
+            disabled={isDownloadingDisabled}
+            className={styles.downloadButton}
+          >
+            <FiDownload size={14} strokeWidth={3}/> Download PDF
+          </button>
         </div>
         {showModal && (
           <Modal onClose={resetForm}>

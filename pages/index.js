@@ -23,7 +23,7 @@ const responsiveStyles = `
 
   /* Gaya untuk layar besar (di atas 768px) */
   .left-panel {
-    flex: 0.5; /* Diubah: Mengurangi lebar panel kiri */
+    flex: 0.5;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -31,7 +31,7 @@ const responsiveStyles = `
   }
 
   .right-panel {
-    flex: 0.5; /* Diubah: Menambah lebar panel kanan */
+    flex: 0.5;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -48,14 +48,14 @@ const responsiveStyles = `
     display: flex;
     justify-content: center;
     align-items: center;
-}
+  }
 
   .photo-style {
     width: 80%;
     height: 100%;
     object-fit: contain;
-    margin-right: -120px; /* Menambahkan margin kanan */
-}
+    margin-right: -120px;
+  }
 
   .icon-group {
     display: flex;
@@ -78,17 +78,17 @@ const responsiveStyles = `
       height: auto;
       min-height: 100vh;
     }
-    
+
     .left-panel {
-        display: none;
+      display: none;
     }
 
     .right-panel {
-        flex: 1; /* Diperbaiki: Mengambil seluruh lebar */
-        width: 100%; /* Diperbaiki: Mengambil seluruh lebar */
-        padding: 1.5rem;
+      flex: 1;
+      width: 100%;
+      padding: 1.5rem;
     }
-    
+
     .right-panel-title {
       font-size: 1rem;
       margin-top: 2rem;
@@ -102,7 +102,7 @@ const responsiveStyles = `
     .greeting {
       font-size: 1rem;
     }
-    
+
     .sub-greeting {
       font-size: 0.9rem;
       margin-bottom: 1.5rem;
@@ -135,7 +135,6 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [msgType, setMsgType] = useState("error");
-  const [isRegisterMode, setIsRegisterMode] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -163,50 +162,30 @@ export default function Home() {
     setLoading(true);
     setMessage("");
 
-    let authResponse;
-    if (isRegisterMode) {
-      authResponse = await supabase.auth.signUp({
-        email,
-        password,
-      });
-    } else {
-      authResponse = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-    }
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
     setLoading(false);
-    const { data, error } = authResponse;
 
     if (error) {
       setMsgType("error");
-      if (error.message.includes("User already registered")) {
-        setMessage("Email ini sudah terdaftar. Silakan login.");
-      } else {
-        setMessage("Email atau password yang Anda masukkan salah.");
-      }
+      setMessage("Email atau password yang Anda masukkan salah.");
     } else {
       setMsgType("success");
-      setMessage(isRegisterMode ? "Registrasi berhasil! Silakan lengkapi profil Anda." : "Login berhasil!");
-
-      if (isRegisterMode) {
-        if (data.user) {
-          await supabase.from("profiles").insert([{ id: data.user.id, nama_lengkap: "", pekerjaan: "" }]);
-        }
+      setMessage("Login berhasil!");
+      
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("nama_lengkap")
+        .eq("id", data.user.id)
+        .single();
+      
+      if (!profile || !profile.nama_lengkap) {
         router.push("/profile");
       } else {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("nama_lengkap")
-          .eq("id", data.user.id)
-          .single();
-        
-        if (!profile || !profile.nama_lengkap) {
-          router.push("/profile");
-        } else {
-          router.push("/dashboard");
-        }
+        router.push("/dashboard");
       }
     }
   };
@@ -273,12 +252,12 @@ export default function Home() {
                 disabled={loading}
                 style={{
                   ...buttonStyle,
-                  backgroundColor: isRegisterMode ? "#10b981" : "#2563eb",
+                  backgroundColor: "#2563eb",
                   opacity: loading ? 0.7 : 1,
                   cursor: loading ? "not-allowed" : "pointer",
                 }}
               >
-                {loading ? "Memuat..." : (isRegisterMode ? "Daftar" : "Login")}
+                {loading ? "Memuat..." : "Login"}
               </button>
             </form>
             
@@ -288,16 +267,6 @@ export default function Home() {
               </div>
             )}
             
-            <p className="switch-mode">
-              {isRegisterMode ? "Sudah punya akun?" : "Belum punya akun?"}{" "}
-              <button
-                onClick={() => setIsRegisterMode(!isRegisterMode)}
-                style={switchButtonStyle}
-                disabled={loading}
-              >
-                {isRegisterMode ? "Login" : "Daftar"}
-              </button>
-            </p>
           </div>
         </div>
       </div>
@@ -338,14 +307,4 @@ const messageStyle = {
   textAlign: "center",
   fontSize: "0.9rem",
   fontWeight: "500",
-};
-
-const switchButtonStyle = {
-  color: "#2563eb",
-  textDecoration: "none",
-  border: "none",
-  background: "none",
-  cursor: "pointer",
-  padding: "0",
-  fontWeight: "600",
 };
