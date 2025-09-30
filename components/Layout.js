@@ -142,6 +142,8 @@ export default function Layout({ children, fullName }) {
           left: "0",
           width: "100%",
           zIndex: 1000, 
+          // Perubahan: Tambahkan box-shadow untuk efek bayangan
+          boxShadow: "0 4px 6px -1px rgba(210, 32, 32, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)",
         }}
       >
         <div 
@@ -408,6 +410,21 @@ export default function Layout({ children, fullName }) {
               </button>
             </div>
           </div>
+          {/* Perubahan: Tambahkan tautan baru untuk Daftar Akun */}
+          <button
+            onClick={() => router.push("/daftarakun")}
+            onMouseEnter={() => setHoveredItem('daftarakun')}
+            onMouseLeave={() => setHoveredItem(null)}
+            style={
+              isActive("/daftarakun") ? 
+              activeStyle : 
+              (hoveredItem === 'daftarakun' ? hoverStyle : inactiveStyle)
+            }
+          >
+            <span style={{ fontSize: "0.9rem" }}>
+              <FaFile color={isActive("/daftarakun") || hoveredItem === 'daftarakun' ? '#2563eb' : '#4A5568'} />
+            </span> Daftar Akun
+          </button>
         </nav>
       </aside>
       

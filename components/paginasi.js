@@ -35,6 +35,9 @@ const PaginasiKeu = ({ currentPage, totalPages, totalItems, itemsPerPage, onPage
       }
   }
 
+  // Kondisi untuk menonaktifkan semua tombol jika tidak ada item
+  const allButtonsDisabled = totalItems === 0;
+
   return (
     <div style={{ marginTop: "1rem", display: "flex", justifyContent: "center", alignItems: "center", padding: "0px" }}>
       <div style={{ display: "flex", gap: "5px", alignItems: "center" }}>
@@ -43,7 +46,8 @@ const PaginasiKeu = ({ currentPage, totalPages, totalItems, itemsPerPage, onPage
           {/* Tombol Halaman Pertama */}
           <button
             onClick={() => onPageChange(1)}
-            disabled={currentPage === 1}
+            // Perubahan: Tambahkan kondisi allButtonsDisabled
+            disabled={currentPage === 1 || allButtonsDisabled}
             style={{
               padding: "8px 12px",
               background: "white",
@@ -57,14 +61,15 @@ const PaginasiKeu = ({ currentPage, totalPages, totalItems, itemsPerPage, onPage
               justifyContent: "center",
             }}
           >
-            <div style={{ opacity: currentPage === 1 ? 0.5 : 1 }}>
+            <div style={{ opacity: currentPage === 1 || allButtonsDisabled ? 0.5 : 1 }}>
               <FaStepBackward size={10} />
             </div>
           </button>
           {/* Tombol Halaman Sebelumnya */}
           <button
             onClick={() => onPageChange(currentPage - 1)}
-            disabled={currentPage === 1}
+            // Perubahan: Tambahkan kondisi allButtonsDisabled
+            disabled={currentPage === 1 || allButtonsDisabled}
             style={{
               padding: "8px 8px",
               background: "white",
@@ -78,7 +83,7 @@ const PaginasiKeu = ({ currentPage, totalPages, totalItems, itemsPerPage, onPage
               justifyContent: 'center',
             }}
           >
-            <div style={{ opacity: currentPage === 1 ? 0.5 : 1 }}>
+            <div style={{ opacity: currentPage === 1 || allButtonsDisabled ? 0.5 : 1 }}>
               <FaCaretLeft size={14} />
             </div>
           </button>
@@ -88,6 +93,7 @@ const PaginasiKeu = ({ currentPage, totalPages, totalItems, itemsPerPage, onPage
             <button
               key={page}
               onClick={() => onPageChange(page)}
+              disabled={allButtonsDisabled} // Perubahan: Tambahkan kondisi allButtonsDisabled
               // Tambahkan event handler untuk hover
               onMouseEnter={() => setHoveredPage(page)}
               onMouseLeave={() => setHoveredPage(null)}
@@ -114,7 +120,8 @@ const PaginasiKeu = ({ currentPage, totalPages, totalItems, itemsPerPage, onPage
           {/* Tombol Halaman Selanjutnya */}
           <button
             onClick={() => onPageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
+            // Perubahan: Tambahkan kondisi allButtonsDisabled
+            disabled={currentPage === totalPages || allButtonsDisabled}
             style={{
               padding: "8px 12px",
               background: "white",
@@ -128,14 +135,15 @@ const PaginasiKeu = ({ currentPage, totalPages, totalItems, itemsPerPage, onPage
               justifyContent: 'center',
             }}
           >
-            <div style={{ opacity: currentPage === totalPages ? 0.5 : 1 }}>
+            <div style={{ opacity: currentPage === totalPages || allButtonsDisabled ? 0.5 : 1 }}>
               <FaCaretRight size={14} />
             </div>
           </button>
           {/* Tombol Halaman Terakhir */}
           <button
             onClick={() => onPageChange(totalPages)}
-            disabled={currentPage === totalPages}
+            // Perubahan: Tambahkan kondisi allButtonsDisabled
+            disabled={currentPage === totalPages || allButtonsDisabled}
             style={{
               padding: "8px 12px",
               background: "white",
@@ -149,7 +157,7 @@ const PaginasiKeu = ({ currentPage, totalPages, totalItems, itemsPerPage, onPage
               justifyContent: 'center',
             }}
           >
-            <div style={{ opacity: currentPage === totalPages ? 0.5 : 1 }}>
+            <div style={{ opacity: currentPage === totalPages || allButtonsDisabled ? 0.5 : 1 }}>
               <FaStepForward size={10} />
             </div>
           </button>
@@ -157,6 +165,7 @@ const PaginasiKeu = ({ currentPage, totalPages, totalItems, itemsPerPage, onPage
         <select
           value={itemsPerPage}
           onChange={(e) => onItemsPerPageChange(Number(e.target.value))}
+          disabled={allButtonsDisabled} // Perubahan: Tambahkan kondisi allButtonsDisabled
           style={{ padding: "6px 2px 6px 4px", borderRadius: "4px", border: "1px solid #ccc", backgroundColor: "white" }}
         >
           {[5, 10, 20, 50].map(size => (
