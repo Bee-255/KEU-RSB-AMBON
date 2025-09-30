@@ -860,13 +860,13 @@ export default function PencatatanPasien() {
         <table className={pageStyles.table}>
           <thead className={pageStyles.tableHead}>
             <tr>
-              <th style={{ width: "5%" }}>
+              <th style={{ width: "2%" }}>
                 <input
                   type="checkbox"
                   ref={selectAllRef}
                   checked={isAllRekapSelected}
                   onChange={handleSelectAllRekap}
-                  style={{ transform: "scale(1.3)" }}
+                  style={{ transform: "scale(1.2)" }}
                 />
               </th>
               <th>Tanggal</th>
@@ -887,12 +887,12 @@ export default function PencatatanPasien() {
                   className={`${pageStyles.tableRow} ${selectedRekapIds.includes(rekap.id) ? pageStyles.selected : ""}`}
                 >
                   <td>
-                    <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+                    <div style={{display: "flex", justifyContent: "center", alignItems: "center" }}>
                       <input
                         type="checkbox"
                         checked={selectedRekapIds.includes(rekap.id)}
                         onChange={() => handleRekapCheckbox(rekap.id)}
-                        style={{ transform: "scale(1.3)" }}
+                        style={{ transform: "scale(1.2)" }}
                       />
                     </div>
                   </td>

@@ -383,7 +383,7 @@ const Sppr = () => {
     const isAllowedToRekam = userRole === "Owner" || userRole === "Operator";
     const isAllowedToEditOrDelete = userRole === "Owner" || userRole === "Admin" || userRole === "Operator";
     const isAllowedToApprove = userRole === "Owner" || userRole === "Admin";
-    const isAllowedToDownload = userRole === "Owner" || userRole === "Admin" || userRole === "Operator" || userRole === "Kasir";
+    const isAllowedToDownload = userRole === "Owner" || userRole === "Admin" || userRole === "Operator";
     
     const isEditingOrDeletingDisabled = !isAllowedToEditOrDelete || !selectedSppr || selectedSppr?.status_sppr === "DISETUJUI";
     const isApprovingDisabled = !isAllowedToApprove || !selectedSppr || selectedSppr?.status_sppr === "DISETUJUI";
