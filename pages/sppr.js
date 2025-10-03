@@ -5,13 +5,15 @@ import Swal from "sweetalert2";
 import { FaPlus, FaEdit, FaRegTrashAlt } from "react-icons/fa";
 import { FiDownload } from "react-icons/fi";
 import { MdDoneAll } from "react-icons/md";
-import PaginasiKeu from '../components/paginasi';
+import { toast, ToastContainer } from "react-toastify";
+import 'react-toastify/dist/ReactToastify.css';
 
+import PaginasiKeu from '../components/paginasi';
 import styles from "../styles/button.module.css";
 import pageStyles from "../styles/komponen.module.css";
 
 import { capitalizeWords, formatAngka, parseAngka, toRoman, formatTanggal } from '../lib/utils';
-import { terbilang } from "../lib/terbilang"; // Import terbilang di sini
+import { terbilang } from "../lib/terbilang";
 import { createPDF } from '../lib/pdfsppr';
 
 // === Komponen Modal ===
@@ -318,7 +320,15 @@ const Sppr = () => {
           Swal.fire('Gagal!', `Gagal menyetujui data: ${error.message}`, 'error');
           console.error("Error approving data:", error);
         } else {
-          Swal.fire('Berhasil!', 'Data berhasil Disetujui.', 'success');
+          toast.success("SPPR Berhasil Disetujui!", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+          });
           fetchSPPR();
           setSelectedSppr({ ...selectedSppr, status_sppr: 'DISETUJUI' });
         }
@@ -388,10 +398,11 @@ const Sppr = () => {
     const isEditingOrDeletingDisabled = !isAllowedToEditOrDelete || !selectedSppr || selectedSppr?.status_sppr === "DISETUJUI";
     const isApprovingDisabled = !isAllowedToApprove || !selectedSppr || selectedSppr?.status_sppr === "DISETUJUI";
     const isDownloadingDisabled = !isAllowedToDownload || !selectedSppr;
-
+    
     // === Tampilan (Render) ===
     return (
       <div className={pageStyles.container}>
+        <ToastContainer />
         <h2 className={pageStyles.header}>Data Surat Perintah Pendebitan Rekening</h2>
         <div className={pageStyles.buttonContainer}>
           <button

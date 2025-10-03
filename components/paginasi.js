@@ -49,11 +49,13 @@ const PaginasiKeu = ({ currentPage, totalPages, totalItems, itemsPerPage, onPage
             // Perubahan: Tambahkan kondisi allButtonsDisabled
             disabled={currentPage === 1 || allButtonsDisabled}
             style={{
-              padding: "8px 12px",
+              padding: "8px 8px",
               background: "white",
               borderRadius: "4px 0px 0px 4px",
-              border: "1px solid #ccc",
-              borderRight: "none",
+              borderLeft: "1px solid #ccc",
+              borderRight: "0px",
+              borderTop: "1px solid #ccc",
+              borderBottom: "1px solid #ccc",
               cursor: "pointer",
               color: "#2563eb",
               display: "flex",
@@ -73,9 +75,10 @@ const PaginasiKeu = ({ currentPage, totalPages, totalItems, itemsPerPage, onPage
             style={{
               padding: "8px 8px",
               background: "white",
-              border: "1px solid #ccc",
-              borderLeft: "none",
-              borderRight: "none",
+              borderLeft: "0px",
+              borderRight: "0px",
+              borderTop: "1px solid #ccc",
+              borderBottom: "1px solid #ccc",
               cursor: "pointer",
               color: "#2563eb",
               display: 'flex',
@@ -123,11 +126,12 @@ const PaginasiKeu = ({ currentPage, totalPages, totalItems, itemsPerPage, onPage
             // Perubahan: Tambahkan kondisi allButtonsDisabled
             disabled={currentPage === totalPages || allButtonsDisabled}
             style={{
-              padding: "8px 12px",
+              padding: "8px 8px",
               background: "white",
-              border: "1px solid #ccc",
-              borderLeft: "none",
-              borderRight: "none",
+              borderLeft: "0px",
+              borderRight: "0px",
+              borderTop: "1px solid #ccc",
+              borderBottom: "1px solid #ccc",
               cursor: "pointer",
               color: "#2563eb",
               display: 'flex',
@@ -145,11 +149,13 @@ const PaginasiKeu = ({ currentPage, totalPages, totalItems, itemsPerPage, onPage
             // Perubahan: Tambahkan kondisi allButtonsDisabled
             disabled={currentPage === totalPages || allButtonsDisabled}
             style={{
-              padding: "8px 12px",
+              padding: "8px 8px",
               background: "white",
               borderRadius: "0 4px 4px 0",
-              border: "1px solid #ccc",
-              borderLeft: "none",
+              borderLeft: "0px",
+              borderRight: "1px solid #ccc",
+              borderTop: "1px solid #ccc",
+              borderBottom: "1px solid #ccc",
               cursor: "pointer",
               color: "#2563eb",
               display: 'flex',
@@ -166,7 +172,7 @@ const PaginasiKeu = ({ currentPage, totalPages, totalItems, itemsPerPage, onPage
           value={itemsPerPage}
           onChange={(e) => onItemsPerPageChange(Number(e.target.value))}
           disabled={allButtonsDisabled} // Perubahan: Tambahkan kondisi allButtonsDisabled
-          style={{ padding: "6px 2px 6px 4px", borderRadius: "4px", border: "1px solid #ccc", backgroundColor: "white" }}
+          style={{ padding: "6px 4px 6px 4px", borderRadius: "4px", border: "1px solid #ccc", backgroundColor: "white" }}
         >
           {[5, 10, 20, 50].map(size => (
             <option key={size} value={size}>{size}</option>

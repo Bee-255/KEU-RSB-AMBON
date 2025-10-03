@@ -12,7 +12,7 @@ export default function Layout({ children, fullName }) {
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
   
   const [openFolder, setOpenFolder] = useState(null);
-  const [hoveredItem, setHoveredItem] = useState(null); // State baru untuk melacak item yang di-hover
+  const [hoveredItem, setHoveredItem] = useState(null);
   
   const handleLogout = async () => {
     const result = await Swal.fire({
@@ -56,9 +56,9 @@ export default function Layout({ children, fullName }) {
   }, []);
 
   useEffect(() => {
-    if (router.pathname.startsWith('/pejabat')) {
+    if (router.pathname.startsWith('/pejabatkeuangan') || router.pathname.startsWith('/daftarakun')) {
       setOpenFolder('administrasi');
-    } else if (router.pathname.startsWith('/pegawai') || router.pathname.startsWith('/pencatatanpasien') || router.pathname.startsWith('/sppr')) {
+    } else if (router.pathname.startsWith('/pegawai') || router.pathname.startsWith('/pencatatanpasien') || router.pathname.startsWith('/sppr') || router.pathname.startsWith('/jurnalumum')) {
       setOpenFolder('rekam');
     } else {
       setOpenFolder(null);
@@ -76,7 +76,7 @@ export default function Layout({ children, fullName }) {
   const baseMenuItemStyle = {
     background: "none",
     border: "none",
-    color: "#000",
+    color: "#4A5568", 
     textAlign: "left",
     cursor: "pointer",
     fontSize: "0.8rem",
@@ -87,37 +87,29 @@ export default function Layout({ children, fullName }) {
     gap: "0.5rem",
     width: "100%",
     boxSizing: "border-box",
+    fontWeight: "normal", 
   };
 
   const activeStyle = { 
     ...baseMenuItemStyle,
     backgroundColor: "rgba(255, 255, 255, 0.5)",
-    borderLeft: "4px solid #2563eb", 
+    borderLeft: "4px solid #2563eb",
+    color: "#000",
+    fontWeight: "600",
   };
 
   const inactiveStyle = {
     ...baseMenuItemStyle,
     backgroundColor: "#E1E7EF",
-    borderLeft: "4px solid transparent",
+    borderLeft: "4px solid #E1E7EF",
   };
   
-  // Style baru untuk efek hover
   const hoverStyle = { 
-    background: "none",
-    border: "none",
-    color: "#000",
-    textAlign: "left",
-    cursor: "pointer",
-    fontSize: "0.8rem",
-    padding: "0.2rem 0.5rem 0.2rem 0.5rem",
-    margin: "0rem",
-    display: "flex",
-    alignItems: "center",
-    gap: "0.5rem",
-    width: "100%",
-    boxSizing: "border-box",
+    ...baseMenuItemStyle,
     backgroundColor: "rgba(255, 255, 255, 0.5)",
     borderLeft: "4px solid rgba(255, 255, 255, 0.5)", 
+    color: "#4A5568",
+    fontWeight: "normal",
   };
 
   const handleDashboardClick = () => {
@@ -130,7 +122,7 @@ export default function Layout({ children, fullName }) {
   const isActive = (path) => router.pathname === path;
 
   return (
-    <div style={{}}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
       <header
         style={{
           display: "flex",
@@ -142,7 +134,6 @@ export default function Layout({ children, fullName }) {
           left: "0",
           width: "100%",
           zIndex: 1000, 
-          // Perubahan: Tambahkan box-shadow untuk efek bayangan
           boxShadow: "0 4px 6px -1px rgba(210, 32, 32, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)",
         }}
       >
@@ -255,192 +246,205 @@ export default function Layout({ children, fullName }) {
         </div>
       </header>
       
-      <aside
-          style={{
-            width: "200px",
-            backgroundColor: "#E1E7EF",
-            color: "#000",
-            display: "flex",
-            flexDirection: "column",
-            transition: "left 0.3s ease",
-            overflow: "hidden",
-            flexShrink: 0,
-            padding: "0",
-            boxSizing: "border-box",
-            position: "fixed",
-            top: "50px",
-            bottom: "0",
-            left: isSidebarVisible ? "0" : "-200px",
-            zIndex: 500,
-          }}
-      >
+      <div style={{ display: "flex", flexGrow: 1, paddingTop: "50px" }}>
+        <aside
+            style={{
+              width: "200px",
+              backgroundColor: "#E1E7EF",
+              color: "#000",
+              display: "flex",
+              flexDirection: "column",
+              transition: "left 0.3s ease",
+              overflow: "hidden",
+              flexShrink: 0,
+              boxSizing: "border-box",
+              position: "fixed",
+              top: "50px",
+              bottom: "0",
+              left: isSidebarVisible ? "0" : "-200px",
+              zIndex: 500,
+            }}
+        >
+          
+          <nav
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "0rem",
+              padding: "1.5rem 0"
+            }}
+          >
+            {/* Administrasi (Folder) */}
+            <div
+              onClick={handleAdminToggle}
+              onMouseEnter={() => setHoveredItem('administrasi')}
+              onMouseLeave={() => setHoveredItem(null)}
+              style={
+                isAdminOpen ? activeStyle : (hoveredItem === 'administrasi' ? hoverStyle : inactiveStyle)
+              }
+            >
+              <span style={{ fontSize: "0.9rem" }}>
+                <FaFolder color={isAdminOpen ? '#2563eb' : '#4A5568'}/>
+              </span> Administrasi
+              <span style={{
+                display: 'inline-block',
+                marginLeft: "auto",
+                width: "1em",
+                height: "1em",
+                transform: isAdminOpen ? 'rotate(-180deg)' : 'rotate(0deg)',
+                transition: 'transform 0.2s ease-in-out',
+              }}>
+                <FaAngleDown strokeWidth={4} color="#4A5568" />
+              </span>
+            </div>
+
+            {/* Sub-menu Administrasi */}
+            <div 
+              style={{
+                maxHeight: isAdminOpen ? '200px' : '0',
+                overflow: 'hidden',
+                transition: 'max-height 0.2s',
+              }}
+            >
+              <div style={{ display: "flex", flexDirection: "column", gap: "0rem" }}>
+                <button
+                  onClick={() => router.push("/pejabatkeuangan")}
+                  onMouseEnter={() => setHoveredItem('pejabatkeuangan')}
+                  onMouseLeave={() => setHoveredItem(null)}
+                  style={
+                    isActive("/pejabatkeuangan") ? 
+                    {...activeStyle, paddingLeft: "1rem"} : 
+                    (hoveredItem === 'pejabatkeuangan' ? {...hoverStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"})
+                  }
+                >
+                  <span style={{ fontSize: "0.9rem" }}>
+                    <FaFile color={isActive("/pejabatkeuangan") ? '#2563eb' : '#4A5568'} />
+                  </span> Pejabat Keuangan
+                </button>
+                <button
+                  onClick={() => router.push("/daftarakun")}
+                  onMouseEnter={() => setHoveredItem('daftarakun')}
+                  onMouseLeave={() => setHoveredItem(null)}
+                  style={
+                    isActive("/daftarakun") ? 
+                    {...activeStyle, paddingLeft: "1rem"} : 
+                    (hoveredItem === 'daftarakun' ? {...hoverStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"})
+                  }
+                >
+                  <span style={{ fontSize: "0.9rem" }}>
+                    <FaFile color={isActive("/daftarakun") ? '#2563eb' : '#4A5568'} />
+                  </span> Daftar Akun
+                </button>
+              </div>
+            </div>
+            
+            {/* Rekam (Folder) */}
+            <div
+              onClick={handleRekamToggle}
+              onMouseEnter={() => setHoveredItem('rekam')}
+              onMouseLeave={() => setHoveredItem(null)}
+              style={
+                isRekamOpen ? activeStyle : (hoveredItem === 'rekam' ? hoverStyle : inactiveStyle)
+              }
+            >
+              <span style={{ fontSize: "0.9rem" }}>
+                <FaFolder color={isRekamOpen ? '#2563eb' : '#4A5568'}  />
+              </span> Rekam
+              <span style={{
+                display: 'inline-block',
+                marginLeft: "auto",
+                width: "1em",
+                height: "1em",
+                transform: isRekamOpen ? 'rotate(-180deg)' : 'rotate(0deg)',
+                transition: 'transform 0.2s ease-in-out',
+              }}>
+                <FaAngleDown strokeWidth={4} color="#4A5568" />
+              </span>
+            </div>
+
+            {/* Sub-menu */}
+            <div 
+              style={{
+                maxHeight: isRekamOpen ? '200px' : '0',
+                overflow: 'hidden',
+                transition: 'max-height 0.2s',
+              }}
+            >
+              <div style={{ display: "flex", flexDirection: "column", gap: "0rem" }}>
+                <button
+                  onClick={() => router.push("/pegawai")}
+                  onMouseEnter={() => setHoveredItem('pegawai')}
+                  onMouseLeave={() => setHoveredItem(null)}
+                  style={
+                    isActive("/pegawai") ? 
+                    {...activeStyle, paddingLeft: "1rem"} : 
+                    (hoveredItem === 'pegawai' ? {...hoverStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"})
+                  }
+                >
+                  <span style={{ fontSize: "0.9rem" }}>
+                    <FaFile color={isActive("/pegawai") ? '#2563eb' : '#4A5568'} />
+                  </span> Pegawai
+                </button>
+                <button
+                  onClick={() => router.push("/pencatatanpasien")}
+                  onMouseEnter={() => setHoveredItem('pencatatanpasien')}
+                  onMouseLeave={() => setHoveredItem(null)}
+                  style={
+                    isActive("/pencatatanpasien") ? 
+                    {...activeStyle, paddingLeft: "1rem"} : 
+                    (hoveredItem === 'pencatatanpasien' ? {...hoverStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"})
+                  }
+                >
+                  <span style={{ fontSize: "0.9rem" }}>
+                    <FaFile color={isActive("/pencatatanpasien") ? '#2563eb' : '#4A5568'} />
+                  </span> Pencatatan Pasien
+                </button>
+                <button
+                  onClick={() => router.push("/sppr")}
+                  onMouseEnter={() => setHoveredItem('sppr')}
+                  onMouseLeave={() => setHoveredItem(null)}
+                  style={
+                    isActive("/sppr") ? 
+                    {...activeStyle, paddingLeft: "1rem"} : 
+                    (hoveredItem === 'sppr' ? {...hoverStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"})
+                  }
+                >
+                  <span style={{ fontSize: "0.9rem" }}>
+                    <FaFile color={isActive("/sppr") ? '#2563eb' : '#4A5568'} />
+                  </span> SPPR
+                </button>
+                <button
+                  onClick={() => router.push("/jurnalumum")}
+                  onMouseEnter={() => setHoveredItem('jurnalumum')}
+                  onMouseLeave={() => setHoveredItem(null)}
+                  style={
+                    isActive("/jurnalumum") ? 
+                    {...activeStyle, paddingLeft: "1rem"} : 
+                    (hoveredItem === 'jurnalumum' ? {...hoverStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"})
+                  }
+                >
+                  <span style={{ fontSize: "0.9rem" }}>
+                    <FaFile color={isActive("/jurnalumum") ? '#2563eb' : '#4A5568'} />
+                  </span> Pencatatan Transaksi
+                </button>
+              </div>
+            </div>
+          </nav>
+        </aside>
         
-        <nav
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "0rem",
-            padding: "1.5rem 0"
+        <main 
+          style={{ 
+            flex: 1, 
+            backgroundColor: "#F3F4F6",
+            overflowY: "auto",
+            marginLeft: isSidebarVisible ? "200px" : "0px",
+            transition: "margin-left 0.3s cubic-bezier(.4,0,.2,1)",
+            zIndex: 3,
           }}
         >
-          {/* Administrasi (Folder) */}
-          <div
-            onClick={handleAdminToggle}
-            onMouseEnter={() => setHoveredItem('administrasi')}
-            onMouseLeave={() => setHoveredItem(null)}
-            style={
-              isAdminOpen ? activeStyle : (hoveredItem === 'administrasi' ? hoverStyle : inactiveStyle)
-            }
-          >
-            <span style={{ fontSize: "0.9rem" }}>
-              <FaFolder color={isAdminOpen || hoveredItem === 'administrasi' ? '#2563eb' : '#4A5568'}/>
-            </span> Administrasi
-            <span style={{
-              display: 'inline-block',
-              marginLeft: "auto",
-              width: "1em",
-              height: "1em",
-              transform: isAdminOpen ? 'rotate(-180deg)' : 'rotate(0deg)',
-              transition: 'transform 0.2s ease-in-out',
-            }}>
-              <FaAngleDown strokeWidth={4} color="#4A5568" />
-            </span>
-          </div>
-
-          {/* Sub-menu Administrasi */}
-          <div 
-            style={{
-              maxHeight: isAdminOpen ? '200px' : '0',
-              overflow: 'hidden',
-              transition: 'max-height 0.2s',
-            }}
-          >
-            <div style={{ display: "flex", flexDirection: "column", gap: "0rem" }}>
-              <button
-                onClick={() => router.push("/pejabatkeuangan")}
-                onMouseEnter={() => setHoveredItem('pejabatkeuangan')}
-                onMouseLeave={() => setHoveredItem(null)}
-                style={
-                  isActive("/pejabatkeuangan") ? 
-                  {...activeStyle, paddingLeft: "1rem"} : 
-                  (hoveredItem === 'pejabatkeuangan' ? {...hoverStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"})
-                }
-              >
-                <span style={{ fontSize: "0.9rem" }}>
-                  <FaFile color={isActive("/pejabatkeuangan") || hoveredItem === 'pejabatkeuangan' ? '#2563eb' : '#4A5568'} />
-                </span> Pejabat Keuangan
-              </button>
-            </div>
-          </div>
-          
-          {/* Rekam (Folder) */}
-          <div
-            onClick={handleRekamToggle}
-            onMouseEnter={() => setHoveredItem('rekam')}
-            onMouseLeave={() => setHoveredItem(null)}
-            style={
-              isRekamOpen ? activeStyle : (hoveredItem === 'rekam' ? hoverStyle : inactiveStyle)
-            }
-          >
-            <span style={{ fontSize: "0.9rem" }}>
-              <FaFolder color={isRekamOpen || hoveredItem === 'rekam' ? '#2563eb' : '#4A5568'}  />
-            </span> Rekam
-            <span style={{
-              display: 'inline-block',
-              marginLeft: "auto",
-              width: "1em",
-              height: "1em",
-              transform: isRekamOpen ? 'rotate(-180deg)' : 'rotate(0deg)',
-              transition: 'transform 0.2s ease-in-out',
-            }}>
-              <FaAngleDown strokeWidth={4} color="#4A5568" />
-            </span>
-          </div>
-
-          {/* Sub-menu (Pegawai & Pencatatan Pasien) */}
-          <div 
-            style={{
-              maxHeight: isRekamOpen ? '200px' : '0',
-              overflow: 'hidden',
-              transition: 'max-height 0.2s',
-            }}
-          >
-            <div style={{ display: "flex", flexDirection: "column", gap: "0rem" }}>
-              <button
-                onClick={() => router.push("/pegawai")}
-                onMouseEnter={() => setHoveredItem('pegawai')}
-                onMouseLeave={() => setHoveredItem(null)}
-                style={
-                  isActive("/pegawai") ? 
-                  {...activeStyle, paddingLeft: "1rem"} : 
-                  (hoveredItem === 'pegawai' ? {...hoverStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"})
-                }
-              >
-                <span style={{ fontSize: "0.9rem" }}>
-                  <FaFile color={isActive("/pegawai") || hoveredItem === 'pegawai' ? '#2563eb' : '#4A5568'} />
-                </span> Pegawai
-              </button>
-              <button
-                onClick={() => router.push("/pencatatanpasien")}
-                onMouseEnter={() => setHoveredItem('pencatatanpasien')}
-                onMouseLeave={() => setHoveredItem(null)}
-                style={
-                  isActive("/pencatatanpasien") ? 
-                  {...activeStyle, paddingLeft: "1rem"} : 
-                  (hoveredItem === 'pencatatanpasien' ? {...hoverStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"})
-                }
-              >
-                <span style={{ fontSize: "0.9rem" }}>
-                  <FaFile color={isActive("/pencatatanpasien") || hoveredItem === 'pencatatanpasien' ? '#2563eb' : '#4A5568'} />
-                </span> Pencatatan Pasien
-              </button>
-              <button
-                onClick={() => router.push("/sppr")}
-                onMouseEnter={() => setHoveredItem('sppr')}
-                onMouseLeave={() => setHoveredItem(null)}
-                style={
-                  isActive("/sppr") ? 
-                  {...activeStyle, paddingLeft: "1rem"} : 
-                  (hoveredItem === 'sppr' ? {...hoverStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"})
-                }
-              >
-                <span style={{ fontSize: "0.9rem" }}>
-                  <FaFile color={isActive("/sppr") || hoveredItem === 'sppr' ? '#2563eb' : '#4A5568'} />
-                </span> SPPR
-              </button>
-            </div>
-          </div>
-          {/* Perubahan: Tambahkan tautan baru untuk Daftar Akun */}
-          <button
-            onClick={() => router.push("/daftarakun")}
-            onMouseEnter={() => setHoveredItem('daftarakun')}
-            onMouseLeave={() => setHoveredItem(null)}
-            style={
-              isActive("/daftarakun") ? 
-              activeStyle : 
-              (hoveredItem === 'daftarakun' ? hoverStyle : inactiveStyle)
-            }
-          >
-            <span style={{ fontSize: "0.9rem" }}>
-              <FaFile color={isActive("/daftarakun") || hoveredItem === 'daftarakun' ? '#2563eb' : '#4A5568'} />
-            </span> Daftar Akun
-          </button>
-        </nav>
-      </aside>
-      
-      <main 
-        style={{ 
-          flex: 1, 
-          padding: "3.5rem 1rem 0rem 2rem", 
-          backgroundColor: "#F3F4F6",
-          overflowY: "auto",
-          marginLeft: isSidebarVisible ? "180px" : "0",
-          transition: "margin-left 0.3s cubic-bezier(.4,0,.2,1)",
-          zIndex: 3,
-        }}
-      >
-        {children}
-      </main>
+          {children}
+        </main>
+      </div>
     </div>
   );
 }

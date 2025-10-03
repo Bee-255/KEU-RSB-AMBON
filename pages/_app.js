@@ -1,6 +1,7 @@
 // pages/_app.js
 
 import { useEffect, useState } from 'react';
+import 'react-toastify/dist/ReactToastify.css';
 import { useRouter } from 'next/router';
 import { supabase } from '@/utils/supabaseClient';
 import Layout from '@/components/Layout';
