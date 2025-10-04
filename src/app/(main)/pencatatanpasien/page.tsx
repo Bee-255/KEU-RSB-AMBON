@@ -170,17 +170,17 @@ export default function PencatatanPasien() {
   const [isAllRekapSelected, setIsAllRekapSelected] = useState(false);
   const selectAllRef = useRef<HTMLInputElement>(null);
 
-  const fetchRekapitulasi = useCallback(async (_id: string | null) => {
+  const fetchRekapitulasi = useCallback(async (id: string | null) => {
     let query = supabase.from("rekaman_harian").select("*");
     if (startDate && endDate) {
       query = query.gte("tanggal", startDate).lte("tanggal", endDate);
     }
-    const { data, error } = await query.order("tanggal", { ascending: false });
+    const { data: rekapData, error } = await query.order("tanggal", { ascending: false });
     if (error) {
       console.error("Error fetching rekapitulasi:", error.message);
       return;
     }
-    setRekapitulasiList(data as Rekapitulasi[]);
+    setRekapitulasiList(rekapData as Rekapitulasi[]);
   }, [startDate, endDate]);
 
   const fetchPasienByRekapId = async (rekapId: string): Promise<Pasien[]> => {
@@ -661,8 +661,8 @@ export default function PencatatanPasien() {
       body: data,
       startY: 30,
       headStyles: { fillColor: [243, 244, 246], textColor: [0, 0, 0] },
-      didDrawPage: function(data) {
-        doc.text("Halaman " + doc.internal.getNumberOfPages(), doc.internal.pageSize.width - 20, doc.internal.pageSize.height - 10, { align: "right" });
+      didDrawPage: (data) => {
+        doc.text(`Halaman ${doc.internal.getNumberOfPages()}`, (doc as any).internal.pageSize.width - 20, (doc as any).internal.pageSize.height - 10, { align: "right" });
       }
     });
     doc.save(`Data Pasien Multi Hari.pdf`);
