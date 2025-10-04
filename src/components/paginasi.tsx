@@ -32,7 +32,6 @@ const styles = {
         display: "flex",
         borderRadius: "4px",
         overflow: "hidden",
-        border: "1px solid #ccc",
     },
     button: {
         padding: "8px 8px",
@@ -113,6 +112,7 @@ const Paginasi: React.FC<PaginasiProps> = ({
                         disabled={isFirstPage || allButtonsDisabled}
                         style={{
                             ...styles.button,
+                            border: "1px solid #ccc",
                             borderRight: "none",
                             borderRadius: "4px 0 0 4px",
                             opacity: isFirstPage || allButtonsDisabled ? 0.5 : 1,
@@ -126,6 +126,8 @@ const Paginasi: React.FC<PaginasiProps> = ({
                         disabled={isFirstPage || allButtonsDisabled}
                         style={{
                             ...styles.button,
+                            borderTop: "1px solid #ccc",
+                            borderBottom: "1px solid #ccc",
                             borderLeft: "none",
                             borderRight: "none",
                             opacity: isFirstPage || allButtonsDisabled ? 0.5 : 1,
@@ -147,6 +149,8 @@ const Paginasi: React.FC<PaginasiProps> = ({
                                 background: page === currentPage ? "#2563eb" : (hoveredPage === page ? "#ebe9e5ff" : "white"),
                                 color: page === currentPage ? "white" : "#2563eb",
                                 fontWeight: page === currentPage ? "600" : "400",
+                                borderTop: page === currentPage ? "none" : "1px solid #ccc",
+                                borderBottom: page === currentPage ? "none" : "1px solid #ccc",
                                 borderLeft: "none",
                                 borderRight: "none",
                             }}
@@ -161,6 +165,8 @@ const Paginasi: React.FC<PaginasiProps> = ({
                         disabled={isLastPage || allButtonsDisabled}
                         style={{
                             ...styles.button,
+                            borderTop: "1px solid #ccc",
+                            borderBottom: "1px solid #ccc",
                             borderLeft: "none",
                             borderRight: "none",
                             opacity: isLastPage || allButtonsDisabled ? 0.5 : 1,
@@ -174,7 +180,10 @@ const Paginasi: React.FC<PaginasiProps> = ({
                         disabled={isLastPage || allButtonsDisabled}
                         style={{
                             ...styles.button,
+                            borderTop: "1px solid #ccc",
+                            borderBottom: "1px solid #ccc",
                             borderLeft: "none",
+                            borderRight: "1px solid #ccc",
                             borderRadius: "0 4px 4px 0",
                             opacity: isLastPage || allButtonsDisabled ? 0.5 : 1,
                         }}
