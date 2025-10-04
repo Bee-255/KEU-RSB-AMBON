@@ -115,10 +115,13 @@ const Paginasi: React.FC<PaginasiProps> = ({
                             border: "1px solid #ccc",
                             borderRight: "none",
                             borderRadius: "4px 0 0 4px",
-                            opacity: isFirstPage || allButtonsDisabled ? 0.5 : 1,
                         }}
                     >
-                        <FaStepBackward size={10} />
+                        <FaStepBackward 
+                            size={10} 
+                            style={{opacity: isFirstPage || allButtonsDisabled ? 0.5 : 1,
+                            }}
+                        />
                     </button>
                     {/* Tombol Halaman Sebelumnya */}
                     <button
@@ -130,10 +133,13 @@ const Paginasi: React.FC<PaginasiProps> = ({
                             borderBottom: "1px solid #ccc",
                             borderLeft: "none",
                             borderRight: "none",
-                            opacity: isFirstPage || allButtonsDisabled ? 0.5 : 1,
                         }}
                     >
-                        <FaCaretLeft size={14} />
+                        <FaCaretLeft 
+                            size={14} 
+                            style={{opacity: isFirstPage || allButtonsDisabled ? 0.5 : 1,
+                            }}
+                        />
                     </button>
 
                     {/* Tampilan Nomor Halaman */}
@@ -169,10 +175,13 @@ const Paginasi: React.FC<PaginasiProps> = ({
                             borderBottom: "1px solid #ccc",
                             borderLeft: "none",
                             borderRight: "none",
-                            opacity: isLastPage || allButtonsDisabled ? 0.5 : 1,
                         }}
                     >
-                        <FaCaretRight size={14} />
+                        <FaCaretRight 
+                            size={14} 
+                            style={{opacity: isLastPage || allButtonsDisabled ? 0.5 : 1,
+                            }} 
+                        />
                     </button>
                     {/* Tombol Halaman Terakhir */}
                     <button
@@ -185,10 +194,13 @@ const Paginasi: React.FC<PaginasiProps> = ({
                             borderLeft: "none",
                             borderRight: "1px solid #ccc",
                             borderRadius: "0 4px 4px 0",
-                            opacity: isLastPage || allButtonsDisabled ? 0.5 : 1,
                         }}
                     >
-                        <FaStepForward size={10} />
+                        <FaStepForward 
+                            size={10} 
+                            style={{opacity: isLastPage || allButtonsDisabled ? 0.5 : 1,
+                            }}
+                        />
                     </button>
                 </div>
                 {/* Opsi Items per Halaman */}
