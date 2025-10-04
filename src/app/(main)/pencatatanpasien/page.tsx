@@ -647,7 +647,7 @@ export default function PencatatanPasien() {
       getStatus(p.jumlah_bersih, p.total_pembayaran)
     ]);
     
-    // @ts-expect-error
+    // @ts-expect-error - autoTable method exists but types are not properly defined
     doc.autoTable({
       head: headers,
       body: data,
