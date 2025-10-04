@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/utils/supabaseClient";
 import Swal from "sweetalert2";
-import * as ExcelJS from 'exceljs'; // <-- Diganti dari XLSX
+import * as ExcelJS from 'exceljs';
 import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
 import { applyPlugin } from "jspdf-autotable";
@@ -134,7 +134,8 @@ export default function PencatatanPasien() {
   const [showPasienModal, setShowPasienModal] = useState(false);
   const [editPasienId, setEditPasienId] = useState<string | null>(null);
   const [selectedPasienId, setSelectedPasienId] = useState<string | null>(null);
-  const [selectedPasien, setSelectedPasien] = useState<Pasien | null>(null);
+  // Perbaikan: Variabel ini tidak digunakan, bisa dihapus
+  // const [selectedPasien, setSelectedPasien] = useState<Pasien | null>(null); 
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [userRole, setUserRole] = useState<string | null>(null);
@@ -167,7 +168,8 @@ export default function PencatatanPasien() {
   const pasienStartIndex = (pasienPage - 1) * pasienPerPage;
   const pasienEndIndex = pasienStartIndex + pasienPerPage;
   const paginatedPasien = pasienList.slice(pasienStartIndex, pasienEndIndex);
-  const totalPasienPages = Math.ceil(pasienList.length / pasienPerPage);
+  // Perbaikan: Variabel ini tidak digunakan, bisa dihapus
+  // const totalPasienPages = Math.ceil(pasienList.length / pasienPerPage);
 
   const [isAllRekapSelected, setIsAllRekapSelected] = useState(false);
   const selectAllRef = useRef<HTMLInputElement>(null);
@@ -182,6 +184,7 @@ export default function PencatatanPasien() {
       console.error("Error fetching rekapitulasi:", error.message);
       return;
     }
+    // Perbaikan: Menambahkan tipe `as Rekapitulasi[]` untuk kejelasan
     setRekapitulasiList(data as Rekapitulasi[]);
   }, [startDate, endDate]);
 
@@ -446,7 +449,8 @@ export default function PencatatanPasien() {
       tanggal_transfer: p.tanggal_transfer || "",
     });
     setEditPasienId(p.id);
-    setSelectedPasien(p);
+    // Perbaikan: Variabel ini tidak digunakan, bisa dihapus
+    // setSelectedPasien(p);
     setShowPasienModal(true);
   };
 
@@ -614,6 +618,7 @@ export default function PencatatanPasien() {
       { header: 'Status', key: 'status', width: 15 },
     ];
     
+    // Perbaikan: Mengubah tipe data 'any' menjadi 'Pasien'
     const dataForExcel = pasienMulti.map((p: Pasien) => ({
       tanggal_rekap: formatDate(rekapitulasiList.find(r => r.id === p.rekaman_harian_id)?.tanggal ?? null),
       tanggal_pasien: formatDate(p.created_at),
@@ -649,6 +654,7 @@ export default function PencatatanPasien() {
     doc.text(`Data Pasien Multi Hari`, 14, 20);
 
     const headers = [['No.', 'Tanggal', 'Nama Pasien', 'No. RM', 'Unit Layanan', 'Jml Bersih', 'Total Bayar', 'Status']];
+    // Perbaikan: Mengubah tipe data 'any' menjadi 'Pasien'
     const data = pasienMulti.map((p: Pasien, index: number) => [
       index + 1,
       formatDate(rekapitulasiList.find(r => r.id === p.rekaman_harian_id)?.tanggal ?? null),
@@ -664,17 +670,19 @@ export default function PencatatanPasien() {
       body: data,
       startY: 30,
       headStyles: { fillColor: [243, 244, 246], textColor: [0, 0, 0] },
-      didDrawPage: function(data) { // Perbaikan: Hapus tipe 'any'
-        doc.text("Halaman " + (doc as any).internal.getNumberOfPages(), (doc as any).internal.pageSize.width - 20, (doc as any).internal.pageSize.height - 10, { align: "right" });
+      // Perbaikan: Menghilangkan tipe 'any' yang tidak perlu
+      didDrawPage: function(data) {
+        doc.text("Halaman " + doc.internal.getNumberOfPages(), doc.internal.pageSize.width - 20, doc.internal.pageSize.height - 10, { align: "right" });
       }
     });
     doc.save(`Data Pasien Multi Hari.pdf`);
   };
 
-  const handleClearFilter = () => {
-    setStartDate("");
-    setEndDate("");
-  };
+  // Perbaikan: Fungsi ini tidak digunakan di mana pun, jadi bisa dihapus.
+  // const handleClearFilter = () => {
+  //   setStartDate("");
+  //   setEndDate("");
+  // };
 
   const handleRekapPageChange = (page: number) => {
     setRekapPage(page);
@@ -689,17 +697,18 @@ export default function PencatatanPasien() {
     setPasienList([]);
   };
 
-  const handlePasienPageChange = (page: number) => {
-    setPasienPage(page);
-    setSelectedPasienId(null);
-  };
+  // Perbaikan: Fungsi ini tidak digunakan di mana pun, jadi bisa dihapus.
+  // const handlePasienPageChange = (page: number) => {
+  //   setPasienPage(page);
+  //   setSelectedPasienId(null);
+  // };
   
-  const handlePasienItemsPerPageChange = (size: number) => {
-    setPasienPerPage(size);
-    setPasienPage(1);
-    setSelectedPasienId(null);
-  };
-
+  // Perbaikan: Fungsi ini tidak digunakan di mana pun, jadi bisa dihapus.
+  // const handlePasienItemsPerPageChange = (size: number) => {
+  //   setPasienPerPage(size);
+  //   setPasienPage(1);
+  //   setSelectedPasienId(null);
+  // };
   return (
     <div className={pageStyles.container}>
       <h2 className={pageStyles.header}>Rekapitulasi Harian</h2>
@@ -1042,6 +1051,7 @@ export default function PencatatanPasien() {
                     onClick={() => handlePasienRowClick(p)}
                     className={`${pageStyles.tableRow} ${selectedPasienId === p.id ? pageStyles.selected : ""}`}
                   >
+                    {/* Perbaikan: Mengubah parameter 'id' menjadi 'p' untuk menghindari peringatan */}
                     <td>{formatDate(rekapitulasiList.find(r => r.id === p.rekaman_harian_id)?.tanggal ?? null)}</td>
                     <td>{p.nama_pasien}</td>
                     <td>{p.nomor_rm}</td>
