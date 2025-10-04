@@ -1,3 +1,5 @@
+// src/lib/pdfsppr.ts
+
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import { capitalizeWords, formatAngka, formatTanggalIndonesia } from "./format";
@@ -51,9 +53,11 @@ export const generateSpprPdf = (sppr: Sppr) => {
     const lineSpacingFactor = 1.5;
 
     lines.forEach((line: string, index: number) => {
-      let currentLineY = y + (index * fontHeight * lineSpacingFactor);
+      // Mengubah let menjadi const karena currentLineY tidak di-reassign di sini
+      const currentLineY = y + (index * fontHeight * lineSpacingFactor);
       const words = line.split(' ');
 
+      // Logika khusus untuk baris terakhir agar tidak ter-justify
       if (index === lines.length - 1) {
         doc.text(line, x, currentLineY);
         return;
@@ -62,11 +66,13 @@ export const generateSpprPdf = (sppr: Sppr) => {
       const textWidth = doc.getTextWidth(line);
       const spaceToFill = maxWidth - textWidth;
       const spaceCount = words.length - 1;
-      const addedSpace = spaceToFill / spaceCount;
+      // Menghindari pembagian oleh nol jika hanya ada satu kata atau kurang
+      const addedSpace = spaceCount > 0 ? spaceToFill / spaceCount : 0;
       let currentX = x;
 
-      words.forEach((word: string, wordIndex: number) => {
+      words.forEach((word: string) => {
         doc.text(word, currentX, currentLineY);
+        // Menambahkan spasi sesuai kebutuhan, hindari spasi ekstra di akhir baris
         currentX += doc.getTextWidth(word) + doc.getTextWidth(' ') + addedSpace;
       });
     });
@@ -79,6 +85,7 @@ export const generateSpprPdf = (sppr: Sppr) => {
   // **Fungsi untuk membuat halaman SPPR (Halaman 1) **
   const createSPPRSection = (startY: number) => {
     let y = startY + 20;
+    // Variabel ini tidak perlu diubah, jadi gunakan const
     const boxWidth = pageWidth - margin * 2;
     const boxX = margin;
     const textWidth = boxWidth - contentMargin * 2;
@@ -87,20 +94,18 @@ export const generateSpprPdf = (sppr: Sppr) => {
     // Part 1: Kotak Kop Surat
     const part1BoxHeight = 16;
     doc.rect(boxX, y, boxWidth, part1BoxHeight);
-    let part1Y = y + 5;
+    const part1Y = y + 5;
     doc.setFont("Inter", "bold");
     doc.setFontSize(11);
     doc.text("KEPOLISIAN NEGARA REPUBLIK INDONESIA", pageWidth / 2, part1Y, { align: "center" });
-    part1Y += lineHeight;
-    doc.text("DAERAH MALUKU", pageWidth / 2, part1Y, { align: "center" });
-    part1Y += lineHeight;
-    doc.text("RUMAH SAKIT BHAYANGKARA AMBON", pageWidth / 2, part1Y, { align: "center" });
+    doc.text("DAERAH MALUKU", pageWidth / 2, part1Y + lineHeight, { align: "center" });
+    doc.text("RUMAH SAKIT BHAYANGKARA AMBON", pageWidth / 2, part1Y + lineHeight * 2, { align: "center" });
     y += part1BoxHeight;
 
     // Part 2: Kotak Judul dan Tanggal
     const part2BoxHeight = 13;
     doc.rect(boxX, y, boxWidth, part2BoxHeight);
-    let part2Y = y + 5;
+    const part2Y = y + 5;
     doc.setFont("Inter", "bold");
     doc.setFontSize(11);
     const titleText = "SURAT PERSETUJUAN PENDEBITAN REKENING (SPPR)";
@@ -118,7 +123,7 @@ export const generateSpprPdf = (sppr: Sppr) => {
     // Part 3: Kotak Penjelasan
     const part3BoxHeight = 20;
     doc.rect(boxX, y, boxWidth, part3BoxHeight);
-    let part3Y = y + 5;
+    const part3Y = y + 5;
 
     const penjelasanText = `Saya yang bertanda tangan di bawah ini selaku Kuasa Pengguna Anggaran memerintahkan Bendahara Pengeluaran agar melakukan Pendebitan Rekening menggunakan Kartu Debit sejumlah Rp${formatAngka(sppr.jumlah_penarikan)}`;
 
@@ -129,7 +134,7 @@ export const generateSpprPdf = (sppr: Sppr) => {
     // Part 4: Kotak Terbilang
     const part4BoxHeight = 15;
     doc.rect(boxX, y, boxWidth, part4BoxHeight);
-    let part4Y = y + 5;
+    const part4Y = y + 5;
 
     const terbilangText = `Terbilang: ${capitalizeWords(terbilang(sppr.jumlah_penarikan))} Rupiah`;
     justifyText(terbilangText, textX, part4Y, textWidth, lineHeight, doc);
@@ -139,7 +144,7 @@ export const generateSpprPdf = (sppr: Sppr) => {
     // Part 5: Kotak Atas Dasar
     const part5BoxHeight = 10;
     doc.rect(boxX, y, boxWidth, part5BoxHeight);
-    let part5Y = y + 5;
+    const part5Y = y + 5;
 
     doc.text(`Atas dasar: Surat perintah bayar nomor ......... **)`, textX, part5Y);
 
@@ -166,8 +171,9 @@ export const generateSpprPdf = (sppr: Sppr) => {
 
     // Teks nama Bendahara dan garis bawah
     const namaBendaharaWidth = doc.getTextWidth(sppr.nama_bendahara);
-    doc.text(sppr.nama_bendahara, pageWidth - margin - 22, namaY, { align: "right" });
-    doc.line(pageWidth - margin - 34 - namaBendaharaWidth, namaY + 1, pageWidth - margin - 10, namaY + 1);
+    const xBendahara = pageWidth - margin - 10; // Posisi x untuk align right
+    doc.text(sppr.nama_bendahara, xBendahara, namaY, { align: "right" });
+    doc.line(xBendahara - namaBendaharaWidth, namaY + 1, xBendahara, namaY + 1);
 
     doc.setFont("Inter", "normal");
     doc.text(sppr.pangkat_kpa, margin + 13, part6Y + signatureYOffset + 30, { align: "left" });
@@ -378,10 +384,8 @@ export const generateSpprPdf = (sppr: Sppr) => {
   createSPPRSection(pageHeight / 2);
 
   // Garis pemisah untuk halaman 1
-  
   doc.setLineWidth(0.5);
   doc.line(margin, pageHeight / 2, pageWidth - margin, pageHeight / 2);
-
 
   // Halaman 2: Tambahkan halaman baru dan render surat kuasa
   doc.addPage();
