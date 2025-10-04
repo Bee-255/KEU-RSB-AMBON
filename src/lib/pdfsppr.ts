@@ -22,7 +22,7 @@ interface Sppr {
 }
 
 // Fungsi untuk membuat PDF sesuai template
-export const createPDF = (sppr: Sppr) => {
+export const generateSpprPdf = (sppr: Sppr) => {
   const doc = new jsPDF("p", "mm", "a4");
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();

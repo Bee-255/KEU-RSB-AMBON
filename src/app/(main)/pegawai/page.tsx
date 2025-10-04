@@ -1,5 +1,4 @@
-// src/app/pegawai/page.tsx
-"use client";
+'use client';
 
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/utils/supabaseClient";
@@ -11,7 +10,7 @@ import pageStyles from "@/styles/komponen.module.css";
 
 // Interface untuk data pegawai
 interface PegawaiData {
-  id: string;
+  id: string; // Pastikan 'id' ada di interface
   nama: string;
   pekerjaan: string;
   nrp_nip_nir: string;
@@ -47,7 +46,13 @@ interface PangkatMap {
   [key: string]: string[];
 }
 
-const Modal: React.FC<{ children: React.ReactNode; onClose: () => void }> = ({ children, onClose }) => {
+// Tambahkan deklarasi tipe untuk props komponen Modal
+interface ModalProps {
+  children: React.ReactNode;
+  onClose: () => void;
+}
+
+const Modal: React.FC<ModalProps> = ({ children, onClose }) => {
   return (
     <div
       className={pageStyles.modalOverlay}
@@ -145,7 +150,7 @@ export default function Pegawai() {
       return;
     }
     
-    const sortedData = data.sort((a, b) => {
+    const sortedData = (data as PegawaiData[]).sort((a, b) => {
       const pekerjaanA = pekerjaanOrder.indexOf(a.pekerjaan);
       const pekerjaanB = pekerjaanOrder.indexOf(b.pekerjaan);
       if (pekerjaanA !== pekerjaanB) return pekerjaanA - pekerjaanB;
@@ -173,7 +178,7 @@ export default function Pegawai() {
     const to = from + itemsPerPage;
     const paginatedData = sortedData.slice(from, to);
     
-    setListPegawai(paginatedData as PegawaiData[]);
+    setListPegawai(paginatedData);
   }, [currentPage, itemsPerPage, searchTerm, filterPekerjaan]);
 
   const saveOrUpdatePegawai = useCallback(async () => {
@@ -189,8 +194,12 @@ export default function Pegawai() {
       }
       resetForm();
       fetchPegawai();
-    } catch (error: any) {
-      Swal.fire("Error!", error.message, "error");
+    } catch (error) {
+      if (error instanceof Error) {
+        Swal.fire("Error!", error.message, "error");
+      } else {
+        Swal.fire("Error!", "Terjadi kesalahan yang tidak diketahui.", "error");
+      }
     }
   }, [editId, pegawai, fetchPegawai]);
 
@@ -230,7 +239,8 @@ export default function Pegawai() {
     const { data: existingPegawai, error: checkError } = await supabase
         .from("pegawai")
         .select("nama, nrp_nip_nir")
-        .eq("nrp_nip_nir", inputNrpNipNir);
+        .eq("nrp_nip_nir", inputNrpNipNir)
+        .limit(1);
 
     if (checkError) {
         console.error("Supabase error:", checkError);
@@ -303,11 +313,7 @@ export default function Pegawai() {
   };
 
   const handleRowClick = (p: PegawaiData) => {
-    if (selectedPegawai?.id === p.id) {
-      setSelectedPegawai(null);
-    } else {
-      setSelectedPegawai(p);
-    }
+    setSelectedPegawai((prev) => (prev?.id === p.id ? null : p));
   };
   
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {

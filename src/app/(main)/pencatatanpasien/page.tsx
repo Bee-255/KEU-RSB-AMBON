@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/utils/supabaseClient";
 import Swal from "sweetalert2";
-import * as XLSX from "xlsx";
+import * as ExcelJS from 'exceljs'; // <-- Diganti dari XLSX
 import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
 import { applyPlugin } from "jspdf-autotable";
@@ -16,10 +16,9 @@ import pageStyles from "@/styles/komponen.module.css";
 // Perbaikan: Menambahkan deklarasi tipe untuk plugin jspdf-autotable
 declare module 'jspdf' {
   interface jsPDF {
-    autoTable: (options: any) => jsPDF;
+    autoTable: (options: any) => jsPDF; // Tipe ini sudah ada, akan kita biarkan untuk autoTable
   }
 }
-
 applyPlugin(jsPDF);
 
 // Perbaikan: Menambahkan deklarasi tipe untuk props komponen Modal
@@ -586,35 +585,58 @@ export default function PencatatanPasien() {
     }
   };
 
+  // Perbaikan: Ganti fungsi XLSX dengan ExcelJS
   const handleDownloadExcelMulti = async () => {
     const pasienMulti = await fetchPasienByRekapIds(selectedRekapIds);
     if (!pasienMulti.length) {
       Swal.fire("Info", "Tidak ada data pasien untuk diunduh.", "info");
       return;
     }
+    
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Data Pasien');
+
+    worksheet.columns = [
+      { header: 'Tanggal Rekap', key: 'tanggal_rekap', width: 15 },
+      { header: 'Tanggal Pasien', key: 'tanggal_pasien', width: 15 },
+      { header: 'Nama Pasien', key: 'nama_pasien', width: 25 },
+      { header: 'Nomor RM', key: 'nomor_rm', width: 15 },
+      { header: 'Klasifikasi', key: 'klasifikasi', width: 15 },
+      { header: 'Unit Layanan', key: 'unit_layanan', width: 20 },
+      { header: 'Jenis Rawat', key: 'jenis_rawat', width: 15 },
+      { header: 'Jumlah Tagihan', key: 'jumlah_tagihan', width: 20 },
+      { header: 'Diskon (%)', key: 'diskon', width: 15 },
+      { header: 'Jumlah Bersih', key: 'jumlah_bersih', width: 20 },
+      { header: 'Bayar Tunai', key: 'bayar_tunai', width: 20 },
+      { header: 'Bayar Transfer', key: 'bayar_transfer', width: 20 },
+      { header: 'Tanggal Transfer', key: 'tanggal_transfer', width: 20 },
+      { header: 'Total Pembayaran', key: 'total_pembayaran', width: 20 },
+      { header: 'Status', key: 'status', width: 15 },
+    ];
+    
     const dataForExcel = pasienMulti.map((p: Pasien) => ({
-      'Tanggal Rekap': formatDate(rekapitulasiList.find(r => r.id === p.rekaman_harian_id)?.tanggal ?? null),
-      'Tanggal Pasien': formatDate(p.created_at),
-      'Nama Pasien': p.nama_pasien,
-      'Nomor RM': p.nomor_rm,
-      'Klasifikasi': p.klasifikasi,
-      'Unit Layanan': p.unit_layanan,
-      'Jenis Rawat': p.jenis_rawat,
-      'Jumlah Tagihan': p.jumlah_tagihan,
-      'Diskon (%)': p.diskon,
-      'Jumlah Bersih': p.jumlah_bersih,
-      'Bayar Tunai': p.bayar_tunai,
-      'Bayar Transfer': p.bayar_transfer,
-      'Tanggal Transfer': p.tanggal_transfer || '-',
-      'Total Pembayaran': p.total_pembayaran,
-      'Status': getStatus(p.jumlah_bersih, p.total_pembayaran),
+      tanggal_rekap: formatDate(rekapitulasiList.find(r => r.id === p.rekaman_harian_id)?.tanggal ?? null),
+      tanggal_pasien: formatDate(p.created_at),
+      nama_pasien: p.nama_pasien,
+      nomor_rm: p.nomor_rm,
+      klasifikasi: p.klasifikasi,
+      unit_layanan: p.unit_layanan,
+      jenis_rawat: p.jenis_rawat,
+      jumlah_tagihan: p.jumlah_tagihan,
+      diskon: p.diskon,
+      jumlah_bersih: p.jumlah_bersih,
+      bayar_tunai: p.bayar_tunai,
+      bayar_transfer: p.bayar_transfer,
+      tanggal_transfer: p.tanggal_transfer || '-',
+      total_pembayaran: p.total_pembayaran,
+      status: getStatus(p.jumlah_bersih, p.total_pembayaran),
     }));
-    const worksheet = XLSX.utils.json_to_sheet(dataForExcel);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Data Pasien");
-    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-    const data = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8" });
-    saveAs(data, `Data Pasien Multi Hari.xlsx`);
+
+    worksheet.addRows(dataForExcel);
+    
+    const excelBuffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8" });
+    saveAs(blob, `Data Pasien Multi Hari.xlsx`);
   };
 
   const handleDownloadPDFMulti = async () => {
@@ -642,7 +664,7 @@ export default function PencatatanPasien() {
       body: data,
       startY: 30,
       headStyles: { fillColor: [243, 244, 246], textColor: [0, 0, 0] },
-      didDrawPage: function(data: any) {
+      didDrawPage: function(data) { // Perbaikan: Hapus tipe 'any'
         doc.text("Halaman " + (doc as any).internal.getNumberOfPages(), (doc as any).internal.pageSize.width - 20, (doc as any).internal.pageSize.height - 10, { align: "right" });
       }
     });

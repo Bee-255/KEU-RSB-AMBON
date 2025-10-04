@@ -18,7 +18,7 @@ import pageStyles from "@/styles/komponen.module.css";
 
 import { capitalizeWords, formatAngka, parseAngka, toRoman, formatTanggal } from '@/lib/format';
 import { terbilang } from "@/lib/terbilang";
-import { createPDF } from "@/lib/pdfsppr";
+import { generateSpprPdf } from "@/lib/pdfsppr";
 
 // === Type Definitions untuk SPPR dan Personil ===
 interface SpprType {
@@ -374,7 +374,7 @@ const Sppr = () => {
     
     const handleDownload = () => {
       if (selectedSppr) {
-        createPDF(selectedSppr);
+        generateSpprPdf(selectedSppr);
       } else {
         Swal.fire("Peringatan", "Pilih data SPPR yang akan diunduh.", "warning");
       }
