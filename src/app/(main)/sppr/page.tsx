@@ -3,7 +3,7 @@
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+// import { useRouter } from "next/navigation"; // Dihapus karena tidak digunakan
 import { supabase } from "@/utils/supabaseClient";
 import Swal from "sweetalert2";
 import { FaPlus, FaEdit, FaRegTrashAlt } from "react-icons/fa";
@@ -106,7 +106,7 @@ const Sppr = () => {
   const [operatorName, setOperatorName] = useState("");
   const [userRole, setUserRole] = useState("");
   
-  const router = useRouter();
+  // const router = useRouter(); // Dihapus karena tidak digunakan
 
   // === Fungsi Pengambilan Data (menggunakan useCallback) ===
   const fetchSPPR = useCallback(async () => {
@@ -243,7 +243,8 @@ const Sppr = () => {
     // === Handler Aksi Pengguna ===
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
       const { name, value } = e.target;
-      let newFormData = { ...formData, [name]: value };
+      // Mengubah let menjadi const karena newFormData tidak di-assign ulang
+      const newFormData = { ...formData, [name]: value };
       
       if (name === "jumlah_penarikan") {
         const sanitizedValue = parseAngka(value);
