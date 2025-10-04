@@ -7,21 +7,20 @@ import Swal from "sweetalert2";
 import * as ExcelJS from 'exceljs';
 import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
-import { applyPlugin } from "jspdf-autotable";
+import "jspdf-autotable";
 import { FaPlus, FaEdit, FaRegTrashAlt, FaDownload } from "react-icons/fa";
 import Paginasi from '@/components/paginasi';
 import styles from "@/styles/button.module.css";
 import pageStyles from "@/styles/komponen.module.css";
 
-// Perbaikan: Menambahkan deklarasi tipe untuk plugin jspdf-autotable
+// Deklarasi tipe untuk plugin jspdf-autotable
 declare module 'jspdf' {
   interface jsPDF {
     autoTable: (options: any) => jsPDF;
   }
 }
-applyPlugin(jsPDF);
 
-// Perbaikan: Menambahkan deklarasi tipe untuk props komponen Modal
+// Deklarasi tipe untuk props komponen Modal
 interface ModalProps {
   children: React.ReactNode;
   onClose: () => void;
@@ -134,12 +133,12 @@ export default function PencatatanPasien() {
   const [showPasienModal, setShowPasienModal] = useState(false);
   const [editPasienId, setEditPasienId] = useState<string | null>(null);
   const [selectedPasienId, setSelectedPasienId] = useState<string | null>(null);
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate] = useState("");
+  const [endDate] = useState("");
   const [userRole, setUserRole] = useState<string | null>(null);
   const [selectedRekapIds, setSelectedRekapIds] = useState<string[]>([]);
   
-  // Perbaikan: Menambahkan tipe data awal untuk state
+  // Menambahkan tipe data awal untuk state pasienData
   const [pasienData, setPasienData] = useState<{
     klasifikasi: string, nomor_rm: string, nama_pasien: string, jenis_rawat: string,
     unit_layanan: string, jumlah_tagihan: string | number, diskon: string | number, jumlah_bersih: string | number,
@@ -162,7 +161,7 @@ export default function PencatatanPasien() {
   const totalRekapPages = Math.ceil(rekapitulasiList.length / rekapPerPage);
 
   const [pasienPage, setPasienPage] = useState(1);
-  const [pasienPerPage, setPasienPerPage] = useState(10);
+  const [pasienPerPage] = useState(10);
   const pasienStartIndex = (pasienPage - 1) * pasienPerPage;
   const pasienEndIndex = pasienStartIndex + pasienPerPage;
   const paginatedPasien = pasienList.slice(pasienStartIndex, pasienEndIndex);
@@ -170,17 +169,17 @@ export default function PencatatanPasien() {
   const [isAllRekapSelected, setIsAllRekapSelected] = useState(false);
   const selectAllRef = useRef<HTMLInputElement>(null);
 
-  const fetchRekapitulasi = useCallback(async (id: string | null) => {
+  const fetchRekapitulasi = useCallback(async (userId: string | null) => {
     let query = supabase.from("rekaman_harian").select("*");
     if (startDate && endDate) {
       query = query.gte("tanggal", startDate).lte("tanggal", endDate);
     }
-    const { data: rekapData, error } = await query.order("tanggal", { ascending: false });
+    const { data, error } = await query.order("tanggal", { ascending: false });
     if (error) {
       console.error("Error fetching rekapitulasi:", error.message);
       return;
     }
-    setRekapitulasiList(rekapData as Rekapitulasi[]);
+    setRekapitulasiList(data as Rekapitulasi[]);
   }, [startDate, endDate]);
 
   const fetchPasienByRekapId = async (rekapId: string): Promise<Pasien[]> => {
@@ -366,7 +365,6 @@ export default function PencatatanPasien() {
       return;
     }
 
-    // Perbaikan: Konversi tipe data sebelum submit
     const dataToSubmit = {
       ...pasienData,
       tanggal_transfer: pasienData.bayar_transfer ? pasienData.tanggal_transfer : null,
@@ -661,8 +659,8 @@ export default function PencatatanPasien() {
       body: data,
       startY: 30,
       headStyles: { fillColor: [243, 244, 246], textColor: [0, 0, 0] },
-      didDrawPage: (data) => {
-        doc.text(`Halaman ${doc.internal.getNumberOfPages()}`, (doc as any).internal.pageSize.width - 20, (doc as any).internal.pageSize.height - 10, { align: "right" });
+      didDrawPage: (hookData: { doc: jsPDF, pageNumber: number }) => {
+        hookData.doc.text(`Halaman ${hookData.pageNumber}`, hookData.doc.internal.pageSize.width - 20, hookData.doc.internal.pageSize.height - 10, { align: "right" });
       }
     });
     doc.save(`Data Pasien Multi Hari.pdf`);
