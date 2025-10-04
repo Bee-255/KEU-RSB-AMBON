@@ -134,10 +134,9 @@ export default function PencatatanPasien() {
   const [showPasienModal, setShowPasienModal] = useState(false);
   const [editPasienId, setEditPasienId] = useState<string | null>(null);
   const [selectedPasienId, setSelectedPasienId] = useState<string | null>(null);
-  // Perbaikan: Variabel ini tidak digunakan, bisa dihapus
-  // const [selectedPasien, setSelectedPasien] = useState<Pasien | null>(null); 
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  // Perbaikan: menghapus 'setStartDate' dan 'setEndDate' karena tidak digunakan
+  const [startDate] = useState("");
+  const [endDate] = useState("");
   const [userRole, setUserRole] = useState<string | null>(null);
   const [selectedRekapIds, setSelectedRekapIds] = useState<string[]>([]);
   
@@ -168,13 +167,11 @@ export default function PencatatanPasien() {
   const pasienStartIndex = (pasienPage - 1) * pasienPerPage;
   const pasienEndIndex = pasienStartIndex + pasienPerPage;
   const paginatedPasien = pasienList.slice(pasienStartIndex, pasienEndIndex);
-  // Perbaikan: Variabel ini tidak digunakan, bisa dihapus
-  // const totalPasienPages = Math.ceil(pasienList.length / pasienPerPage);
 
   const [isAllRekapSelected, setIsAllRekapSelected] = useState(false);
   const selectAllRef = useRef<HTMLInputElement>(null);
 
-  const fetchRekapitulasi = useCallback(async (id: string | null) => {
+  const fetchRekapitulasi = useCallback(async (_id: string | null) => {
     let query = supabase.from("rekaman_harian").select("*");
     if (startDate && endDate) {
       query = query.gte("tanggal", startDate).lte("tanggal", endDate);
@@ -184,7 +181,6 @@ export default function PencatatanPasien() {
       console.error("Error fetching rekapitulasi:", error.message);
       return;
     }
-    // Perbaikan: Menambahkan tipe `as Rekapitulasi[]` untuk kejelasan
     setRekapitulasiList(data as Rekapitulasi[]);
   }, [startDate, endDate]);
 
@@ -277,7 +273,7 @@ export default function PencatatanPasien() {
         return;
     }
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("rekaman_harian")
       .insert([{
         tanggal: newRekapDate,
@@ -449,8 +445,6 @@ export default function PencatatanPasien() {
       tanggal_transfer: p.tanggal_transfer || "",
     });
     setEditPasienId(p.id);
-    // Perbaikan: Variabel ini tidak digunakan, bisa dihapus
-    // setSelectedPasien(p);
     setShowPasienModal(true);
   };
 
@@ -589,7 +583,6 @@ export default function PencatatanPasien() {
     }
   };
 
-  // Perbaikan: Ganti fungsi XLSX dengan ExcelJS
   const handleDownloadExcelMulti = async () => {
     const pasienMulti = await fetchPasienByRekapIds(selectedRekapIds);
     if (!pasienMulti.length) {
@@ -618,8 +611,7 @@ export default function PencatatanPasien() {
       { header: 'Status', key: 'status', width: 15 },
     ];
     
-    // Perbaikan: Mengubah tipe data 'any' menjadi 'Pasien'
-    const dataForExcel = pasienMulti.map((p: Pasien) => ({
+    const dataForExcel = pasienMulti.map((p) => ({
       tanggal_rekap: formatDate(rekapitulasiList.find(r => r.id === p.rekaman_harian_id)?.tanggal ?? null),
       tanggal_pasien: formatDate(p.created_at),
       nama_pasien: p.nama_pasien,
@@ -654,8 +646,7 @@ export default function PencatatanPasien() {
     doc.text(`Data Pasien Multi Hari`, 14, 20);
 
     const headers = [['No.', 'Tanggal', 'Nama Pasien', 'No. RM', 'Unit Layanan', 'Jml Bersih', 'Total Bayar', 'Status']];
-    // Perbaikan: Mengubah tipe data 'any' menjadi 'Pasien'
-    const data = pasienMulti.map((p: Pasien, index: number) => [
+    const data = pasienMulti.map((p, index) => [
       index + 1,
       formatDate(rekapitulasiList.find(r => r.id === p.rekaman_harian_id)?.tanggal ?? null),
       p.nama_pasien,
@@ -670,19 +661,12 @@ export default function PencatatanPasien() {
       body: data,
       startY: 30,
       headStyles: { fillColor: [243, 244, 246], textColor: [0, 0, 0] },
-      // Perbaikan: Menghilangkan tipe 'any' yang tidak perlu
       didDrawPage: function(data) {
-        doc.text("Halaman " + doc.internal.getNumberOfPages(), doc.internal.pageSize.width - 20, doc.internal.pageSize.height - 10, { align: "right" });
+        doc.text("Halaman " + (doc as any).internal.getNumberOfPages(), (doc as any).internal.pageSize.width - 20, (doc as any).internal.pageSize.height - 10, { align: "right" });
       }
     });
     doc.save(`Data Pasien Multi Hari.pdf`);
   };
-
-  // Perbaikan: Fungsi ini tidak digunakan di mana pun, jadi bisa dihapus.
-  // const handleClearFilter = () => {
-  //   setStartDate("");
-  //   setEndDate("");
-  // };
 
   const handleRekapPageChange = (page: number) => {
     setRekapPage(page);
@@ -697,25 +681,11 @@ export default function PencatatanPasien() {
     setPasienList([]);
   };
 
-  // Perbaikan: Fungsi ini tidak digunakan di mana pun, jadi bisa dihapus.
-  // const handlePasienPageChange = (page: number) => {
-  //   setPasienPage(page);
-  //   setSelectedPasienId(null);
-  // };
-  
-  // Perbaikan: Fungsi ini tidak digunakan di mana pun, jadi bisa dihapus.
-  // const handlePasienItemsPerPageChange = (size: number) => {
-  //   setPasienPerPage(size);
-  //   setPasienPage(1);
-  //   setSelectedPasienId(null);
-  // };
   return (
     <div className={pageStyles.container}>
       <h2 className={pageStyles.header}>Rekapitulasi Harian</h2>
         
-      {/* Grup Kiri: Tombol Aksi */}
       <div className={pageStyles.buttonContainer}>
-        {/* Tombol Rekam: Selalu aktif karena bisa diakses semua role */}
         <button
           onClick={() => {
             setNewRekapDate("");
@@ -725,7 +695,6 @@ export default function PencatatanPasien() {
         >
           <FaPlus/>Rekam
         </button>
-        {/* Tombol Tambah Pasien: Selalu aktif karena bisa diakses semua role */}
         <button
           onClick={handleAddPasienClick}
           disabled={selectedRekapIds.length !== 1}
@@ -733,7 +702,6 @@ export default function PencatatanPasien() {
         >
           <FaPlus size={14}/> Pasien
         </button>
-        {/* Tombol Hapus Rekap: Dinonaktifkan jika bukan Owner */}
         <button
           onClick={handleDeleteRekap}
           disabled={selectedRekapIds.length === 0 || !(userRole === "Owner" || userRole === "Admin")}
@@ -741,7 +709,6 @@ export default function PencatatanPasien() {
         >
           <FaRegTrashAlt/> Hapus
         </button>
-        {/* Tombol Download: Dinonaktifkan jika bukan Operator atau Admin */}
         <button
           onClick={handleDownloadClick}
           disabled={selectedRekapIds.length === 0 || !(userRole === "Owner" || userRole === "Operator" || userRole === "Admin")}
@@ -751,7 +718,6 @@ export default function PencatatanPasien() {
         </button>
       </div>
     
-      {/* Modal Tambah Rekapitulasi Baru */}
       {showRekapModal && (
         <Modal onClose={() => setShowRekapModal(false)}>
           <form onSubmit={handleRekapFormSubmit}>
@@ -774,7 +740,6 @@ export default function PencatatanPasien() {
         </Modal>
       )}
 
-      {/* Modal Rekam Pasien */}
       {showPasienModal && (
         <Modal onClose={resetPasienForm}>
           <form onSubmit={handlePasienFormSubmit}>
@@ -934,7 +899,6 @@ export default function PencatatanPasien() {
         </Modal>
       )}
 
-      {/* Tabel data rekap harian */}
       <div className={pageStyles.tableContainer}>
         <table className={pageStyles.table}>
           <thead className={pageStyles.tableHead}>
@@ -996,7 +960,6 @@ export default function PencatatanPasien() {
         </table>
       </div>
 
-      {/* Rekap Pagination */}
       <Paginasi
         currentPage={rekapPage}
         totalPages={totalRekapPages}
@@ -1006,11 +969,9 @@ export default function PencatatanPasien() {
         onItemsPerPageChange={handleRekapItemsPerPageChange}
       />
 
-      {/* DETAIL Data Pasien */}
       <div className={pageStyles.detailContainer}>
        <div className={pageStyles.detailHeader}>Data Pasien</div>
         <div className={pageStyles.buttonContainer} style={{ margin: "1rem" }}>
-            {/* Tombol Edit: Dinonaktifkan jika bukan Owner atau Admin, atau tidak ada pasien yang dipilih */}
             <button
                 onClick={handleEditPasien}
                 disabled={!selectedPasienId || !(userRole === "Owner" || userRole === "Admin"  || userRole === "Kasir")}
@@ -1018,7 +979,6 @@ export default function PencatatanPasien() {
             >
                 <FaEdit/> Edit
             </button>
-            {/* Tombol Hapus: Dinonaktifkan jika bukan Owner, atau tidak ada pasien yang dipilih */}
             <button
                 onClick={handleDeletePasien}
                 disabled={!selectedPasienId || userRole !== "Owner"}
@@ -1028,7 +988,6 @@ export default function PencatatanPasien() {
             </button>
         </div>
       
-        {/* Tabel Detail Data Pasien */}
         <div className={pageStyles.tableContainer}>
           <table className={pageStyles.table}>
             <thead className={pageStyles.tableHead}>
@@ -1051,7 +1010,6 @@ export default function PencatatanPasien() {
                     onClick={() => handlePasienRowClick(p)}
                     className={`${pageStyles.tableRow} ${selectedPasienId === p.id ? pageStyles.selected : ""}`}
                   >
-                    {/* Perbaikan: Mengubah parameter 'id' menjadi 'p' untuk menghindari peringatan */}
                     <td>{formatDate(rekapitulasiList.find(r => r.id === p.rekaman_harian_id)?.tanggal ?? null)}</td>
                     <td>{p.nama_pasien}</td>
                     <td>{p.nomor_rm}</td>
