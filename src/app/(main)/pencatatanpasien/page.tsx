@@ -13,13 +13,6 @@ import Paginasi from '@/components/paginasi';
 import styles from "@/styles/button.module.css";
 import pageStyles from "@/styles/komponen.module.css";
 
-// Deklarasi tipe untuk plugin jspdf-autotable
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-  }
-}
-
 // Deklarasi tipe untuk props komponen Modal
 interface ModalProps {
   children: React.ReactNode;
@@ -169,7 +162,7 @@ export default function PencatatanPasien() {
   const [isAllRekapSelected, setIsAllRekapSelected] = useState(false);
   const selectAllRef = useRef<HTMLInputElement>(null);
 
-  const fetchRekapitulasi = useCallback(async (userId: string | null) => {
+  const fetchRekapitulasi = useCallback(async () => {
     let query = supabase.from("rekaman_harian").select("*");
     if (startDate && endDate) {
       query = query.gte("tanggal", startDate).lte("tanggal", endDate);
@@ -232,7 +225,7 @@ export default function PencatatanPasien() {
           setUserName(profiles.nama_lengkap);
           setUserRole(profiles.role);
         }
-        fetchRekapitulasi(user.id);
+        fetchRekapitulasi();
       } else {
         router.push("/");
       }
@@ -288,7 +281,7 @@ export default function PencatatanPasien() {
       Swal.fire("Berhasil!", "Rekapitulasi harian berhasil dibuat.", "success");
       setShowRekapModal(false);
       setNewRekapDate("");
-      fetchRekapitulasi(userId);
+      fetchRekapitulasi();
     }
   };
 
@@ -353,7 +346,7 @@ export default function PencatatanPasien() {
         status: rekapStatus,
       })
       .eq('id', rekapId);
-    fetchRekapitulasi(userId);
+    fetchRekapitulasi();
   };
   
   const handlePasienFormSubmit = async (e: React.FormEvent) => {
@@ -500,7 +493,7 @@ export default function PencatatanPasien() {
         Swal.fire("Terhapus!", "Data rekapitulasi telah dihapus.", "success");
         setSelectedRekapIds([]);
         setPasienList([]);
-        fetchRekapitulasi(userId);
+        fetchRekapitulasi();
       } catch (error) {
         console.error("Error:", error);
         Swal.fire("Error!", "Terjadi kesalahan saat menghapus data.", "error");
@@ -654,7 +647,7 @@ export default function PencatatanPasien() {
       getStatus(p.jumlah_bersih, p.total_pembayaran)
     ]);
     
-    doc.autoTable({
+    (doc as any).autoTable({
       head: headers,
       body: data,
       startY: 30,
