@@ -647,7 +647,8 @@ export default function PencatatanPasien() {
       getStatus(p.jumlah_bersih, p.total_pembayaran)
     ]);
     
-    (doc as any).autoTable({
+    // @ts-ignore
+    doc.autoTable({
       head: headers,
       body: data,
       startY: 30,
