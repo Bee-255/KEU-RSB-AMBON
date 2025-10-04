@@ -16,7 +16,7 @@ import pageStyles from "@/styles/komponen.module.css";
 // Perbaikan: Menambahkan deklarasi tipe untuk plugin jspdf-autotable
 declare module 'jspdf' {
   interface jsPDF {
-    autoTable: (options: any) => jsPDF; // Tipe ini sudah ada, akan kita biarkan untuk autoTable
+    autoTable: (options: any) => jsPDF;
   }
 }
 applyPlugin(jsPDF);
@@ -134,9 +134,8 @@ export default function PencatatanPasien() {
   const [showPasienModal, setShowPasienModal] = useState(false);
   const [editPasienId, setEditPasienId] = useState<string | null>(null);
   const [selectedPasienId, setSelectedPasienId] = useState<string | null>(null);
-  // Perbaikan: menghapus 'setStartDate' dan 'setEndDate' karena tidak digunakan
-  const [startDate] = useState("");
-  const [endDate] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [userRole, setUserRole] = useState<string | null>(null);
   const [selectedRekapIds, setSelectedRekapIds] = useState<string[]>([]);
   
@@ -656,13 +655,14 @@ export default function PencatatanPasien() {
       formatRupiah(p.total_pembayaran),
       getStatus(p.jumlah_bersih, p.total_pembayaran)
     ]);
+    
     doc.autoTable({
       head: headers,
       body: data,
       startY: 30,
       headStyles: { fillColor: [243, 244, 246], textColor: [0, 0, 0] },
       didDrawPage: function(data) {
-        doc.text("Halaman " + (doc as any).internal.getNumberOfPages(), (doc as any).internal.pageSize.width - 20, (doc as any).internal.pageSize.height - 10, { align: "right" });
+        doc.text("Halaman " + doc.internal.getNumberOfPages(), doc.internal.pageSize.width - 20, doc.internal.pageSize.height - 10, { align: "right" });
       }
     });
     doc.save(`Data Pasien Multi Hari.pdf`);
