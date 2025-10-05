@@ -1,3 +1,4 @@
+// src/app/(main)/pegawai/page.tsx
 'use client';
 
 import { useEffect, useState, useCallback } from "react";
@@ -7,10 +8,11 @@ import { FaPlus, FaEdit, FaRegTrashAlt } from "react-icons/fa";
 import Paginasi from '@/components/paginasi';
 import styles from "@/styles/button.module.css";
 import pageStyles from "@/styles/komponen.module.css";
+import loadingStyles from "@/styles/loading.module.css"; // Import CSS loading
 
 // Interface untuk data pegawai
 interface PegawaiData {
-  id: string; // Pastikan 'id' ada di interface
+  id: string; 
   nama: string;
   pekerjaan: string;
   nrp_nip_nir: string;
@@ -104,6 +106,7 @@ export default function Pegawai() {
   const [showModal, setShowModal] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [filterPekerjaan, setFilterPekerjaan] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(true); // State untuk loading
 
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
@@ -133,52 +136,56 @@ export default function Pegawai() {
   const totalPages = Math.ceil(totalItems / itemsPerPage);
 
   const fetchPegawai = useCallback(async () => {
-    let query = supabase.from("pegawai").select("*", { count: "exact" });
+    try {
+      let query = supabase.from("pegawai").select("*", { count: "exact" });
 
-    if (filterPekerjaan) {
-      query = query.filter('pekerjaan', 'eq', filterPekerjaan);
-    }
+      if (filterPekerjaan) {
+        query = query.filter('pekerjaan', 'eq', filterPekerjaan);
+      }
 
-    if (searchTerm) {
-      query = query.or(`nama.ilike.%${searchTerm}%,pekerjaan.ilike.%${searchTerm}%,nrp_nip_nir.ilike.%${searchTerm}%`);
-    }
+      if (searchTerm) {
+        query = query.or(`nama.ilike.%${searchTerm}%,pekerjaan.ilike.%${searchTerm}%,nrp_nip_nir.ilike.%${searchTerm}%`);
+      }
 
-    const { data, count, error } = await query.order("id", { ascending: false });
+      const { data, count, error } = await query.order("id", { ascending: false });
 
-    if (error) {
-      console.error("Error fetching pegawai:", error.message);
-      return;
-    }
-    
-    const sortedData = (data as PegawaiData[]).sort((a, b) => {
-      const pekerjaanA = pekerjaanOrder.indexOf(a.pekerjaan);
-      const pekerjaanB = pekerjaanOrder.indexOf(b.pekerjaan);
-      if (pekerjaanA !== pekerjaanB) return pekerjaanA - pekerjaanB;
+      if (error) {
+        console.error("Error fetching pegawai:", error.message);
+        return;
+      }
       
-      const statusOrder: { [key: string]: number } = { 'Aktif': 1, 'Tidak Aktif': 2 };
-      const statusA = statusOrder[a.status] || 3;
-      const statusB = statusOrder[b.status] || 3;
-      if (statusA !== statusB) return statusA - statusB;
+      const sortedData = (data as PegawaiData[]).sort((a, b) => {
+        const pekerjaanA = pekerjaanOrder.indexOf(a.pekerjaan);
+        const pekerjaanB = pekerjaanOrder.indexOf(b.pekerjaan);
+        if (pekerjaanA !== pekerjaanB) return pekerjaanA - pekerjaanB;
+        
+        const statusOrder: { [key: string]: number } = { 'Aktif': 1, 'Tidak Aktif': 2 };
+        const statusA = statusOrder[a.status] || 3;
+        const statusB = statusOrder[b.status] || 3;
+        if (statusA !== statusB) return statusA - statusB;
 
-      const getPangkatIndex = (pangkat: string, pekerjaan: string) => {
-        if (pekerjaan === "Anggota Polri") return allPangkatPolri.indexOf(pangkat);
-        if (pekerjaan === "ASN") return allPangkatAsn.indexOf(pangkat);
-        return 999;
-      };
-      const pangkatA = getPangkatIndex(a.pangkat, a.pekerjaan);
-      const pangkatB = getPangkatIndex(b.pangkat, b.pekerjaan);
-      if (pangkatA !== pangkatB) return pangkatA - pangkatB;
+        const getPangkatIndex = (pangkat: string, pekerjaan: string) => {
+          if (pekerjaan === "Anggota Polri") return allPangkatPolri.indexOf(pangkat);
+          if (pekerjaan === "ASN") return allPangkatAsn.indexOf(pangkat);
+          return 999;
+        };
+        const pangkatA = getPangkatIndex(a.pangkat, a.pekerjaan);
+        const pangkatB = getPangkatIndex(b.pangkat, b.pekerjaan);
+        if (pangkatA !== pangkatB) return pangkatA - pangkatB;
+        
+        return a.nama.localeCompare(b.nama);
+      });
+
+      setTotalItems(sortedData.length);
+
+      const from = (currentPage - 1) * itemsPerPage;
+      const to = from + itemsPerPage;
+      const paginatedData = sortedData.slice(from, to);
       
-      return a.nama.localeCompare(b.nama);
-    });
-
-    setTotalItems(sortedData.length);
-
-    const from = (currentPage - 1) * itemsPerPage;
-    const to = from + itemsPerPage;
-    const paginatedData = sortedData.slice(from, to);
-    
-    setListPegawai(paginatedData);
+      setListPegawai(paginatedData);
+    } catch (e) {
+      console.error("Failed to fetch pegawai:", e);
+    }
   }, [currentPage, itemsPerPage, searchTerm, filterPekerjaan]);
 
   const saveOrUpdatePegawai = useCallback(async () => {
@@ -295,7 +302,7 @@ export default function Pegawai() {
     setPegawai({
       nama: "", pekerjaan: "", nrp_nip_nir: "", klasifikasi: "", pangkat: "",
       tipe_identitas: "", golongan: "", jabatan_struktural: "", status: "",
-      bank: "-", no_rekening: "-", nama_rekening: "-",
+      bank: "-", no_rekening: "-", nama_rekening: "",
     });
     setEditId(null);
     setShowModal(false);
@@ -340,8 +347,12 @@ export default function Pegawai() {
   }, []);
 
   useEffect(() => {
-    fetchPegawai();
-    fetchUserRole();
+    const initializeData = async () => {
+      setIsLoading(true);
+      await Promise.all([fetchPegawai(), fetchUserRole()]);
+      setIsLoading(false);
+    };
+    initializeData();
   }, [fetchPegawai, fetchUserRole]);
 
   useEffect(() => {
@@ -382,6 +393,20 @@ export default function Pegawai() {
   }, [pegawai.pekerjaan]);
 
   const isAllowedToEditOrDelete = userRole === "Owner" || userRole === "Admin";
+
+  // Tampilkan loading screen jika isLoading true
+  if (isLoading) {
+    return (
+      <div className={loadingStyles.loadingContainer}>
+        <div className={loadingStyles.dotContainer}>
+          <div className={`${loadingStyles.dot} ${loadingStyles['dot-1']}`} />
+          <div className={`${loadingStyles.dot} ${loadingStyles['dot-2']}`} />
+          <div className={`${loadingStyles.dot} ${loadingStyles['dot-3']}`} />
+        </div>
+        <p className={loadingStyles.loadingText}></p>
+      </div>
+    );
+  }
   
   return (
     <div className={pageStyles.container}>

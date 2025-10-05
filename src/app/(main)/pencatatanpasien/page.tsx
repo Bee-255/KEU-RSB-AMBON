@@ -8,10 +8,12 @@ import * as ExcelJS from 'exceljs';
 import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
-import { FaPlus, FaEdit, FaRegTrashAlt, FaDownload } from "react-icons/fa";
+import { FaPlus, FaEdit, FaRegTrashAlt, FaDownload, FaLock, FaUnlock } from "react-icons/fa";
 import Paginasi from '@/components/paginasi';
 import styles from "@/styles/button.module.css";
 import pageStyles from "@/styles/komponen.module.css";
+import loadingStyles from "@/styles/loading.module.css";
+import { Toaster, toast } from "react-hot-toast";
 
 // Deklarasi tipe untuk props komponen Modal
 interface ModalProps {
@@ -58,19 +60,16 @@ const formatRupiah = (number: number | string | null) => {
 
 // Format input dengan pemisah ribuan (Indonesia)
 const formatInputRupiah = (value: string): string => {
-  // Hapus semua karakter kecuali digit
   const numbersOnly = value.replace(/[^\d]/g, '');
   
   if (numbersOnly === '') return '';
   
-  // Format dengan pemisah ribuan
   return numbersOnly.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 };
 
 // Konversi dari format input ke number
 const parseRupiahInput = (formattedValue: string): number => {
   if (!formattedValue) return 0;
-  // Hapus semua titik dan konversi ke number
   const numbersOnly = formattedValue.replace(/\./g, '');
   return parseInt(numbersOnly, 10) || 0;
 };
@@ -145,6 +144,7 @@ export default function PencatatanPasien() {
   const [endDate] = useState("");
   const [userRole, setUserRole] = useState<string | null>(null);
   const [selectedRekapIds, setSelectedRekapIds] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true); // State untuk loading
   
   // State untuk form pasien - sekarang menyimpan nilai asli (number)
   const [pasienData, setPasienData] = useState<{
@@ -261,6 +261,7 @@ export default function PencatatanPasien() {
 
   useEffect(() => {
     const fetchUserAndData = async () => {
+      setIsLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUserId(user.id);
@@ -273,14 +274,15 @@ export default function PencatatanPasien() {
           setUserName(profiles.nama_lengkap);
           setUserRole(profiles.role);
         }
-        fetchRekapitulasi();
+        await fetchRekapitulasi();
+        setIsLoading(false);
       } else {
         router.push("/");
       }
     };
     fetchUserAndData();
   }, [router, fetchRekapitulasi]);
-
+  
   useEffect(() => {
     fetchAllSelectedPasien();
   }, [fetchAllSelectedPasien]);
@@ -319,7 +321,7 @@ export default function PencatatanPasien() {
         user_id: userId,
         nama_user: userName,
         total_pembayaran: 0,
-        status: "KASIR",
+        status: "BARU",
       }])
       .select();
 
@@ -333,35 +335,27 @@ export default function PencatatanPasien() {
     }
   };
 
-  // Handle input change untuk field numeric
   const handleNumericInputChange = (fieldName: string, value: string) => {
-    // Format input dengan pemisah ribuan
     const formattedValue = formatInputRupiah(value);
     
-    // Update display
     setInputDisplay(prev => ({
       ...prev,
       [fieldName]: formattedValue
     }));
 
-    // Parse ke number untuk kalkulasi
     const numericValue = parseRupiahInput(formattedValue);
 
-    // Update data pasien dengan nilai number
     setPasienData(prev => ({
       ...prev,
       [fieldName]: numericValue
     }));
 
-    // Kalkulasi otomatis
     calculateTotals(fieldName, numericValue);
   };
 
-  // Kalkulasi total otomatis
   const calculateTotals = (changedField: string, newValue: number) => {
     const currentData = { ...pasienData };
     
-    // Update field yang berubah
     if (changedField === "jumlah_tagihan") {
       currentData.jumlah_tagihan = newValue;
     } else if (changedField === "diskon") {
@@ -372,10 +366,8 @@ export default function PencatatanPasien() {
       currentData.bayar_transfer = newValue;
     }
 
-    // Hitung jumlah bersih
     const jumlahBersih = currentData.jumlah_tagihan * (1 - (currentData.diskon / 100));
     
-    // Hitung total pembayaran
     const totalPembayaran = currentData.bayar_tunai + currentData.bayar_transfer;
 
     setPasienData(prev => ({
@@ -385,17 +377,9 @@ export default function PencatatanPasien() {
     }));
   };
 
-  // Handle change untuk field non-numeric
-  const handlePasienFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handlePasienInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-
-    if (name === "unit_layanan") {
-      setPasienData(prev => ({
-        ...prev,
-        [name]: value,
-        jenis_rawat: unitToJenisRawat[value] || ""
-      }));
-    } else if (["nomor_rm", "nama_pasien", "klasifikasi", "tanggal_transfer"].includes(name)) {
+    if (["nomor_rm", "nama_pasien", "tanggal_transfer"].includes(name)) {
       setPasienData(prev => ({
         ...prev,
         [name]: value
@@ -403,6 +387,22 @@ export default function PencatatanPasien() {
     }
   };
 
+  const handlePasienSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const { name, value } = e.target;
+      if (name === "unit_layanan") {
+          setPasienData(prev => ({
+              ...prev,
+              [name]: value,
+              jenis_rawat: unitToJenisRawat[value] || ""
+          }));
+      } else if (name === "klasifikasi") {
+          setPasienData(prev => ({
+              ...prev,
+              [name]: value
+          }));
+      }
+  };
+  
   const updateRekapitulasiTotals = async (rekapId: string) => {
     const pasienData = await fetchPasienByRekapId(rekapId);
     const totalPasien = pasienData.length;
@@ -410,16 +410,6 @@ export default function PencatatanPasien() {
     const totalTunai = pasienData.reduce((sum: number, item: Pasien) => sum + item.bayar_tunai, 0);
     const totalTransfer = pasienData.reduce((sum: number, item: Pasien) => sum + item.bayar_transfer, 0);
     const totalPembayaran = totalTunai + totalTransfer;
-
-    let rekapStatus = "KASIR";
-    if (totalPasien > 0) {
-        const allPatientsPaid = pasienData.every((p: Pasien) => getStatus(p.jumlah_bersih, p.total_pembayaran) === "LUNAS");
-        if (allPatientsPaid) {
-            rekapStatus = "LUNAS";
-        } else {
-            rekapStatus = "BELUM LUNAS";
-        }
-    }
 
     await supabase
       .from('rekaman_harian')
@@ -429,7 +419,6 @@ export default function PencatatanPasien() {
         total_tunai: totalTunai,
         total_transfer: totalTransfer,
         total_pembayaran: totalPembayaran,
-        status: rekapStatus,
       })
       .eq('id', rekapId);
     fetchRekapitulasi();
@@ -490,11 +479,11 @@ export default function PencatatanPasien() {
     }
   };
 
-  const getStatus = (jumlahBersih: number, totalPembayaran: number) => {
+  const getStatusPembayaran = (jumlahBersih: number, totalPembayaran: number) => {
     if (totalPembayaran === jumlahBersih) {
         return "LUNAS";
     } else if (totalPembayaran < jumlahBersih) {
-        return "BELUM LUNAS";
+        return "KURANG BAYAR";
     } else {
         return "LEBIH BAYAR";
     }
@@ -505,13 +494,21 @@ export default function PencatatanPasien() {
     const p = pasienList.find(p => p.id === selectedPasienId);
     if (!p) return;
     
-    // Set data pasien dengan nilai number asli
+    const selectedRekap = rekapitulasiList.find(r => r.id === p.rekaman_harian_id);
+    if ((selectedRekap?.status === "TUTUP" || selectedRekap?.status === "BANK") && userRole === "Kasir") {
+      Swal.fire("Tidak Diizinkan", "Data sudah ditutup, tidak bisa diubah.", "warning");
+      return;
+    }
+    if (selectedRekap?.status === "BANK") {
+        Swal.fire("Tidak Diizinkan", "Data sudah disetor ke bank, tidak bisa diubah.", "warning");
+        return;
+    }
+
     setPasienData({
       ...p,
       tanggal_transfer: p.tanggal_transfer || "",
     });
 
-    // Set display format untuk input fields
     setInputDisplay({
       jumlah_tagihan: formatNumberDisplay(p.jumlah_tagihan),
       diskon: formatNumberDisplay(p.diskon),
@@ -528,6 +525,17 @@ export default function PencatatanPasien() {
     const p = pasienList.find(p => p.id === selectedPasienId);
     if (!p) return;
     const rekapId = p.rekaman_harian_id;
+
+    const selectedRekap = rekapitulasiList.find(r => r.id === rekapId);
+    if ((selectedRekap?.status === "TUTUP" || selectedRekap?.status === "BANK") && userRole === "Kasir") {
+      Swal.fire("Tidak Diizinkan", "Data sudah ditutup, tidak bisa dihapus.", "warning");
+      return;
+    }
+    if (selectedRekap?.status === "BANK") {
+        Swal.fire("Tidak Diizinkan", "Data sudah disetor ke bank, tidak bisa dihapus.", "warning");
+        return;
+    }
+
     const result = await Swal.fire({
       title: "Apakah Anda yakin?",
       text: `Anda akan menghapus data ${p.nama_pasien}`,
@@ -560,6 +568,12 @@ export default function PencatatanPasien() {
       Swal.fire("Info", "Pilih rekapitulasi yang ingin dihapus.", "info");
       return;
     }
+    const rekapStatusCheck = rekapitulasiList.filter(r => selectedRekapIds.includes(r.id)).some(r => r.status === "BANK");
+    if (rekapStatusCheck) {
+        Swal.fire("Tidak Diizinkan", "Tidak bisa menghapus rekapitulasi yang sudah disetor ke bank.", "warning");
+        return;
+    }
+
     const result = await Swal.fire({
       title: "Apakah Anda yakin?",
       text: `Menghapus ${selectedRekapIds.length} rekapitulasi harian akan menghapus semua data pasien di dalamnya. Tindakan ini tidak bisa dibatalkan.`,
@@ -583,6 +597,67 @@ export default function PencatatanPasien() {
         console.error("Error:", error);
         Swal.fire("Error!", "Terjadi kesalahan saat menghapus data.", "error");
       }
+    }
+  };
+
+  const handleTutupSetor = async (action: 'tutup' | 'setor') => {
+    if (selectedRekapIds.length !== 1) {
+      toast.error("Pilih satu rekapitulasi harian untuk diproses.");
+      return;
+    }
+    
+    const selectedRekap = rekapitulasiList.find(r => r.id === selectedRekapIds[0]);
+    if (!selectedRekap) return;
+
+    try {
+      if (action === "tutup") {
+        if (selectedRekap.status !== "BARU") {
+          toast.error("Hanya rekapitulasi berstatus 'BARU' yang bisa ditutup.");
+          return;
+        }
+        if (userRole === "Kasir" || userRole === "Owner") {
+          const { error } = await supabase
+            .from("rekaman_harian")
+            .update({ status: "TUTUP" })
+            .eq("id", selectedRekap.id);
+          
+          if (error) {
+            toast.error("Gagal mengubah status.");
+            console.error("Error updating status:", error);
+          } else {
+            toast.success("Rekapitulasi berhasil ditutup. Siap untuk disetor.");
+            // Refresh data setelah berhasil
+            await fetchRekapitulasi();
+          }
+        } else {
+          toast.error("Hanya kasir atau owner yang bisa menutup rekapitulasi.");
+        }
+      } else if (action === "setor") {
+        if (selectedRekap.status !== "TUTUP") {
+          toast.error("Hanya rekapitulasi berstatus 'TUTUP' yang bisa disetor.");
+          return;
+        }
+        if (userRole === "Owner" || userRole === "Admin" || userRole === "Operator") {
+          const { error } = await supabase
+            .from("rekaman_harian")
+            .update({ status: "BANK" })
+            .eq("id", selectedRekap.id);
+          
+          if (error) {
+            toast.error("Gagal menyetor rekapitulasi ke bank.");
+            console.error("Error updating status:", error);
+          } else {
+            toast.success("Rekapitulasi berhasil disetor ke bank.");
+            // Refresh data setelah berhasil
+            await fetchRekapitulasi();
+          }
+        } else {
+          toast.error("Hanya Owner, Admin, atau Operator yang bisa menyetor ke bank.");
+        }
+      }
+    } catch (error) {
+      console.error("Error in handleTutupSetor:", error);
+      toast.error("Terjadi kesalahan saat memproses data.");
     }
   };
 
@@ -645,6 +720,16 @@ export default function PencatatanPasien() {
       Swal.fire("Info", "Hanya bisa menambah pasien untuk satu rekapitulasi harian saja.", "info");
       return;
     }
+    const selectedRekap = rekapitulasiList.find(r => r.id === selectedRekapIds[0]);
+    if (selectedRekap?.status !== "BARU" && (userRole === "Kasir")) {
+        Swal.fire("Tidak Diizinkan", "Data sudah ditutup, tidak bisa ditambahkan.", "warning");
+        return;
+    }
+    if (selectedRekap?.status === "BANK") {
+        Swal.fire("Tidak Diizinkan", "Data sudah disetor ke bank, tidak bisa ditambahkan.", "warning");
+        return;
+    }
+
     resetPasienForm();
     setShowPasienModal(true);
   };
@@ -654,6 +739,18 @@ export default function PencatatanPasien() {
       Swal.fire("Info", "Pilih minimal satu rekapitulasi harian.", "info");
       return;
     }
+
+    const selectedRekaps = rekapitulasiList.filter(r => selectedRekapIds.includes(r.id));
+    const isAllZero = selectedRekaps.every(r => r.total_pasien === 0);
+    
+    if (isAllZero && selectedRekapIds.length > 1) {
+      Swal.fire("Peringatan", "Beberapa baris yang Anda pilih tidak memiliki data pasien.", "warning");
+      return;
+    } else if (isAllZero && selectedRekapIds.length === 1) {
+      Swal.fire("Info", "Rekapitulasi ini tidak memiliki data pasien.", "info");
+      return;
+    }
+
     const { value: format } = await Swal.fire({
       title: 'Pilih format unduhan',
       input: 'radio',
@@ -699,7 +796,7 @@ export default function PencatatanPasien() {
       { header: 'Bayar Transfer', key: 'bayar_transfer', width: 20 },
       { header: 'Tanggal Transfer', key: 'tanggal_transfer', width: 20 },
       { header: 'Total Pembayaran', key: 'total_pembayaran', width: 20 },
-      { header: 'Status', key: 'status', width: 15 },
+      { header: 'Status Pembayaran', key: 'status_pembayaran', width: 20 },
     ];
     
     const dataForExcel = pasienMulti.map((p) => ({
@@ -717,7 +814,7 @@ export default function PencatatanPasien() {
       bayar_transfer: p.bayar_transfer,
       tanggal_transfer: p.tanggal_transfer || '-',
       total_pembayaran: p.total_pembayaran,
-      status: getStatus(p.jumlah_bersih, p.total_pembayaran),
+      status_pembayaran: getStatusPembayaran(p.jumlah_bersih, p.total_pembayaran),
     }));
 
     worksheet.addRows(dataForExcel);
@@ -745,7 +842,7 @@ export default function PencatatanPasien() {
       p.unit_layanan,
       formatRupiah(p.jumlah_bersih),
       formatRupiah(p.total_pembayaran),
-      getStatus(p.jumlah_bersih, p.total_pembayaran)
+      getStatusPembayaran(p.jumlah_bersih, p.total_pembayaran)
     ]);
     
     // @ts-expect-error - autoTable method exists but types are not properly defined
@@ -774,8 +871,166 @@ export default function PencatatanPasien() {
     setPasienList([]);
   };
 
+  const getTombolAksiTambahan = () => {
+    if (selectedRekapIds.length !== 1) {
+      return (
+        <>
+          <button className={styles.tutupButton} disabled>
+            <FaLock /> Tutup
+          </button>
+          <button className={styles.setorButton} disabled>
+            <FaUnlock /> Setor
+          </button>
+        </>
+      );
+    }
+    
+    const selectedRekap = rekapitulasiList.find(r => r.id === selectedRekapIds[0]);
+    if (!selectedRekap) {
+      return (
+        <>
+          <button className={styles.disabledButton} disabled>
+            <FaLock /> Tutup
+          </button>
+          <button className={styles.disabledButton} disabled>
+            <FaUnlock /> Setor
+          </button>
+        </>
+      );
+    }
+
+    if (selectedRekap.status === "BARU") {
+      const isAllowed = (userRole === "Kasir" || userRole === "Owner") && selectedRekap.total_pasien > 0;
+      return (
+        <>
+          <button 
+            onClick={() => handleTutupSetor('tutup')} 
+            className={styles.tutupButton} 
+            disabled={!isAllowed}
+          >
+            <FaLock /> Tutup
+          </button>
+          <button className={styles.setorButton} disabled>
+            <FaUnlock /> Setor
+          </button>
+        </>
+      );
+    }
+    
+    if (selectedRekap.status === "TUTUP") {
+      const isAllowed = (userRole === "Owner" || userRole === "Admin" || userRole === "Operator") && selectedRekap.total_pasien > 0;
+      return (
+        <>
+          <button className={styles.tutupButton} disabled>
+            <FaLock /> Tutup
+          </button>
+          <button 
+            onClick={() => handleTutupSetor('setor')} 
+            className={styles.setorButton} 
+            disabled={!isAllowed}
+          >
+            <FaUnlock /> Setor
+          </button>
+        </>
+      );
+    }
+    
+    if (selectedRekap.status === "BANK") {
+      return (
+        <>
+          <button className={styles.tutupButton} disabled>
+            <FaLock /> Tutup
+          </button>
+          <button className={styles.setorButton} disabled>
+            <FaUnlock /> Setor
+          </button>
+        </>
+      );
+    }
+  };
+
+  const isPasienFormDisabled = () => {
+    if (userRole === "Owner" || userRole === "Admin" || userRole === "Operator") {
+        return false;
+    }
+
+    if (editPasienId) {
+      const selectedPasien = pasienList.find(p => p.id === editPasienId);
+      if (selectedPasien) {
+        const rekap = rekapitulasiList.find(r => r.id === selectedPasien.rekaman_harian_id);
+        return rekap?.status === "TUTUP" || rekap?.status === "BANK";
+      }
+    }
+    if (selectedRekapIds.length === 1) {
+        const selectedRekap = rekapitulasiList.find(r => r.id === selectedRekapIds[0]);
+        return selectedRekap?.status === "TUTUP" || selectedRekap?.status === "BANK";
+    }
+    return false;
+  };
+
+  const isPasienEditDisabled = () => {
+    const isOwnerOrAdminOrOperator = userRole === "Owner" || userRole === "Admin" || userRole === "Operator";
+    if (isOwnerOrAdminOrOperator) return false;
+
+    if (selectedPasienId) {
+        const p = pasienList.find(p => p.id === selectedPasienId);
+        if (p) {
+            const rekap = rekapitulasiList.find(r => r.id === p.rekaman_harian_id);
+            return rekap?.status === "TUTUP" || rekap?.status === "BANK";
+        }
+    }
+    return true;
+  };
+
+  const isPasienDeleteDisabled = () => {
+    const isOwnerOrAdmin = userRole === "Owner" || userRole === "Admin";
+    if (isOwnerOrAdmin) return false;
+    
+    if (selectedPasienId) {
+        const p = pasienList.find(p => p.id === selectedPasienId);
+        if (p) {
+            const rekap = rekapitulasiList.find(r => r.id === p.rekaman_harian_id);
+            return rekap?.status === "TUTUP" || rekap?.status === "BANK";
+        }
+    }
+    return true;
+  };
+
+  // Logika untuk menonaktifkan tombol "Download" jika semua baris terpilih memiliki total pasien 0
+  const isDownloadDisabled = () => {
+    if (selectedRekapIds.length === 0) return true;
+    
+    const selectedRekaps = rekapitulasiList.filter(r => selectedRekapIds.includes(r.id));
+    const hasData = selectedRekaps.some(r => r.total_pasien > 0);
+    
+    const isRoleAllowed = userRole === "Owner" || userRole === "Operator" || userRole === "Admin";
+
+    return !isRoleAllowed || !hasData;
+  };
+  
+  if (isLoading) {
+    return (
+      <div className={loadingStyles.loadingContainer}>
+        <div className={loadingStyles.dotContainer}>
+          <div className={`${loadingStyles.dot} ${loadingStyles['dot-1']}`} />
+          <div className={`${loadingStyles.dot} ${loadingStyles['dot-2']}`} />
+          <div className={`${loadingStyles.dot} ${loadingStyles['dot-3']}`} />
+        </div>
+        <p className={loadingStyles.loadingText}></p>
+      </div>
+    );
+  }
+
   return (
     <div className={pageStyles.container}>
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          style: {
+            zIndex: '9999',
+          },
+        }}
+      />
       <h2 className={pageStyles.header}>Rekapitulasi Harian</h2>
         
       <div className={pageStyles.buttonContainer}>
@@ -790,7 +1045,7 @@ export default function PencatatanPasien() {
         </button>
         <button
           onClick={handleAddPasienClick}
-          disabled={selectedRekapIds.length !== 1}
+          disabled={selectedRekapIds.length !== 1 || isPasienFormDisabled()}
           className={styles.rekamButton}
         >
           <FaPlus size={14}/> Pasien
@@ -804,11 +1059,12 @@ export default function PencatatanPasien() {
         </button>
         <button
           onClick={handleDownloadClick}
-          disabled={selectedRekapIds.length === 0 || !(userRole === "Owner" || userRole === "Operator" || userRole === "Admin")}
+          disabled={isDownloadDisabled()}
           className={styles.downloadButton}
         >
           <FaDownload /> Download
         </button>
+        {getTombolAksiTambahan()}
       </div>
     
       {showRekapModal && (
@@ -844,9 +1100,10 @@ export default function PencatatanPasien() {
                     type="text"
                     name="nomor_rm"
                     value={pasienData.nomor_rm}
-                    onChange={handlePasienFormChange}
+                    onChange={handlePasienInputChange}
                     required
                     className={pageStyles.formInput}
+                    disabled={isPasienFormDisabled()}
                   />
                   </div>
                   <div className={pageStyles.formGroup}>
@@ -855,9 +1112,10 @@ export default function PencatatanPasien() {
                       type="text"
                       name="nama_pasien"
                       value={pasienData.nama_pasien}
-                      onChange={handlePasienFormChange}
+                      onChange={handlePasienInputChange}
                       required
                       className={pageStyles.formInput}
+                      disabled={isPasienFormDisabled()}
                     />
                   </div>
                   <div className={pageStyles.formGroup}>
@@ -865,10 +1123,11 @@ export default function PencatatanPasien() {
                     <select
                       name="klasifikasi"
                       value={pasienData.klasifikasi}
-                      onChange={handlePasienFormChange}
+                      onChange={handlePasienSelectChange}
                       required
                       className={pageStyles.formSelect}
-                      style={{ backgroundColor: pasienData.klasifikasi ? "white" : "#f3f4f6" }}>
+                      style={{ backgroundColor: pasienData.klasifikasi ? "white" : "#f3f4f6" }}
+                      disabled={isPasienFormDisabled()}>
                       <option value="">-- Pilih Klasifikasi --</option>
                       {klasifikasiOptions.map((k) => (<option key={k} value={k}>{k}</option>))}
                     </select>
@@ -878,10 +1137,11 @@ export default function PencatatanPasien() {
                       <select
                         name="unit_layanan"
                         value={pasienData.unit_layanan}
-                        onChange={handlePasienFormChange}
+                        onChange={handlePasienSelectChange}
                         required
                         className={pageStyles.formSelect}
-                        style={{ backgroundColor: pasienData.unit_layanan ? "white" : "#f3f4f6" }}>
+                        style={{ backgroundColor: pasienData.unit_layanan ? "white" : "#f3f4f6" }}
+                        disabled={isPasienFormDisabled()}>
                         <option value="">-- Pilih Unit Layanan --</option>
                         {unitLayananOptions.map((unit) => (<option key={unit} value={unit}>{unit}</option>))}
                       </select>
@@ -905,6 +1165,7 @@ export default function PencatatanPasien() {
                       onChange={(e) => handleNumericInputChange("jumlah_tagihan", e.target.value)}
                       className={pageStyles.formInput}
                       placeholder="0"
+                      disabled={isPasienFormDisabled()}
                     />
                   </div>
                   <div className={pageStyles.formGroup}>
@@ -916,6 +1177,7 @@ export default function PencatatanPasien() {
                       onChange={(e) => handleNumericInputChange("diskon", e.target.value)}
                       className={pageStyles.formInput}
                       placeholder="0"
+                      disabled={isPasienFormDisabled()}
                     />
                   </div>
                   <div className={pageStyles.formGroup}>
@@ -939,6 +1201,7 @@ export default function PencatatanPasien() {
                       onChange={(e) => handleNumericInputChange("bayar_tunai", e.target.value)}
                       className={pageStyles.formInput}
                       placeholder="0"
+                      disabled={isPasienFormDisabled()}
                     />
                   </div>
                   <div className={pageStyles.formGroup}>
@@ -950,6 +1213,7 @@ export default function PencatatanPasien() {
                       onChange={(e) => handleNumericInputChange("bayar_transfer", e.target.value)}
                       className={pageStyles.formInput}
                       placeholder="0"
+                      disabled={isPasienFormDisabled()}
                     />
                   </div>
                   <div className={pageStyles.formGroup}>
@@ -958,10 +1222,10 @@ export default function PencatatanPasien() {
                         type="date"
                         name="tanggal_transfer"
                         value={pasienData.tanggal_transfer}
-                        onChange={handlePasienFormChange}
-                        disabled={!pasienData.bayar_transfer || pasienData.bayar_transfer === 0}
+                        onChange={handlePasienInputChange}
+                        disabled={!pasienData.bayar_transfer || pasienData.bayar_transfer === 0 || isPasienFormDisabled()}
                         className={pageStyles.formSelect}
-                        style={{ backgroundColor: !pasienData.bayar_transfer || pasienData.bayar_transfer === 0 ? "#e9ecef" : "white" }}
+                        style={{ backgroundColor: !pasienData.bayar_transfer || pasienData.bayar_transfer === 0 || isPasienFormDisabled() ? "#e9ecef" : "white" }}
                       />
                   </div>
                   <div className={pageStyles.formGroup}>
@@ -976,11 +1240,11 @@ export default function PencatatanPasien() {
                       />
                   </div>
                   <div className={pageStyles.formGroup}>
-                    <label className={pageStyles.formLabel}>Status:</label>
+                    <label className={pageStyles.formLabel}>Status Pembayaran:</label>
                       <input
                         type="text"
-                        name="status"
-                        value={getStatus(Number(pasienData.jumlah_bersih), Number(pasienData.total_pembayaran))}
+                        name="status_pembayaran"
+                        value={getStatusPembayaran(Number(pasienData.jumlah_bersih), Number(pasienData.total_pembayaran))}
                         readOnly
                         disabled
                         className={`${pageStyles.formInput} ${pageStyles.readOnly}`}
@@ -990,7 +1254,7 @@ export default function PencatatanPasien() {
 
             <div className={pageStyles.formActions}>
                 <button type="button" onClick={resetPasienForm} style={{ padding: "8px 16px", border: "1px solid #ccc", borderRadius: "6px", cursor: "pointer", fontSize: "14px" }}>Batal</button>
-                <button type="submit" style={{ background: "#16a34a", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "14px" }}>{editPasienId ? "Update" : "Simpan"}</button>
+                <button type="submit" style={{ background: "#16a34a", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "14px" }} disabled={isPasienFormDisabled()}>{editPasienId ? "Update" : "Simpan"}</button>
             </div>
           </form>
         </Modal>
@@ -1071,14 +1335,14 @@ export default function PencatatanPasien() {
         <div className={pageStyles.buttonContainer} style={{ margin: "1rem" }}>
             <button
                 onClick={handleEditPasien}
-                disabled={!selectedPasienId || !(userRole === "Owner" || userRole === "Admin"  || userRole === "Kasir")}
+                disabled={!selectedPasienId || isPasienEditDisabled()}
                 className={styles.editButton}
             >
                 <FaEdit/> Edit
             </button>
             <button
                 onClick={handleDeletePasien}
-                disabled={!selectedPasienId || userRole !== "Owner"}
+                disabled={!selectedPasienId || isPasienDeleteDisabled()}
                 className={styles.hapusButton}
             >
                 <FaRegTrashAlt /> Hapus
@@ -1089,7 +1353,7 @@ export default function PencatatanPasien() {
           <table className={pageStyles.table}>
             <thead className={pageStyles.tableHead}>
               <tr>
-                <th style={{ width: "10%", padding: "0.5rem 1.5rem" }}>Tanggal</th>
+                <th style={{ width: "10%", padding: "0.5rem 1.5rem" }}>Tanggal Bayar</th>
                 <th style={{ width: "20%" }}>Nama Pasien</th>
                 <th style={{ width: "10%" }}>Nomor RM</th>
                 <th style={{ width: "10%" }}>Unit Layanan</th>
@@ -1097,6 +1361,7 @@ export default function PencatatanPasien() {
                 <th style={{ width: "5%", textAlign: "right" }}>Diskon</th>
                 <th style={{ width: "10%", textAlign: "right" }}>Jumlah Bersih</th>
                 <th style={{ width: "10%", textAlign: "right" }}>Total Bayar</th>
+                <th style={{ width: "10%", textAlign: "center" }}>Status Pembayaran</th>
               </tr>
             </thead>
             <tbody className={pageStyles.tableBody}>
@@ -1107,7 +1372,7 @@ export default function PencatatanPasien() {
                     onClick={() => handlePasienRowClick(p)}
                     className={`${pageStyles.tableRow} ${selectedPasienId === p.id ? pageStyles.selected : ""}`}
                   >
-                    <td>{formatDate(rekapitulasiList.find(r => r.id === p.rekaman_harian_id)?.tanggal ?? null)}</td>
+                    <td>{formatDate(p.tanggal_transfer || (rekapitulasiList.find(r => r.id === p.rekaman_harian_id)?.tanggal ?? null))}</td>
                     <td>{p.nama_pasien}</td>
                     <td>{p.nomor_rm}</td>
                     <td>{p.unit_layanan}</td>
@@ -1115,11 +1380,12 @@ export default function PencatatanPasien() {
                     <td style={{ textAlign: "right" }}>{(p.diskon) + "%"}</td>
                     <td style={{ textAlign: "right" }}>{formatRupiah(p.jumlah_bersih)}</td>
                     <td style={{ textAlign: "right" }}>{formatRupiah(p.total_pembayaran)}</td>
+                    <td style={{ textAlign: "center" }}>{getStatusPembayaran(p.jumlah_bersih, p.total_pembayaran)}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={8} className={pageStyles.tableEmpty}>
+                  <td colSpan={9} className={pageStyles.tableEmpty}>
                     {selectedRekapIds.length > 0 ? "Tidak ada pasien untuk tanggal yang dipilih." : "Silakan pilih tanggal rekapitulasi di atas."}
                   </td>
                 </tr>

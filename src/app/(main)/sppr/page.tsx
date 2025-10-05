@@ -1,6 +1,7 @@
-'use client';
+// src/app/(main)/sppr/page.tsx
+"use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/utils/supabaseClient";
 import Swal from "sweetalert2";
 import { FaPlus, FaEdit, FaRegTrashAlt } from "react-icons/fa";
@@ -11,6 +12,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import Paginasi from '@/components/paginasi';
 import styles from "@/styles/button.module.css";
 import pageStyles from "@/styles/komponen.module.css";
+import loadingStyles from "@/styles/loading.module.css"; // Import CSS loading
 import { capitalizeWords, formatAngka, parseAngka, toRoman, formatTanggal } from '@/lib/format';
 import { terbilang } from "@/lib/terbilang";
 import { generateSpprPdf } from "@/lib/pdfsppr";
@@ -65,6 +67,7 @@ const Sppr = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [selectedSppr, setSelectedSppr] = useState<SpprType | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true); // State untuk loading
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [formData, setFormData] = useState<SpprType>({
@@ -75,52 +78,83 @@ const Sppr = () => {
   const [operatorName, setOperatorName] = useState("");
   const [userRole, setUserRole] = useState("");
 
+  // --- Fungsi Pengambilan Data ---
   const fetchSPPR = useCallback(async () => {
-    const { data, error } = await supabase.from("sppr").select("*").order("created_at", { ascending: false });
-    if (error) {
-      console.error("Gagal mengambil data:", error);
-      Swal.fire("Error", "Gagal mengambil data SPPR.", "error");
-    } else {
-      setSpprList(data as SpprType[]);
+    try {
+      const { data, error } = await supabase.from("sppr").select("*").order("created_at", { ascending: false });
+      if (error) {
+        console.error("Gagal mengambil data:", error);
+        Swal.fire("Error", "Gagal mengambil data SPPR.", "error");
+        return [];
+      } else {
+        setSpprList(data as SpprType[]);
+        return data;
+      }
+    } catch (e) {
+      console.error("Failed to fetch SPPR data:", e);
+      return [];
     }
   }, []);
 
   const fetchPejabatAndPegawai = useCallback(async () => {
-    const { data: kpaData } = await supabase
-      .from("pejabat_keuangan")
-      .select("*, pegawai(nama, pangkat, nrp_nip_nir, tipe_identitas, jabatan_struktural)")
-      .eq("jabatan_pengelola_keuangan", "KPA").eq("status", "Aktif");
-    const formattedKpa = kpaData?.map(item => ({
-      nama: item.pegawai.nama, pangkat: item.pegawai.pangkat, tipe_identitas: item.pegawai.tipe_identitas,
-      nrp_nip_nir: item.pegawai.nrp_nip_nir, jabatan: item.pegawai.jabatan_struktural
-    })) || [];
-    setKpaList(formattedKpa as PersonType[]);
-
-    const { data: bendaharaData } = await supabase
-      .from("pejabat_keuangan")
-      .select("*, pegawai(nama, pangkat, nrp_nip_nir, tipe_identitas, jabatan_struktural)")
-      .eq("jabatan_pengelola_keuangan", "BPG").eq("status", "Aktif");
-    const formattedBendahara = bendaharaData?.map(item => ({
-      nama: item.pegawai.nama, pangkat: item.pegawai.pangkat, tipe_identitas: item.pegawai.tipe_identitas,
-      nrp_nip_nir: item.pegawai.nrp_nip_nir, jabatan: item.pegawai.jabatan_struktural
-    })) || [];
-    setBendaharaList(formattedBendahara as PersonType[]);
-
-    const { data: pengambilData } = await supabase
-      .from("pegawai")
-      .select("nama, pangkat, nrp_nip_nir, tipe_identitas, jabatan_struktural")
-      .in("jabatan_struktural", ["BANUM KEU", "STAF KEU"]).eq("status", "Aktif");
-    const formattedPengambil = pengambilData?.map(item => ({
-      nama: item.nama, pangkat: item.pangkat, tipe_identitas: item.tipe_identitas,
-      nrp_nip_nir: item.nrp_nip_nir, jabatan: item.jabatan_struktural
-    })) || [];
-    setPengambilList(formattedPengambil as PersonType[]);
+    try {
+      const { data: kpaData } = await supabase
+        .from("pejabat_keuangan")
+        .select("*, pegawai(nama, pangkat, nrp_nip_nir, tipe_identitas, jabatan_struktural)")
+        .eq("jabatan_pengelola_keuangan", "KPA").eq("status", "Aktif");
+      const formattedKpa = kpaData?.map(item => ({
+        nama: item.pegawai.nama, pangkat: item.pegawai.pangkat, tipe_identitas: item.pegawai.tipe_identitas,
+        nrp_nip_nir: item.pegawai.nrp_nip_nir, jabatan: item.pegawai.jabatan_struktural
+      })) || [];
+      setKpaList(formattedKpa as PersonType[]);
+  
+      const { data: bendaharaData } = await supabase
+        .from("pejabat_keuangan")
+        .select("*, pegawai(nama, pangkat, nrp_nip_nir, tipe_identitas, jabatan_struktural)")
+        .eq("jabatan_pengelola_keuangan", "BPG").eq("status", "Aktif");
+      const formattedBendahara = bendaharaData?.map(item => ({
+        nama: item.pegawai.nama, pangkat: item.pegawai.pangkat, tipe_identitas: item.pegawai.tipe_identitas,
+        nrp_nip_nir: item.pegawai.nrp_nip_nir, jabatan: item.pegawai.jabatan_struktural
+      })) || [];
+      setBendaharaList(formattedBendahara as PersonType[]);
+  
+      const { data: pengambilData } = await supabase
+        .from("pegawai")
+        .select("nama, pangkat, nrp_nip_nir, tipe_identitas, jabatan_struktural")
+        .in("jabatan_struktural", ["BANUM KEU", "STAF KEU"]).eq("status", "Aktif");
+      const formattedPengambil = pengambilData?.map(item => ({
+        nama: item.nama, pangkat: item.pangkat, tipe_identitas: item.tipe_identitas,
+        nrp_nip_nir: item.nrp_nip_nir, jabatan: item.jabatan_struktural
+      })) || [];
+      setPengambilList(formattedPengambil as PersonType[]);
+    } catch (e) {
+      console.error("Failed to fetch person data:", e);
+    }
   }, []);
 
+  const getLoggedInUser = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles").select("nama_lengkap, role").eq("id", user.id).single();
+        if (profile) {
+          setOperatorName(profile.nama_lengkap);
+          setUserRole(profile.role);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to fetch user role:", e);
+    }
+  };
+
   useEffect(() => {
-    getLoggedInUser();
-    fetchSPPR();
-    fetchPejabatAndPegawai();
+    const initializeData = async () => {
+      setIsLoading(true);
+      await Promise.all([getLoggedInUser(), fetchSPPR(), fetchPejabatAndPegawai()]);
+      setIsLoading(false);
+    };
+    initializeData();
   }, [fetchSPPR, fetchPejabatAndPegawai]);
 
   useEffect(() => {
@@ -134,18 +168,6 @@ const Sppr = () => {
       generateNomorSurat();
     }
   }, [showModal, isEditing]);
-
-  const getLoggedInUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data: profile } = await supabase
-        .from("profiles").select("nama_lengkap, role").eq("id", user.id).single();
-      if (profile) {
-        setOperatorName(profile.nama_lengkap);
-        setUserRole(profile.role);
-      }
-    }
-  };
 
   const generateNomorSurat = async () => {
     const today = new Date();
@@ -318,7 +340,7 @@ const Sppr = () => {
   const totalPages = Math.ceil(spprList.length / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
   const endIndex = startIndex + rowsPerPage;
-  const paginatedSppr = spprList.slice(startIndex, endIndex);
+  const paginatedSppr = useMemo(() => spprList.slice(startIndex, endIndex), [spprList, startIndex, endIndex]);
 
   const isAllowedToRekam = userRole === "Owner" || userRole === "Operator";
   const isAllowedToEditOrDelete = userRole === "Owner" || userRole === "Admin" || userRole === "Operator";
@@ -329,6 +351,21 @@ const Sppr = () => {
   const isApprovingDisabled = !isAllowedToApprove || !selectedSppr || selectedSppr?.status_sppr === "DISETUJUI";
   const isDownloadingDisabled = !isAllowedToDownload || !selectedSppr;
 
+  // Render loading state
+  if (isLoading) {
+    return (
+      <div className={loadingStyles.loadingContainer}>
+        <div className={loadingStyles.dotContainer}>
+          <div className={`${loadingStyles.dot} ${loadingStyles['dot-1']}`} />
+          <div className={`${loadingStyles.dot} ${loadingStyles['dot-2']}`} />
+          <div className={`${loadingStyles.dot} ${loadingStyles['dot-3']}`} />
+        </div>
+        <p className={loadingStyles.loadingText}></p>
+      </div>
+    );
+  }
+
+  // Render main content
   return (
     <div className={pageStyles.container}>
       <ToastContainer />

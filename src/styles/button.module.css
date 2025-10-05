@@ -5,7 +5,10 @@
 .editButton,
 .hapusButton,
 .submitButton,
-.downloadButton {
+.downloadButton,
+.tutupButton,
+.setorButton,
+.disabledButton {
   padding: 6px 10px;
   border: none;
   border-radius: 6px;
@@ -16,6 +19,8 @@
   gap: 4px;
   text-decoration: none;
   transition: all 0.2s ease-in-out;
+  font-size: 14px;
+  font-weight: 500;
 }
 
 /* --- Varian Tombol Rekam/Submit --- */
@@ -84,16 +89,52 @@
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
-.Button:active {
+.downloadButton:active {
   transform: translateY(0);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* ✅ Gaya untuk Tombol yang Dinonaktifkan */
+/* --- Varian Tombol Tutup (Biru) --- */
+.tutupButton {
+  background-color: #3b82f6; /* Biru */
+  color: white;
+}
+
+.tutupButton:hover {
+  background-color: #2563eb;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.tutupButton:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* --- Varian Tombol Setor (Biru) --- */
+.setorButton {
+  background-color: #3b82f6; /* Biru */
+  color: white;
+}
+
+.setorButton:hover {
+  background-color: #2563eb;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.setorButton:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Gaya untuk Tombol yang Dinonaktifkan dengan `disabled` attribute*/
 .rekamButton:disabled,
 .editButton:disabled,
 .hapusButton:disabled,
-.downloadButton:disabled{
+.downloadButton:disabled,
+.tutupButton:disabled,
+.setorButton:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
