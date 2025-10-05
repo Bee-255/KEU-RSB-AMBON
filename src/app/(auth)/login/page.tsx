@@ -6,6 +6,8 @@ import { supabase } from "@/utils/supabaseClient";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import React from 'react';
+import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
+import toast, { Toaster } from 'react-hot-toast';
 
 // Gaya CSS
 const containerStyle: React.CSSProperties = {
@@ -119,16 +121,6 @@ const selectStyle: React.CSSProperties = {
   backgroundColor: "#fff",
 };
 
-const messageStyle: React.CSSProperties = {
-  marginTop: "1rem",
-  padding: "10px",
-  borderRadius: "8px",
-  width: "100%",
-  textAlign: "center",
-  fontSize: "0.9rem",
-  fontWeight: "500",
-};
-
 const generateYears = (startYear: number, endYear: number) => {
   const years = [];
   for (let i = startYear; i <= endYear; i++) {
@@ -141,7 +133,6 @@ export default function LoginPage() {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
-  const [message, setMessage] = useState<{ text: string; type: string } | null>(null);
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [selectedYear, setSelectedYear] = useState<string>(String(new Date().getFullYear()));
   const router = useRouter();
@@ -170,7 +161,6 @@ export default function LoginPage() {
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setMessage(null);
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -179,17 +169,14 @@ export default function LoginPage() {
 
     if (error) {
       setLoading(false);
-      setMessage({ text: "Email atau password yang Anda masukkan salah.", type: "error" });
+      toast.error("Email atau password yang Anda masukkan salah.");
     } else {
-      // Simpan tahun yang dipilih ke dalam session atau database
       const { error: sessionError } = await supabase.auth.updateUser({
         data: {
           periode_tahun: selectedYear,
         },
       });
 
-      setLoading(false);
-      
       const { data: profile } = await supabase
         .from("profiles")
         .select("nama_lengkap")
@@ -197,11 +184,17 @@ export default function LoginPage() {
         .single();
       
       if (!profile || !profile.nama_lengkap) {
-        setMessage({ text: "Login berhasil! Silakan lengkapi data profil Anda.", type: "success" });
-        setTimeout(() => router.push("/profile"), 1500);
+        toast.success("Login berhasil! Silakan lengkapi data profil Anda.");
+        setTimeout(() => {
+          setLoading(false); 
+          router.push("/profile");
+        }, 1500);
       } else {
-        setMessage({ text: "Login berhasil! Anda akan dialihkan ke dashboard.", type: "success" });
-        setTimeout(() => router.push("/dashboard"), 1500);
+        toast.success("Login berhasil!");
+        setTimeout(() => {
+          setLoading(false);
+          router.push("/dashboard");
+        }, 1500);
       }
     }
   };
@@ -212,6 +205,7 @@ export default function LoginPage() {
 
   return (
     <div style={containerStyle}>
+      <Toaster position="top-right" />
       <div style={cardStyle}>
         <div style={iconGroupStyle}>
           <Image
@@ -261,7 +255,7 @@ export default function LoginPage() {
                 style={passwordToggleStyle}
                 onClick={handleTogglePassword}
               >
-                {showPassword ? "👁️" : "👁️‍🗨️"}
+                {showPassword ? <FaRegEye /> : <FaRegEyeSlash />}
               </span>
             </div>
           </div>
@@ -296,18 +290,6 @@ export default function LoginPage() {
             
           </div>
         </form>
-
-        {message && (
-          <div
-            style={{
-              ...messageStyle,
-              backgroundColor: message.type === "error" ? "#fee2e2" : "#dcfce7",
-              color: message.type === "error" ? "#b91c1c" : "#166534",
-            }}
-          >
-            {message.text}
-          </div>
-        )}
       </div>
     </div>
   );
