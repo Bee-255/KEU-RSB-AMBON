@@ -35,7 +35,7 @@ const Modal: React.FC<ModalProps> = ({ children, onClose }) => {
   );
 };
 
-// Fungsi utilitas di luar komponen untuk efisiensi
+// Fungsi utilitas format angka Indonesia
 const formatDate = (dateString: string | null) => {
   if (!dateString) return "-";
   const date = new Date(dateString);
@@ -45,8 +45,9 @@ const formatDate = (dateString: string | null) => {
 };
 
 const formatRupiah = (number: number | string | null) => {
-  if (number === null) return "-";
-  const num = typeof number === 'string' ? parseFloat(number) : number;
+  if (number === null || number === undefined || number === "") return "-";
+  const num = typeof number === 'string' ? parseFloat(number.replace(/\./g, '')) : number;
+  if (isNaN(num)) return "-";
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',
     currency: 'IDR',
@@ -55,17 +56,31 @@ const formatRupiah = (number: number | string | null) => {
   }).format(num);
 };
 
-const formatToNumber = (str: string | number) => {
-  if (typeof str !== 'string' && typeof str !== 'number') {
-    return 0;
-  }
-  const cleaned = String(str).replace(/[^\d]/g, '');
-  return cleaned ? parseInt(cleaned, 10) : 0;
+// Format input dengan pemisah ribuan (Indonesia)
+const formatInputRupiah = (value: string): string => {
+  // Hapus semua karakter kecuali digit
+  const numbersOnly = value.replace(/[^\d]/g, '');
+  
+  if (numbersOnly === '') return '';
+  
+  // Format dengan pemisah ribuan
+  return numbersOnly.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 };
 
-const formatRupiahDisplay = (num: number | string) => {
-  if (num === null || isNaN(Number(num)) || String(num) === "") return "";
-  return String(num).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+// Konversi dari format input ke number
+const parseRupiahInput = (formattedValue: string): number => {
+  if (!formattedValue) return 0;
+  // Hapus semua titik dan konversi ke number
+  const numbersOnly = formattedValue.replace(/\./g, '');
+  return parseInt(numbersOnly, 10) || 0;
+};
+
+// Format untuk display di table (tanpa Rp)
+const formatNumberDisplay = (number: number | string | null): string => {
+  if (number === null || number === undefined || number === "") return "-";
+  const num = typeof number === 'string' ? parseFloat(number.replace(/\./g, '')) : number;
+  if (isNaN(num)) return "-";
+  return new Intl.NumberFormat('id-ID').format(num);
 };
 
 const unitLayananOptions = [
@@ -131,17 +146,50 @@ export default function PencatatanPasien() {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [selectedRekapIds, setSelectedRekapIds] = useState<string[]>([]);
   
-  // Menambahkan tipe data awal untuk state pasienData
+  // State untuk form pasien - sekarang menyimpan nilai asli (number)
   const [pasienData, setPasienData] = useState<{
-    klasifikasi: string, nomor_rm: string, nama_pasien: string, jenis_rawat: string,
-    unit_layanan: string, jumlah_tagihan: string | number, diskon: string | number, jumlah_bersih: string | number,
-    bayar_tunai: string | number, bayar_transfer: string | number, tanggal_transfer: string, total_pembayaran: string | number,
-    rekaman_harian_id: string | null, user_id: string | null
+    klasifikasi: string, 
+    nomor_rm: string, 
+    nama_pasien: string, 
+    jenis_rawat: string,
+    unit_layanan: string, 
+    jumlah_tagihan: number, 
+    diskon: number, 
+    jumlah_bersih: number,
+    bayar_tunai: number, 
+    bayar_transfer: number, 
+    tanggal_transfer: string, 
+    total_pembayaran: number,
+    rekaman_harian_id: string | null, 
+    user_id: string | null
   }>({
-    klasifikasi: "", nomor_rm: "", nama_pasien: "", jenis_rawat: "",
-    unit_layanan: "", jumlah_tagihan: "", diskon: "", jumlah_bersih: "",
-    bayar_tunai: "", bayar_transfer: "", tanggal_transfer: "", total_pembayaran: "",
-    rekaman_harian_id: null, user_id: null,
+    klasifikasi: "", 
+    nomor_rm: "", 
+    nama_pasien: "", 
+    jenis_rawat: "",
+    unit_layanan: "", 
+    jumlah_tagihan: 0, 
+    diskon: 0, 
+    jumlah_bersih: 0,
+    bayar_tunai: 0, 
+    bayar_transfer: 0, 
+    tanggal_transfer: "", 
+    total_pembayaran: 0,
+    rekaman_harian_id: null, 
+    user_id: null,
+  });
+
+  // State untuk format display di input field
+  const [inputDisplay, setInputDisplay] = useState<{
+    jumlah_tagihan: string;
+    diskon: string;
+    bayar_tunai: string;
+    bayar_transfer: string;
+  }>({
+    jumlah_tagihan: "",
+    diskon: "",
+    bayar_tunai: "",
+    bayar_transfer: ""
   });
 
   const [newRekapDate, setNewRekapDate] = useState("");
@@ -285,36 +333,74 @@ export default function PencatatanPasien() {
     }
   };
 
+  // Handle input change untuk field numeric
+  const handleNumericInputChange = (fieldName: string, value: string) => {
+    // Format input dengan pemisah ribuan
+    const formattedValue = formatInputRupiah(value);
+    
+    // Update display
+    setInputDisplay(prev => ({
+      ...prev,
+      [fieldName]: formattedValue
+    }));
+
+    // Parse ke number untuk kalkulasi
+    const numericValue = parseRupiahInput(formattedValue);
+
+    // Update data pasien dengan nilai number
+    setPasienData(prev => ({
+      ...prev,
+      [fieldName]: numericValue
+    }));
+
+    // Kalkulasi otomatis
+    calculateTotals(fieldName, numericValue);
+  };
+
+  // Kalkulasi total otomatis
+  const calculateTotals = (changedField: string, newValue: number) => {
+    const currentData = { ...pasienData };
+    
+    // Update field yang berubah
+    if (changedField === "jumlah_tagihan") {
+      currentData.jumlah_tagihan = newValue;
+    } else if (changedField === "diskon") {
+      currentData.diskon = newValue;
+    } else if (changedField === "bayar_tunai") {
+      currentData.bayar_tunai = newValue;
+    } else if (changedField === "bayar_transfer") {
+      currentData.bayar_transfer = newValue;
+    }
+
+    // Hitung jumlah bersih
+    const jumlahBersih = currentData.jumlah_tagihan * (1 - (currentData.diskon / 100));
+    
+    // Hitung total pembayaran
+    const totalPembayaran = currentData.bayar_tunai + currentData.bayar_transfer;
+
+    setPasienData(prev => ({
+      ...prev,
+      jumlah_bersih: jumlahBersih,
+      total_pembayaran: totalPembayaran
+    }));
+  };
+
+  // Handle change untuk field non-numeric
   const handlePasienFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    let updatedPasienData = { ...pasienData, [name]: value };
 
     if (name === "unit_layanan") {
-      updatedPasienData.jenis_rawat = unitToJenisRawat[value] || "";
+      setPasienData(prev => ({
+        ...prev,
+        [name]: value,
+        jenis_rawat: unitToJenisRawat[value] || ""
+      }));
+    } else if (["nomor_rm", "nama_pasien", "klasifikasi", "tanggal_transfer"].includes(name)) {
+      setPasienData(prev => ({
+        ...prev,
+        [name]: value
+      }));
     }
-
-    if (["jumlah_tagihan", "bayar_tunai", "bayar_transfer", "diskon"].includes(name)) {
-      const rawValue = formatToNumber(value.toString());
-      updatedPasienData = { ...updatedPasienData, [name]: rawValue };
-    }
-
-    const jumlahTagihan = formatToNumber(updatedPasienData.jumlah_tagihan);
-    const diskon = formatToNumber(updatedPasienData.diskon);
-    const bayarTunai = formatToNumber(updatedPasienData.bayar_tunai);
-    const bayarTransfer = formatToNumber(updatedPasienData.bayar_transfer);
-
-    const jumlahBersih = jumlahTagihan * (1 - (diskon / 100));
-    const totalPembayaran = bayarTunai + bayarTransfer;
-
-    setPasienData({
-      ...updatedPasienData,
-      jumlah_tagihan: formatRupiahDisplay(jumlahTagihan),
-      diskon: formatRupiahDisplay(diskon),
-      bayar_tunai: formatRupiahDisplay(bayarTunai),
-      bayar_transfer: formatRupiahDisplay(bayarTransfer),
-      jumlah_bersih: jumlahBersih,
-      total_pembayaran: totalPembayaran,
-    });
   };
 
   const updateRekapitulasiTotals = async (rekapId: string) => {
@@ -360,13 +446,7 @@ export default function PencatatanPasien() {
 
     const dataToSubmit = {
       ...pasienData,
-      tanggal_transfer: pasienData.bayar_transfer ? pasienData.tanggal_transfer : null,
-      jumlah_tagihan: Number(pasienData.jumlah_tagihan),
-      diskon: Number(pasienData.diskon),
-      jumlah_bersih: Number(pasienData.jumlah_bersih),
-      bayar_tunai: Number(pasienData.bayar_tunai),
-      bayar_transfer: Number(pasienData.bayar_transfer),
-      total_pembayaran: Number(pasienData.total_pembayaran),
+      tanggal_transfer: pasienData.bayar_transfer > 0 ? pasienData.tanggal_transfer : null,
       rekaman_harian_id: rekapIdToSubmit,
       user_id: userId,
     };
@@ -424,16 +504,21 @@ export default function PencatatanPasien() {
     if (!selectedPasienId) return;
     const p = pasienList.find(p => p.id === selectedPasienId);
     if (!p) return;
+    
+    // Set data pasien dengan nilai number asli
     setPasienData({
       ...p,
-      jumlah_tagihan: formatRupiahDisplay(p.jumlah_tagihan),
-      diskon: formatRupiahDisplay(p.diskon),
-      jumlah_bersih: p.jumlah_bersih,
-      bayar_tunai: formatRupiahDisplay(p.bayar_tunai),
-      bayar_transfer: formatRupiahDisplay(p.bayar_transfer),
-      total_pembayaran: p.total_pembayaran,
       tanggal_transfer: p.tanggal_transfer || "",
     });
+
+    // Set display format untuk input fields
+    setInputDisplay({
+      jumlah_tagihan: formatNumberDisplay(p.jumlah_tagihan),
+      diskon: formatNumberDisplay(p.diskon),
+      bayar_tunai: formatNumberDisplay(p.bayar_tunai),
+      bayar_transfer: formatNumberDisplay(p.bayar_transfer)
+    });
+
     setEditPasienId(p.id);
     setShowPasienModal(true);
   };
@@ -525,10 +610,26 @@ export default function PencatatanPasien() {
 
   const resetPasienForm = () => {
     setPasienData({
-      klasifikasi: "", nomor_rm: "", nama_pasien: "", jenis_rawat: "",
-      unit_layanan: "", jumlah_tagihan: "", diskon: "", jumlah_bersih: "",
-      bayar_tunai: "", bayar_transfer: "", tanggal_transfer: "", total_pembayaran: "",
-      rekaman_harian_id: null, user_id: null,
+      klasifikasi: "", 
+      nomor_rm: "", 
+      nama_pasien: "", 
+      jenis_rawat: "",
+      unit_layanan: "", 
+      jumlah_tagihan: 0, 
+      diskon: 0, 
+      jumlah_bersih: 0,
+      bayar_tunai: 0, 
+      bayar_transfer: 0, 
+      tanggal_transfer: "", 
+      total_pembayaran: 0,
+      rekaman_harian_id: null, 
+      user_id: null,
+    });
+    setInputDisplay({
+      jumlah_tagihan: "",
+      diskon: "",
+      bayar_tunai: "",
+      bayar_transfer: ""
     });
     setEditPasienId(null);
     setSelectedPasienId(null);
@@ -800,9 +901,10 @@ export default function PencatatanPasien() {
                     <input
                       type="text"
                       name="jumlah_tagihan"
-                      value={pasienData.jumlah_tagihan}
-                      onChange={handlePasienFormChange}
+                      value={inputDisplay.jumlah_tagihan}
+                      onChange={(e) => handleNumericInputChange("jumlah_tagihan", e.target.value)}
                       className={pageStyles.formInput}
+                      placeholder="0"
                     />
                   </div>
                   <div className={pageStyles.formGroup}>
@@ -810,9 +912,10 @@ export default function PencatatanPasien() {
                       <input
                       type="text"
                       name="diskon"
-                      value={pasienData.diskon}
-                      onChange={handlePasienFormChange}
+                      value={inputDisplay.diskon}
+                      onChange={(e) => handleNumericInputChange("diskon", e.target.value)}
                       className={pageStyles.formInput}
+                      placeholder="0"
                     />
                   </div>
                   <div className={pageStyles.formGroup}>
@@ -820,7 +923,7 @@ export default function PencatatanPasien() {
                       <input
                         type="text"
                         name="jumlah_bersih"
-                        value={formatRupiah(Number(pasienData.jumlah_bersih))}
+                        value={formatRupiah(pasienData.jumlah_bersih)}
                         readOnly
                         disabled
                         className={`${pageStyles.formInput} ${pageStyles.readOnly}`}
@@ -832,9 +935,10 @@ export default function PencatatanPasien() {
                     <input
                       type="text"
                       name="bayar_tunai"
-                      value={pasienData.bayar_tunai}
-                      onChange={handlePasienFormChange}
+                      value={inputDisplay.bayar_tunai}
+                      onChange={(e) => handleNumericInputChange("bayar_tunai", e.target.value)}
                       className={pageStyles.formInput}
+                      placeholder="0"
                     />
                   </div>
                   <div className={pageStyles.formGroup}>
@@ -842,9 +946,10 @@ export default function PencatatanPasien() {
                     <input
                       type="text"
                       name="bayar_transfer"
-                      value={pasienData.bayar_transfer}
-                      onChange={handlePasienFormChange}
+                      value={inputDisplay.bayar_transfer}
+                      onChange={(e) => handleNumericInputChange("bayar_transfer", e.target.value)}
                       className={pageStyles.formInput}
+                      placeholder="0"
                     />
                   </div>
                   <div className={pageStyles.formGroup}>
@@ -854,9 +959,9 @@ export default function PencatatanPasien() {
                         name="tanggal_transfer"
                         value={pasienData.tanggal_transfer}
                         onChange={handlePasienFormChange}
-                        disabled={!pasienData.bayar_transfer || formatToNumber(pasienData.bayar_transfer) === 0}
+                        disabled={!pasienData.bayar_transfer || pasienData.bayar_transfer === 0}
                         className={pageStyles.formSelect}
-                        style={{ backgroundColor: !pasienData.bayar_transfer || formatToNumber(pasienData.bayar_transfer) === 0 ? "#e9ecef" : "white" }}
+                        style={{ backgroundColor: !pasienData.bayar_transfer || pasienData.bayar_transfer === 0 ? "#e9ecef" : "white" }}
                       />
                   </div>
                   <div className={pageStyles.formGroup}>
@@ -864,7 +969,7 @@ export default function PencatatanPasien() {
                       <input
                         type="text"
                         name="total_pembayaran"
-                        value={formatRupiah(Number(pasienData.total_pembayaran))}
+                        value={formatRupiah(pasienData.total_pembayaran)}
                         readOnly
                         disabled
                         className={`${pageStyles.formInput} ${pageStyles.readOnly}`}
@@ -907,10 +1012,10 @@ export default function PencatatanPasien() {
               <th>Tanggal</th>
               <th>Nama User</th>
               <th style={{ textAlign: "center" }}>Total Pasien</th>
-              <th style={{ textAlign: "center" }}>Total Tagihan</th>
-              <th style={{ textAlign: "center" }}>Bayar Tunai</th>
-              <th style={{ textAlign: "center" }}>Bayar Transfer</th>
-              <th style={{ textAlign: "center" }}>Total Pembayaran</th>
+              <th style={{ textAlign: "right" }}>Total Tagihan</th>
+              <th style={{ textAlign: "right" }}>Bayar Tunai</th>
+              <th style={{ textAlign: "right" }}>Bayar Transfer</th>
+              <th style={{ textAlign: "right" }}>Total Pembayaran</th>
               <th style={{ textAlign: "center" }}>Status</th>
             </tr>
           </thead>
