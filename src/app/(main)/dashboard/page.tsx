@@ -163,7 +163,7 @@ export default function DashboardPage() {
                   {/* Tabel 1: Pencatatan Kasir yang Belum Ditutup */}
                   {belumTutupList.length > 0 && (
                       <div className={pageStyles.tableContainer}>
-                          <h4 style={{ marginBottom: "0.5rem" }}>Pencatatan Kasir yang Belum Ditutup:</h4>
+                          <h4 style={{ marginBottom: "0.5rem", marginLeft: "1rem" }}>Pencatatan Kasir yang Belum Ditutup:</h4>
                           <table className={pageStyles.table}>
                               <thead className={pageStyles.tableHead}>
                                   <tr>
@@ -190,7 +190,7 @@ export default function DashboardPage() {
                   {/* Tabel 2: Pencatatan Pasien yang Belum Disetor */}
                   {belumSetorList.length > 0 && (
                       <div className={pageStyles.tableContainer} style={{ marginTop: "1rem" }}>
-                          <h4 style={{ marginBottom: "0.5rem" }}>Pencatatan Pasien yang Belum Disetor:</h4>
+                          <h4 style={{ marginBottom: "0.5rem", marginLeft: "1rem" }}>Pencatatan Pasien yang Belum Disetor:</h4>
                           <table className={pageStyles.table}>
                               <thead className={pageStyles.tableHead}>
                                   <tr>
