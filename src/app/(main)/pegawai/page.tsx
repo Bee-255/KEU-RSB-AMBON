@@ -8,7 +8,7 @@ import { FaPlus, FaEdit, FaRegTrashAlt } from "react-icons/fa";
 import Paginasi from '@/components/paginasi';
 import styles from "@/styles/button.module.css";
 import pageStyles from "@/styles/komponen.module.css";
-import loadingStyles from "@/styles/loading.module.css"; // Import CSS loading
+import loadingStyles from "@/styles/loading.module.css";
 
 // Interface untuk data pegawai
 interface PegawaiData {
@@ -106,7 +106,7 @@ export default function Pegawai() {
   const [showModal, setShowModal] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [filterPekerjaan, setFilterPekerjaan] = useState<string>("");
-  const [isLoading, setIsLoading] = useState<boolean>(true); // State untuk loading
+  const [isTableLoading, setIsTableLoading] = useState<boolean>(true); // State untuk loading tabel
 
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
@@ -136,6 +136,7 @@ export default function Pegawai() {
   const totalPages = Math.ceil(totalItems / itemsPerPage);
 
   const fetchPegawai = useCallback(async () => {
+    setIsTableLoading(true); // Mulai loading
     try {
       let query = supabase.from("pegawai").select("*", { count: "exact" });
 
@@ -185,6 +186,8 @@ export default function Pegawai() {
       setListPegawai(paginatedData);
     } catch (e) {
       console.error("Failed to fetch pegawai:", e);
+    } finally {
+      setIsTableLoading(false); // Selesai loading
     }
   }, [currentPage, itemsPerPage, searchTerm, filterPekerjaan]);
 
@@ -348,9 +351,8 @@ export default function Pegawai() {
 
   useEffect(() => {
     const initializeData = async () => {
-      setIsLoading(true);
+      // Tidak perlu lagi set isLoading di sini
       await Promise.all([fetchPegawai(), fetchUserRole()]);
-      setIsLoading(false);
     };
     initializeData();
   }, [fetchPegawai, fetchUserRole]);
@@ -394,20 +396,6 @@ export default function Pegawai() {
 
   const isAllowedToEditOrDelete = userRole === "Owner" || userRole === "Admin";
 
-  // Tampilkan loading screen jika isLoading true
-  if (isLoading) {
-    return (
-      <div className={loadingStyles.loadingContainer}>
-        <div className={loadingStyles.dotContainer}>
-          <div className={`${loadingStyles.dot} ${loadingStyles['dot-1']}`} />
-          <div className={`${loadingStyles.dot} ${loadingStyles['dot-2']}`} />
-          <div className={`${loadingStyles.dot} ${loadingStyles['dot-3']}`} />
-        </div>
-        <p className={loadingStyles.loadingText}></p>
-      </div>
-    );
-  }
-  
   return (
     <div className={pageStyles.container}>
       <h2 className={pageStyles.header}>Data Pegawai</h2>
@@ -668,44 +656,56 @@ export default function Pegawai() {
       )}
       
       <div className={pageStyles.tableContainer}>
-        <table className={pageStyles.table}>
-          <thead className={pageStyles.tableHead}>
-            <tr>
-              <th>No.</th>
-              <th>Nama</th>
-              <th>Pekerjaan</th>
-              <th>Pangkat</th>
-              <th>NRP / NIP / NIR</th>
-              <th>Jabatan Struktural</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody className={pageStyles.tableBody}>
-            {listPegawai.length > 0 ? (
-              listPegawai.map((p, index) => (
-                <tr
-                  key={p.id}
-                  onClick={() => handleRowClick(p)}
-                  className={`${pageStyles.tableRow} ${selectedPegawai?.id === p.id ? pageStyles.selected : ""}`}
-                >
-                  <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                  <td>{p.nama}</td>
-                  <td>{p.pekerjaan}</td>
-                  <td>{p.pangkat}</td>
-                  <td>{p.nrp_nip_nir}</td>
-                  <td>{p.jabatan_struktural}</td>
-                  <td>{p.status}</td>
-                </tr>
-              ))
-            ) : (
+        {/* Tambahkan div pembungkus dan overlay loading di sini */}
+        <div className={pageStyles.tableWrapper}>
+          {isTableLoading && (
+            <div className={pageStyles.tableOverlay}>
+              <div className={loadingStyles.dotContainer}>
+                <div className={`${loadingStyles.dot} ${loadingStyles['dot-1']}`} />
+                <div className={`${loadingStyles.dot} ${loadingStyles['dot-2']}`} />
+                <div className={`${loadingStyles.dot} ${loadingStyles['dot-3']}`} />
+              </div>
+            </div>
+          )}
+          <table className={pageStyles.table}>
+            <thead className={pageStyles.tableHead}>
               <tr>
-                <td colSpan={7} className={pageStyles.tableEmpty}>
-                  Tidak ada data pegawai yang ditemukan.
-                </td>
+                <th>No.</th>
+                <th>Nama</th>
+                <th>Pekerjaan</th>
+                <th>Pangkat</th>
+                <th>NRP / NIP / NIR</th>
+                <th>Jabatan Struktural</th>
+                <th>Status</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className={pageStyles.tableBody}>
+              {listPegawai.length > 0 ? (
+                listPegawai.map((p, index) => (
+                  <tr
+                    key={p.id}
+                    onClick={() => handleRowClick(p)}
+                    className={`${pageStyles.tableRow} ${selectedPegawai?.id === p.id ? pageStyles.selected : ""}`}
+                  >
+                    <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                    <td>{p.nama}</td>
+                    <td>{p.pekerjaan}</td>
+                    <td>{p.pangkat}</td>
+                    <td>{p.nrp_nip_nir}</td>
+                    <td>{p.jabatan_struktural}</td>
+                    <td>{p.status}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={7} className={pageStyles.tableEmpty}>
+                    Tidak ada data pegawai yang ditemukan.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>

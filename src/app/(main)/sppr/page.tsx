@@ -12,7 +12,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import Paginasi from '@/components/paginasi';
 import styles from "@/styles/button.module.css";
 import pageStyles from "@/styles/komponen.module.css";
-import loadingStyles from "@/styles/loading.module.css"; // Import CSS loading
+import loadingStyles from "@/styles/loading.module.css";
 import { capitalizeWords, formatAngka, parseAngka, toRoman, formatTanggal } from '@/lib/format';
 import { terbilang } from "@/lib/terbilang";
 import { generateSpprPdf } from "@/lib/pdfsppr";
@@ -67,7 +67,7 @@ const Sppr = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [selectedSppr, setSelectedSppr] = useState<SpprType | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const [isLoading, setIsLoading] = useState<boolean>(true); // State untuk loading
+  const [isTableLoading, setIsTableLoading] = useState<boolean>(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [formData, setFormData] = useState<SpprType>({
@@ -78,21 +78,23 @@ const Sppr = () => {
   const [operatorName, setOperatorName] = useState("");
   const [userRole, setUserRole] = useState("");
 
-  // --- Fungsi Pengambilan Data ---
   const fetchSPPR = useCallback(async () => {
+    setIsTableLoading(true);
     try {
       const { data, error } = await supabase.from("sppr").select("*").order("created_at", { ascending: false });
       if (error) {
         console.error("Gagal mengambil data:", error);
         Swal.fire("Error", "Gagal mengambil data SPPR.", "error");
-        return [];
+        setSpprList([]);
+        return;
       } else {
         setSpprList(data as SpprType[]);
-        return data;
       }
     } catch (e) {
       console.error("Failed to fetch SPPR data:", e);
-      return [];
+      setSpprList([]);
+    } finally {
+      setIsTableLoading(false);
     }
   }, []);
 
@@ -150,9 +152,7 @@ const Sppr = () => {
 
   useEffect(() => {
     const initializeData = async () => {
-      setIsLoading(true);
       await Promise.all([getLoggedInUser(), fetchSPPR(), fetchPejabatAndPegawai()]);
-      setIsLoading(false);
     };
     initializeData();
   }, [fetchSPPR, fetchPejabatAndPegawai]);
@@ -351,21 +351,6 @@ const Sppr = () => {
   const isApprovingDisabled = !isAllowedToApprove || !selectedSppr || selectedSppr?.status_sppr === "DISETUJUI";
   const isDownloadingDisabled = !isAllowedToDownload || !selectedSppr;
 
-  // Render loading state
-  if (isLoading) {
-    return (
-      <div className={loadingStyles.loadingContainer}>
-        <div className={loadingStyles.dotContainer}>
-          <div className={`${loadingStyles.dot} ${loadingStyles['dot-1']}`} />
-          <div className={`${loadingStyles.dot} ${loadingStyles['dot-2']}`} />
-          <div className={`${loadingStyles.dot} ${loadingStyles['dot-3']}`} />
-        </div>
-        <p className={loadingStyles.loadingText}></p>
-      </div>
-    );
-  }
-
-  // Render main content
   return (
     <div className={pageStyles.container}>
       <ToastContainer />
@@ -477,34 +462,45 @@ const Sppr = () => {
       )}
 
       <div className={pageStyles.tableContainer}>
-        <table className={pageStyles.table}>
-          <thead className={pageStyles.tableHead}>
-            <tr>
-              <th style={{ width: "5%" }}>No.</th>
-              <th style={{ width: "10%" }}>Tanggal</th>
-              <th style={{ width: "20%" }}>Nomor Surat</th>
-              <th style={{ width: "25%" }}>Operator</th>
-              <th style={{ width: "10%" }}>Jumlah Penarikan</th>
-              <th style={{ width: "10%" }}>Status</th>
-            </tr>
-          </thead>
-          <tbody className={pageStyles.tableBody}>
-            {paginatedSppr.length > 0 ? (
-              paginatedSppr.map((sppr, index) => (
-                <tr key={sppr.id} onClick={() => handleRowClick(sppr)} className={`${pageStyles.tableRow} ${selectedSppr?.id === sppr.id ? pageStyles.selected : ""}`}>
-                  <td>{startIndex + index + 1}</td>
-                  <td>{formatTanggal(sppr.tanggal)}</td>
-                  <td>{sppr.nomor_surat}</td>
-                  <td>{sppr.operator}</td>
-                  <td>{formatAngka(sppr.jumlah_penarikan)}</td>
-                  <td>{sppr.status_sppr}</td>
-                </tr>
-              ))
-            ) : (
-              <tr><td colSpan={6} className={pageStyles.tableEmpty}>Tidak ada data SPPR yang ditemukan.</td></tr>
-            )}
-          </tbody>
-        </table>
+        <div className={pageStyles.tableWrapper}>
+          {isTableLoading && (
+            <div className={pageStyles.tableOverlay}>
+              <div className={loadingStyles.dotContainer}>
+                <div className={`${loadingStyles.dot} ${loadingStyles['dot-1']}`} />
+                <div className={`${loadingStyles.dot} ${loadingStyles['dot-2']}`} />
+                <div className={`${loadingStyles.dot} ${loadingStyles['dot-3']}`} />
+              </div>
+            </div>
+          )}
+          <table className={pageStyles.table}>
+            <thead className={pageStyles.tableHead}>
+              <tr>
+                <th style={{ width: "5%" }}>No.</th>
+                <th style={{ width: "10%" }}>Tanggal</th>
+                <th style={{ width: "20%" }}>Nomor Surat</th>
+                <th style={{ width: "25%" }}>Operator</th>
+                <th style={{ width: "10%" }}>Jumlah Penarikan</th>
+                <th style={{ width: "10%" }}>Status</th>
+              </tr>
+            </thead>
+            <tbody className={pageStyles.tableBody}>
+              {paginatedSppr.length > 0 ? (
+                paginatedSppr.map((sppr, index) => (
+                  <tr key={sppr.id} onClick={() => handleRowClick(sppr)} className={`${pageStyles.tableRow} ${selectedSppr?.id === sppr.id ? pageStyles.selected : ""}`}>
+                    <td>{startIndex + index + 1}</td>
+                    <td>{formatTanggal(sppr.tanggal)}</td>
+                    <td>{sppr.nomor_surat}</td>
+                    <td>{sppr.operator}</td>
+                    <td>{formatAngka(sppr.jumlah_penarikan)}</td>
+                    <td>{sppr.status_sppr}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr><td colSpan={6} className={pageStyles.tableEmpty}>Tidak ada data SPPR yang ditemukan.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <Paginasi currentPage={currentPage} totalPages={totalPages} totalItems={spprList.length} itemsPerPage={rowsPerPage} onPageChange={handlePageChange} onItemsPerPageChange={handleRowsPerPageChange} />

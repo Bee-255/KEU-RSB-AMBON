@@ -99,6 +99,7 @@ const DaftarAkun: React.FC = () => {
     };
 
     const fetchAkun = useCallback(async () => {
+        setIsLoading(true); // Mulai loading saat fetch
         try {
             const { data, error } = await supabase
                 .from("bas_akun")
@@ -113,17 +114,15 @@ const DaftarAkun: React.FC = () => {
             }
         } catch (error) {
             console.error("Gagal mengambil data:", error);
+        } finally {
+            setIsLoading(false); // Akhiri loading setelah fetch selesai
         }
     }, []);
 
     // --- Efek Samping (Side Effects) ---
     useEffect(() => {
-        const initializeData = async () => {
-            setIsLoading(true);
-            await Promise.all([getLoggedInUser(), fetchAkun()]);
-            setIsLoading(false);
-        };
-        initializeData();
+        getLoggedInUser();
+        fetchAkun();
     }, [fetchAkun]);
 
     // --- Handler Aksi Pengguna ---
@@ -278,21 +277,7 @@ const DaftarAkun: React.FC = () => {
     const isOwner = userRole === "Owner";
     const isActionDisabled = !isOwner || !selectedAkun;
 
-    // Tampilkan loading jika isLoading true
-    if (isLoading) {
-      return (
-        <div className={loadingStyles.loadingContainer}>
-          <div className={loadingStyles.dotContainer}>
-            <div className={`${loadingStyles.dot} ${loadingStyles['dot-1']}`} />
-            <div className={`${loadingStyles.dot} ${loadingStyles['dot-2']}`} />
-            <div className={`${loadingStyles.dot} ${loadingStyles['dot-3']}`} />
-          </div>
-          <p className={loadingStyles.loadingText}></p>
-        </div>
-      );
-    }
-    
-    // Tampilkan konten utama setelah loading selesai
+    // Tampilkan konten utama, termasuk tabel dengan loading overlay
     return (
         <div className={pageStyles.container}>
             <h2 className={pageStyles.header}>Daftar Bagan Akun Standar (BAS)</h2>
@@ -402,43 +387,56 @@ const DaftarAkun: React.FC = () => {
                     </form>
                 </Modal>
             )}
+            
             <div className={pageStyles.tableContainer}>
-                <table className={pageStyles.table}>
-                    <thead className={pageStyles.tableHead}>
-                        <tr>
-                            <th style={{ width: "5%" }}>No.</th>
-                            <th style={{ width: "20%" }}>Kode Akun</th>
-                            <th style={{ width: "30%" }}>Nama Akun</th>
-                            <th style={{ width: "15%" }}>Kategori</th>
-                            <th style={{ width: "20%" }}>Saldo Normal</th>
-                            <th style={{ width: "10%" }}>Jenis</th>
-                        </tr>
-                    </thead>
-                    <tbody className={pageStyles.tableBody}>
-                        {paginatedAkun.length > 0 ? (
-                            paginatedAkun.map((akun, index) => (
-                                <tr
-                                    key={akun.id}
-                                    onClick={() => handleRowClick(akun)}
-                                    className={`${pageStyles.tableRow} ${selectedAkun?.id === akun.id ? pageStyles.selected : ""}`}
-                                >
-                                    <td>{startIndex + index + 1}</td>
-                                    <td>{akun.kode_akun}</td>
-                                    <td>{akun.nama_akun}</td>
-                                    <td>{akun.kategori}</td>
-                                    <td>{akun.is_debit ? "Debit" : "Kredit"}</td>
-                                    <td>{akun.is_induk ? "Induk" : "Detail"}</td>
-                                </tr>
-                            ))
-                        ) : (
+                {/* === Tambahkan elemen tableWrapper === */}
+                <div className={pageStyles.tableWrapper}>
+                    {isLoading && (
+                        <div className={pageStyles.tableOverlay}>
+                            <div className={loadingStyles.dotContainer}>
+                                <div className={`${loadingStyles.dot} ${loadingStyles['dot-1']}`} />
+                                <div className={`${loadingStyles.dot} ${loadingStyles['dot-2']}`} />
+                                <div className={`${loadingStyles.dot} ${loadingStyles['dot-3']}`} />
+                            </div>
+                        </div>
+                    )}
+                    <table className={pageStyles.table}>
+                        <thead className={pageStyles.tableHead}>
                             <tr>
-                                <td colSpan={6} className={pageStyles.tableEmpty}>
-                                    Tidak ada data akun yang ditemukan.
-                                </td>
+                                <th style={{ width: "5%" }}>No.</th>
+                                <th style={{ width: "20%" }}>Kode Akun</th>
+                                <th style={{ width: "30%" }}>Nama Akun</th>
+                                <th style={{ width: "15%" }}>Kategori</th>
+                                <th style={{ width: "20%" }}>Saldo Normal</th>
+                                <th style={{ width: "10%" }}>Jenis</th>
                             </tr>
-                        )}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className={pageStyles.tableBody}>
+                            {paginatedAkun.length > 0 ? (
+                                paginatedAkun.map((akun, index) => (
+                                    <tr
+                                        key={akun.id}
+                                        onClick={() => handleRowClick(akun)}
+                                        className={`${pageStyles.tableRow} ${selectedAkun?.id === akun.id ? pageStyles.selected : ""}`}
+                                    >
+                                        <td>{startIndex + index + 1}</td>
+                                        <td>{akun.kode_akun}</td>
+                                        <td>{akun.nama_akun}</td>
+                                        <td>{akun.kategori}</td>
+                                        <td>{akun.is_debit ? "Debit" : "Kredit"}</td>
+                                        <td>{akun.is_induk ? "Induk" : "Detail"}</td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan={6} className={pageStyles.tableEmpty}>
+                                        Tidak ada data akun yang ditemukan.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
             <Paginasi
                 currentPage={currentPage}

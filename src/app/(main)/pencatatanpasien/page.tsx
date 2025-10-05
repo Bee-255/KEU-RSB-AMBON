@@ -144,7 +144,9 @@ export default function PencatatanPasien() {
   const [endDate] = useState("");
   const [userRole, setUserRole] = useState<string | null>(null);
   const [selectedRekapIds, setSelectedRekapIds] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true); // State untuk loading
+  
+  // === Deklarasi State Loading ===
+  const [isTableLoading, setIsTableLoading] = useState<boolean>(true);
   
   // State untuk form pasien - sekarang menyimpan nilai asli (number)
   const [pasienData, setPasienData] = useState<{
@@ -211,6 +213,7 @@ export default function PencatatanPasien() {
   const selectAllRef = useRef<HTMLInputElement>(null);
 
   const fetchRekapitulasi = useCallback(async () => {
+    setIsTableLoading(true); // Mulai loading untuk tabel rekap
     let query = supabase.from("rekaman_harian").select("*");
     if (startDate && endDate) {
       query = query.gte("tanggal", startDate).lte("tanggal", endDate);
@@ -218,9 +221,12 @@ export default function PencatatanPasien() {
     const { data, error } = await query.order("tanggal", { ascending: false });
     if (error) {
       console.error("Error fetching rekapitulasi:", error.message);
+      Swal.fire("Error", "Gagal mengambil data rekapitulasi.", "error");
+      setIsTableLoading(false);
       return;
     }
     setRekapitulasiList(data as Rekapitulasi[]);
+    setIsTableLoading(false); // Akhiri loading untuk tabel rekap
   }, [startDate, endDate]);
 
   const fetchPasienByRekapId = async (rekapId: string): Promise<Pasien[]> => {
@@ -261,7 +267,7 @@ export default function PencatatanPasien() {
 
   useEffect(() => {
     const fetchUserAndData = async () => {
-      setIsLoading(true);
+      setIsTableLoading(true); // Mulai loading untuk tabel rekap
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUserId(user.id);
@@ -275,7 +281,7 @@ export default function PencatatanPasien() {
           setUserRole(profiles.role);
         }
         await fetchRekapitulasi();
-        setIsLoading(false);
+        setIsTableLoading(false); // Akhiri loading setelah data awal diambil
       } else {
         router.push("/");
       }
@@ -661,79 +667,6 @@ export default function PencatatanPasien() {
     }
   };
 
-  const handleRekapCheckbox = (rekapId: string) => {
-    setSelectedPasienId(null);
-    setSelectedRekapIds((prev) =>
-      prev.includes(rekapId)
-        ? prev.filter((id) => id !== rekapId)
-        : [...prev, rekapId]
-    );
-  };
-
-  const handleSelectAllRekap = () => {
-    if (isAllRekapSelected) {
-      setSelectedRekapIds([]);
-    } else {
-      const allIds = paginatedRekap.map(rekap => rekap.id);
-      setSelectedRekapIds(allIds);
-    }
-  };
-
-  const handlePasienRowClick = (pasien: Pasien) => {
-    setSelectedPasienId((prev) => (prev === pasien.id ? null : pasien.id));
-  };
-
-  const resetPasienForm = () => {
-    setPasienData({
-      klasifikasi: "", 
-      nomor_rm: "", 
-      nama_pasien: "", 
-      jenis_rawat: "",
-      unit_layanan: "", 
-      jumlah_tagihan: 0, 
-      diskon: 0, 
-      jumlah_bersih: 0,
-      bayar_tunai: 0, 
-      bayar_transfer: 0, 
-      tanggal_transfer: "", 
-      total_pembayaran: 0,
-      rekaman_harian_id: null, 
-      user_id: null,
-    });
-    setInputDisplay({
-      jumlah_tagihan: "",
-      diskon: "",
-      bayar_tunai: "",
-      bayar_transfer: ""
-    });
-    setEditPasienId(null);
-    setSelectedPasienId(null);
-    setShowPasienModal(false);
-  };
-
-  const handleAddPasienClick = () => {
-    if (selectedRekapIds.length === 0) {
-      Swal.fire("Info", "Pilih setidaknya satu rekapitulasi harian untuk menambahkan pasien.", "info");
-      return;
-    }
-    if (selectedRekapIds.length > 1) {
-      Swal.fire("Info", "Hanya bisa menambah pasien untuk satu rekapitulasi harian saja.", "info");
-      return;
-    }
-    const selectedRekap = rekapitulasiList.find(r => r.id === selectedRekapIds[0]);
-    if (selectedRekap?.status !== "BARU" && (userRole === "Kasir")) {
-        Swal.fire("Tidak Diizinkan", "Data sudah ditutup, tidak bisa ditambahkan.", "warning");
-        return;
-    }
-    if (selectedRekap?.status === "BANK") {
-        Swal.fire("Tidak Diizinkan", "Data sudah disetor ke bank, tidak bisa ditambahkan.", "warning");
-        return;
-    }
-
-    resetPasienForm();
-    setShowPasienModal(true);
-  };
-
   const handleDownloadClick = async () => {
     if (selectedRekapIds.length === 0) {
       Swal.fire("Info", "Pilih minimal satu rekapitulasi harian.", "info");
@@ -856,6 +789,79 @@ export default function PencatatanPasien() {
       }
     });
     doc.save(`Data Pasien Multi Hari.pdf`);
+  };
+
+  const handleRekapCheckbox = (rekapId: string) => {
+    setSelectedPasienId(null);
+    setSelectedRekapIds((prev) =>
+      prev.includes(rekapId)
+        ? prev.filter((id) => id !== rekapId)
+        : [...prev, rekapId]
+    );
+  };
+
+  const handleSelectAllRekap = () => {
+    if (isAllRekapSelected) {
+      setSelectedRekapIds([]);
+    } else {
+      const allIds = paginatedRekap.map(rekap => rekap.id);
+      setSelectedRekapIds(allIds);
+    }
+  };
+
+  const handlePasienRowClick = (pasien: Pasien) => {
+    setSelectedPasienId((prev) => (prev === pasien.id ? null : pasien.id));
+  };
+
+  const resetPasienForm = () => {
+    setPasienData({
+      klasifikasi: "", 
+      nomor_rm: "", 
+      nama_pasien: "", 
+      jenis_rawat: "",
+      unit_layanan: "", 
+      jumlah_tagihan: 0, 
+      diskon: 0, 
+      jumlah_bersih: 0,
+      bayar_tunai: 0, 
+      bayar_transfer: 0, 
+      tanggal_transfer: "", 
+      total_pembayaran: 0,
+      rekaman_harian_id: null, 
+      user_id: null,
+    });
+    setInputDisplay({
+      jumlah_tagihan: "",
+      diskon: "",
+      bayar_tunai: "",
+      bayar_transfer: ""
+    });
+    setEditPasienId(null);
+    setSelectedPasienId(null);
+    setShowPasienModal(false);
+  };
+
+  const handleAddPasienClick = () => {
+    if (selectedRekapIds.length === 0) {
+      Swal.fire("Info", "Pilih setidaknya satu rekapitulasi harian untuk menambahkan pasien.", "info");
+      return;
+    }
+    if (selectedRekapIds.length > 1) {
+      Swal.fire("Info", "Hanya bisa menambah pasien untuk satu rekapitulasi harian saja.", "info");
+      return;
+    }
+    const selectedRekap = rekapitulasiList.find(r => r.id === selectedRekapIds[0]);
+    if (selectedRekap?.status !== "BARU" && (userRole === "Kasir")) {
+        Swal.fire("Tidak Diizinkan", "Data sudah ditutup, tidak bisa ditambahkan.", "warning");
+        return;
+    }
+    if (selectedRekap?.status === "BANK") {
+        Swal.fire("Tidak Diizinkan", "Data sudah disetor ke bank, tidak bisa ditambahkan.", "warning");
+        return;
+    }
+
+    resetPasienForm();
+    setShowPasienModal(true);
   };
 
   const handleRekapPageChange = (page: number) => {
@@ -1007,19 +1013,6 @@ export default function PencatatanPasien() {
 
     return !isRoleAllowed || !hasData;
   };
-  
-  if (isLoading) {
-    return (
-      <div className={loadingStyles.loadingContainer}>
-        <div className={loadingStyles.dotContainer}>
-          <div className={`${loadingStyles.dot} ${loadingStyles['dot-1']}`} />
-          <div className={`${loadingStyles.dot} ${loadingStyles['dot-2']}`} />
-          <div className={`${loadingStyles.dot} ${loadingStyles['dot-3']}`} />
-        </div>
-        <p className={loadingStyles.loadingText}></p>
-      </div>
-    );
-  }
 
   return (
     <div className={pageStyles.container}>
@@ -1260,66 +1253,78 @@ export default function PencatatanPasien() {
         </Modal>
       )}
 
-      <div className={pageStyles.tableContainer}>
-        <table className={pageStyles.table}>
-          <thead className={pageStyles.tableHead}>
-            <tr>
-              <th style={{ width: "2%" }}>
-                <input
-                  type="checkbox"
-                  ref={selectAllRef}
-                  checked={isAllRekapSelected}
-                  onChange={handleSelectAllRekap}
-                  style={{ transform: "scale(1.2)" }}
-                />
-              </th>
-              <th>Tanggal</th>
-              <th>Nama User</th>
-              <th style={{ textAlign: "center" }}>Total Pasien</th>
-              <th style={{ textAlign: "right" }}>Total Tagihan</th>
-              <th style={{ textAlign: "right" }}>Bayar Tunai</th>
-              <th style={{ textAlign: "right" }}>Bayar Transfer</th>
-              <th style={{ textAlign: "right" }}>Total Pembayaran</th>
-              <th style={{ textAlign: "center" }}>Status</th>
-            </tr>
-          </thead>
-          <tbody className={pageStyles.tableBody}>
-            {paginatedRekap.length > 0 ? (
-              paginatedRekap.map((rekap) => (
-                <tr
-                  key={rekap.id}
-                  className={`${pageStyles.tableRow} ${selectedRekapIds.includes(rekap.id) ? pageStyles.selected : ""}`}
-                >
-                  <td>
-                    <div style={{display: "flex", justifyContent: "center", alignItems: "center" }}>
-                      <input
-                        type="checkbox"
-                        checked={selectedRekapIds.includes(rekap.id)}
-                        onChange={() => handleRekapCheckbox(rekap.id)}
-                        style={{ transform: "scale(1.2)" }}
-                      />
-                    </div>
-                  </td>
-                  <td>{formatDate(rekap.tanggal)}</td>
-                  <td>{rekap.nama_user}</td>
-                  <td style={{ textAlign: "center" }}>{rekap.total_pasien}</td>
-                  <td style={{ textAlign: "right" }}>{formatRupiah(rekap.total_tagihan)}</td>
-                  <td style={{ textAlign: "right" }}>{formatRupiah(rekap.total_tunai)}</td>
-                  <td style={{ textAlign: "right" }}>{formatRupiah(rekap.total_transfer)}</td>
-                  <td style={{ textAlign: "right" }}>{formatRupiah(rekap.total_pembayaran)}</td>
-                  <td style={{ textAlign: "center" }}>{rekap.status}</td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={9} className={pageStyles.tableEmpty}>
-                  Tidak ada data rekapitulasi yang ditemukan.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+     <div className={pageStyles.tableContainer}>
+  <div className={pageStyles.tableWrapper}>
+    {isTableLoading && (
+      <div className={pageStyles.tableOverlay}>
+        <div className={loadingStyles.dotContainer}>
+          <div className={`${loadingStyles.dot} ${loadingStyles['dot-1']}`} />
+          <div className={`${loadingStyles.dot} ${loadingStyles['dot-2']}`} />
+          <div className={`${loadingStyles.dot} ${loadingStyles['dot-3']}`} />
+        </div>
       </div>
+    )}
+    
+    <table className={pageStyles.table}>
+      <thead className={pageStyles.tableHead}>
+        <tr>
+          <th style={{ width: "2%" }}>
+            <input
+              type="checkbox"
+              ref={selectAllRef}
+              checked={isAllRekapSelected}
+              onChange={handleSelectAllRekap}
+              style={{ transform: "scale(1.2)" }}
+            />
+          </th>
+          <th>Tanggal</th>
+          <th>Nama User</th>
+          <th style={{ textAlign: "center" }}>Total Pasien</th>
+          <th style={{ textAlign: "right" }}>Total Tagihan</th>
+          <th style={{ textAlign: "right" }}>Bayar Tunai</th>
+          <th style={{ textAlign: "right" }}>Bayar Transfer</th>
+          <th style={{ textAlign: "right" }}>Total Pembayaran</th>
+          <th style={{ textAlign: "center" }}>Status</th>
+        </tr>
+      </thead>
+      <tbody className={pageStyles.tableBody}>
+        {paginatedRekap.length > 0 ? (
+          paginatedRekap.map((rekap) => (
+            <tr
+              key={rekap.id}
+              className={`${pageStyles.tableRow} ${selectedRekapIds.includes(rekap.id) ? pageStyles.selected : ""}`}
+            >
+              <td>
+                <div style={{display: "flex", justifyContent: "center", alignItems: "center" }}>
+                  <input
+                    type="checkbox"
+                    checked={selectedRekapIds.includes(rekap.id)}
+                    onChange={() => handleRekapCheckbox(rekap.id)}
+                    style={{ transform: "scale(1.2)" }}
+                  />
+                </div>
+              </td>
+              <td>{formatDate(rekap.tanggal)}</td>
+              <td>{rekap.nama_user}</td>
+              <td style={{ textAlign: "center" }}>{rekap.total_pasien}</td>
+              <td style={{ textAlign: "right" }}>{formatRupiah(rekap.total_tagihan)}</td>
+              <td style={{ textAlign: "right" }}>{formatRupiah(rekap.total_tunai)}</td>
+              <td style={{ textAlign: "right" }}>{formatRupiah(rekap.total_transfer)}</td>
+              <td style={{ textAlign: "right" }}>{formatRupiah(rekap.total_pembayaran)}</td>
+              <td style={{ textAlign: "center" }}>{rekap.status}</td>
+            </tr>
+          ))
+        ) : (
+          <tr>
+            <td colSpan={9} className={pageStyles.tableEmpty}>
+              Tidak ada data rekapitulasi yang ditemukan.
+            </td>
+          </tr>
+        )}
+      </tbody>
+    </table>
+  </div>
+</div>
 
       <Paginasi
         currentPage={rekapPage}

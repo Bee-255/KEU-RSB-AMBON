@@ -19,12 +19,12 @@
 
 .dotContainer {
   display: flex;
-  gap: 8px; /* Jarak antar titik */
+  gap: 4px; /* Jarak antar titik */
 }
 
 .dot {
-  width: 12px; /* Ukuran titik kecil */
-  height: 12px;
+  width: 8px; /* Ukuran titik kecil */
+  height: 8px;
   background-color: #334155; /* Warna titik abu-abu gelap */
   border-radius: 50%;
   box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
