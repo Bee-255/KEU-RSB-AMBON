@@ -2,13 +2,13 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { supabase } from "@/utils/supabaseClient"; // Menggunakan path alias
+import { supabase } from "@/utils/supabaseClient";
 import Swal from "sweetalert2";
 import { FaPlus, FaEdit, FaRegTrashAlt } from "react-icons/fa";
 
-// ✅ Impor file CSS Modules dengan path alias
 import styles from "@/styles/button.module.css";
 import pageStyles from "@/styles/komponen.module.css";
+import loadingStyles from "@/styles/loading.module.css"; // Menggunakan file CSS untuk loading
 
 // Interface untuk data
 interface Pegawai {
@@ -72,6 +72,7 @@ const PejabatKeuangan = () => {
   const [selectedPejabat, setSelectedPejabat] = useState<Pejabat | null>(null);
   const [showModal, setShowModal] = useState<boolean>(false);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true); // State untuk loading
 
   // State untuk form input
   const [formData, setFormData] = useState<FormData>({
@@ -96,9 +97,11 @@ const PejabatKeuangan = () => {
   };
 
   useEffect(() => {
-    fetchPejabat();
-    fetchPegawai();
-    getLoggedInUserRole();
+    // Jalankan semua fetch secara paralel untuk efisiensi
+    Promise.all([fetchPejabat(), fetchPegawai(), getLoggedInUserRole()])
+      .finally(() => {
+        setIsLoading(false); // Matikan loading setelah semua fetch selesai
+      });
   }, []);
 
   const fetchPejabat = async () => {
@@ -113,8 +116,10 @@ const PejabatKeuangan = () => {
     if (error) {
       console.error("Gagal mengambil data pejabat:", error);
       Swal.fire("Error", "Gagal mengambil data pejabat. Periksa koneksi atau nama tabel.", "error");
+      return []; // Mengembalikan array kosong jika ada error
     } else {
       setPejabatList(data as Pejabat[]);
+      return data;
     }
   };
 
@@ -123,8 +128,10 @@ const PejabatKeuangan = () => {
     if (error) {
       console.error("Gagal mengambil data pegawai:", error);
       Swal.fire("Error", "Gagal mengambil data pegawai. Periksa koneksi atau nama tabel.", "error");
+      return []; // Mengembalikan array kosong jika ada error
     } else {
       setPegawaiList(data as Pegawai[]);
+      return data;
     }
   };
 
@@ -265,6 +272,22 @@ const PejabatKeuangan = () => {
 
   const isAllowedToEditOrDelete = userRole === "Owner" || userRole === "Admin";
 
+  // Tampilkan loading screen jika isLoading true
+  if (isLoading) {
+    return (
+      <div className={loadingStyles.loadingContainer}>
+        <div className={loadingStyles.dotContainer}>
+          <div className={`${loadingStyles.dot} ${loadingStyles['dot-1']}`} />
+          <div className={`${loadingStyles.dot} ${loadingStyles['dot-2']}`} />
+          <div className={`${loadingStyles.dot} ${loadingStyles['dot-3']}`} />
+        </div>
+          
+        <p className={loadingStyles.loadingText}></p>
+      </div>
+    );
+  }
+
+  // Tampilkan komponen utama setelah loading selesai
   return (
     <div className={pageStyles.container}>
       <h2 className={pageStyles.header}>Data Pejabat Keuangan</h2>

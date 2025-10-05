@@ -8,8 +8,8 @@ import { FaPlus, FaEdit, FaRegTrashAlt } from "react-icons/fa";
 import Paginasi from '@/components/paginasi';
 import styles from "@/styles/button.module.css";
 import pageStyles from "@/styles/komponen.module.css";
-import { formatTanggal } from "@/components/utilitas"
-
+import loadingStyles from "@/styles/loading.module.css";
+import { formatTanggal } from "@/components/utilitas";
 
 // === Komponen Modal ===
 const Modal: React.FC<{ children: React.ReactNode; onClose: () => void }> = ({ children, onClose }) => {
@@ -22,7 +22,7 @@ const Modal: React.FC<{ children: React.ReactNode; onClose: () => void }> = ({ c
     );
 };
 
-// === Helper Functions (Dipindahkan ke luar komponen utama) ===
+// === Helper Functions ===
 const getKategoriDariKode = (kodeAkun: string): string => {
     const firstDigit = kodeAkun.charAt(0);
     switch (firstDigit) {
@@ -58,11 +58,11 @@ const DaftarAkun: React.FC = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [selectedAkun, setSelectedAkun] = useState<Akun | null>(null);
     const [showModal, setShowModal] = useState(false);
-
+    const [isLoading, setIsLoading] = useState<boolean>(true);
+    
     const [currentPage, setCurrentPage] = useState(1);
     const [rowsPerPage, setRowsPerPage] = useState(10);
     
-    // PERBAIKAN: Anotasi tipe yang benar untuk formData
     const [formData, setFormData] = useState<{
         kode_akun: string;
         nama_akun: string;
@@ -78,15 +78,6 @@ const DaftarAkun: React.FC = () => {
     });
     
     const [userRole, setUserRole] = useState("");
-
-    // --- Efek Samping (Side Effects) ---
-    useEffect(() => {
-        const initializeData = async () => {
-            await getLoggedInUser();
-            await fetchAkun();
-        };
-        initializeData();
-    }, []);
 
     // --- Fungsi Pengambilan Data ---
     const getLoggedInUser = async () => {
@@ -108,14 +99,32 @@ const DaftarAkun: React.FC = () => {
     };
 
     const fetchAkun = useCallback(async () => {
-        const { data, error } = await supabase.from("bas_akun").select("*").order("created_at", { ascending: false });
-        if (error) {
+        try {
+            const { data, error } = await supabase
+                .from("bas_akun")
+                .select("*")
+                .order("created_at", { ascending: false });
+            
+            if (error) {
+                console.error("Gagal mengambil data:", error);
+                Swal.fire("Error", "Gagal mengambil data akun. Periksa koneksi atau nama tabel.", "error");
+            } else {
+                setAkunList(data as Akun[]);
+            }
+        } catch (error) {
             console.error("Gagal mengambil data:", error);
-            Swal.fire("Error", "Gagal mengambil data akun. Periksa koneksi atau nama tabel.", "error");
-        } else {
-            setAkunList(data as Akun[]);
         }
     }, []);
+
+    // --- Efek Samping (Side Effects) ---
+    useEffect(() => {
+        const initializeData = async () => {
+            setIsLoading(true);
+            await Promise.all([getLoggedInUser(), fetchAkun()]);
+            setIsLoading(false);
+        };
+        initializeData();
+    }, [fetchAkun]);
 
     // --- Handler Aksi Pengguna ---
     const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -145,7 +154,6 @@ const DaftarAkun: React.FC = () => {
         e.preventDefault();
         const dataToSave = { ...formData, is_induk: !formData.kode_akun.includes('.') };
         
-        // Cek duplikasi kode akun
         const { data: existingAccount, error: fetchError } = await supabase
             .from('bas_akun')
             .select('id')
@@ -270,6 +278,21 @@ const DaftarAkun: React.FC = () => {
     const isOwner = userRole === "Owner";
     const isActionDisabled = !isOwner || !selectedAkun;
 
+    // Tampilkan loading jika isLoading true
+    if (isLoading) {
+      return (
+        <div className={loadingStyles.loadingContainer}>
+          <div className={loadingStyles.dotContainer}>
+            <div className={`${loadingStyles.dot} ${loadingStyles['dot-1']}`} />
+            <div className={`${loadingStyles.dot} ${loadingStyles['dot-2']}`} />
+            <div className={`${loadingStyles.dot} ${loadingStyles['dot-3']}`} />
+          </div>
+          <p className={loadingStyles.loadingText}></p>
+        </div>
+      );
+    }
+    
+    // Tampilkan konten utama setelah loading selesai
     return (
         <div className={pageStyles.container}>
             <h2 className={pageStyles.header}>Daftar Bagan Akun Standar (BAS)</h2>

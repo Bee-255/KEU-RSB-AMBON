@@ -1,6 +1,5 @@
 // src/app/layout.tsx
 import './globals.css';
-
 export const metadata = {
   title: 'Keuangan RSB Ambon',
   description: 'Aplikasi Keuangan RSB Ambon',

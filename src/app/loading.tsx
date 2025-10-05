@@ -1,30 +1,19 @@
+// src/app/loading.tsx
 'use client';
+import React from 'react';
+import styles from '../styles/loading.module.css'; // Path yang diperbarui
 
-export default function Loading() {
+const LoadingPage = () => {
   return (
-    <div style={{
-      height: '100vh',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      flexDirection: 'column',
-      background: '#fff',
-      fontFamily: 'sans-serif'
-    }}>
-      <div style={{
-        width: '40px',
-        height: '40px',
-        border: '4px solid #ccc',
-        borderTop: '4px solid #0070f3',
-        borderRadius: '50%',
-        animation: 'spin 1s linear infinite'
-      }} />
-      <p style={{ marginTop: '16px', color: '#333' }}>Memuat halaman...</p>
-      <style jsx>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
+    <div className={styles.loadingContainer}>
+      <div className={styles.dotContainer}>
+        <div className={`${styles.dot} ${styles['dot-1']}`} />
+        <div className={`${styles.dot} ${styles['dot-2']}`} />
+        <div className={`${styles.dot} ${styles['dot-3']}`} />
+      </div>
+      <p className={styles.loadingText}>Loading...</p>
     </div>
   );
-}
+};
+
+export default LoadingPage;

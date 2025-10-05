@@ -1,0 +1,62 @@
+/* src/styles/loading.module.css */
+
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  /* Ganti baris ini */
+  background-color: rgba(255, 255, 255, 0.9); /* Latar belakang putih semi-transparan */
+  /* Atau gunakan kode hex dengan alpha: background-color: #ffffffb3; */
+  font-family: sans-serif;
+  position: fixed; /* Tambahkan ini agar overlay tetap di posisi yang sama */
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000; /* Pastikan overlay berada di atas konten lain */
+}
+
+.dotContainer {
+  display: flex;
+  gap: 8px; /* Jarak antar titik */
+}
+
+.dot {
+  width: 12px; /* Ukuran titik kecil */
+  height: 12px;
+  background-color: #334155; /* Warna titik abu-abu gelap */
+  border-radius: 50%;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+  animation: pulse-fade 1.5s infinite ease-in-out both;
+}
+
+.dot-1 {
+  animation-delay: -0.32s;
+}
+
+.dot-2 {
+  animation-delay: -0.16s;
+}
+
+.dot-3 {
+  animation-delay: 0s;
+}
+
+.loadingText {
+  margin-top: 16px;
+  font-size: 1rem;
+  font-weight: 400;
+  color: #334155; /* Warna teks abu-abu gelap */
+}
+
+@keyframes pulse-fade {
+  0%, 80%, 100% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

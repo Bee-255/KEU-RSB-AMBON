@@ -155,10 +155,6 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const isRekamOpen = openFolder === 'rekam';
   const isActive = (path: string) => pathname === path;
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
       <header

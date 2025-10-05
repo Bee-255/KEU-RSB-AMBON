@@ -24,14 +24,6 @@ export default function DashboardPage() {
     fetchUser();
   }, [router]);
 
-  if (loading) {
-    return (
-      <div style={{ padding: "2rem", textAlign: "center", backgroundColor: "#F3F4F6", minHeight: "100vh" }}>
-        <p>Memuat data...</p>
-      </div>
-    );
-  }
-
   if (!user) {
     return null;
   }
