@@ -52,6 +52,17 @@ interface PersonType {
   jabatan: string;
 }
 
+// Interface untuk struktur data hasil fetch rekening (DIPERBAIKI)
+interface RekeningFetchType {
+  nomor_rekening: string;
+  kode_akun_bank: string | null;
+  // FIX: Mengubah tipe bas_akun menjadi array untuk mengakomodasi inferensi TypeScript
+  // dari nested select Supabase (bas_akun (nama_akun))
+  bas_akun: {
+    nama_akun: string;
+  }[] | null; 
+}
+
 interface ModalProps {
   children: React.ReactNode;
   onClose: () => void;
@@ -126,10 +137,14 @@ const Sppr = () => {
         return;
       }
 
-      // Memformat data
-      let formattedOptions: RekeningOption[] = rekeningData.map((item: any) => {
+      // Memformat data - FIX: Mengubah `let` menjadi `const` dan menggunakan tipe yang diperbarui
+      const formattedOptions: RekeningOption[] = (rekeningData as RekeningFetchType[]).map((item) => {
         const kodeAkun = item.kode_akun_bank || '';
-        const namaAkun = item.bas_akun?.nama_akun || 'Akun Tidak Ditemukan';
+        
+        // FIX: Mengakses elemen pertama dari array bas_akun (item.bas_akun?.[0]) 
+        // untuk mendapatkan nama_akun, sesuai dengan perubahan interface.
+        const namaAkun = item.bas_akun?.[0]?.nama_akun || 'Akun Tidak Ditemukan';
+        
         const value = `${namaAkun} - ${item.nomor_rekening}`;
         return {
           value: value,
@@ -154,7 +169,7 @@ const Sppr = () => {
         .from("pejabat_keuangan")
         .select("*, pegawai(nama, pangkat, nrp_nip_nir, tipe_identitas, jabatan_struktural)")
         .eq("jabatan_pengelola_keuangan", "KPA").eq("status", "Aktif");
-      const formattedKpa = kpaData?.map(item => ({
+      const formattedKpa = kpaData?.map((item: any) => ({
         nama: item.pegawai.nama, pangkat: item.pegawai.pangkat, tipe_identitas: item.pegawai.tipe_identitas,
         nrp_nip_nir: item.pegawai.nrp_nip_nir, jabatan: item.pegawai.jabatan_struktural
       })) || [];
@@ -164,7 +179,7 @@ const Sppr = () => {
         .from("pejabat_keuangan")
         .select("*, pegawai(nama, pangkat, nrp_nip_nir, tipe_identitas, jabatan_struktural)")
         .eq("jabatan_pengelola_keuangan", "BPG").eq("status", "Aktif");
-      const formattedBendahara = bendaharaData?.map(item => ({
+      const formattedBendahara = bendaharaData?.map((item: any) => ({
         nama: item.pegawai.nama, pangkat: item.pegawai.pangkat, tipe_identitas: item.pegawai.tipe_identitas,
         nrp_nip_nir: item.pegawai.nrp_nip_nir, jabatan: item.pegawai.jabatan_struktural
       })) || [];
@@ -174,7 +189,7 @@ const Sppr = () => {
         .from("pegawai")
         .select("nama, pangkat, nrp_nip_nir, tipe_identitas, jabatan_struktural")
         .in("jabatan_struktural", ["BANUM KEU", "STAF KEU"]).eq("status", "Aktif");
-      const formattedPengambil = pengambilData?.map(item => ({
+      const formattedPengambil = pengambilData?.map((item: any) => ({
         nama: item.nama, pangkat: item.pangkat, tipe_identitas: item.tipe_identitas,
         nrp_nip_nir: item.nrp_nip_nir, jabatan: item.jabatan_struktural
       })) || [];
@@ -224,7 +239,8 @@ const Sppr = () => {
     const currentYear = today.getFullYear();
     const currentMonthRoman = toRoman(today.getMonth() + 1);
 
-    const { data, error } = await supabase
+    // FIX: Hapus error yang tidak terpakai
+    const { data } = await supabase
       .from("sppr").select("nomor_surat")
       .gte("tanggal", `${currentYear}-01-01`).lt("tanggal", `${currentYear + 1}-01-01`)
       .order("created_at", { ascending: false });
@@ -261,11 +277,13 @@ const Sppr = () => {
     } else if (name === "nama_pengambil") {
       const selectedPengambil = pengambilList.find(p => p.nama === value);
       newFormData.nama_pengambil = value;
+      // FIX: Hapus optional chaining pada .trim() karena sudah pasti string
       newFormData.pangkat_pengambil = selectedPengambil ? `${selectedPengambil.pangkat} ${selectedPengambil.tipe_identitas || ''} ${selectedPengambil.nrp_nip_nir}`.trim() : "";
       newFormData.jabatan_pengambil = selectedPengambil ? selectedPengambil.jabatan : "";
     } else if (name === "nama_kpa") {
       const selectedKpa = kpaList.find(p => p.nama === value);
       newFormData.nama_kpa = value;
+      // FIX: Hapus optional chaining pada .trim() karena sudah pasti string
       newFormData.pangkat_kpa = selectedKpa ? `${selectedKpa.pangkat} ${selectedKpa.tipe_identitas || ''} ${selectedKpa.nrp_nip_nir}`.trim() : "";
       newFormData.jabatan_kpa = selectedKpa ? selectedKpa.jabatan : "";
     } else if (name === "nama_bendahara") {
@@ -548,7 +566,7 @@ const Sppr = () => {
         </Modal>
       )}
 
-      {/* Tabel Data SPPR */}
+      {/* Tabel Data SPPR - Style disesuaikan dengan request tersimpan */}
       <div className={pageStyles.tableContainer}>
         <div className={pageStyles.tableWrapper}>
           {isTableLoading && (
@@ -560,31 +578,38 @@ const Sppr = () => {
               </div>
             </div>
           )}
+          {/* Style tabel data diterapkan di sini */}
           <table className={pageStyles.table}>
             <thead className={pageStyles.tableHead}>
               <tr>
                 <th style={{ width: "5%" }}>No.</th>
-                <th style={{ width: "10%" }}>Tanggal</th>
-                <th style={{ width: "20%" }}>Nomor Surat</th>
-                <th style={{ width: "25%" }}>Operator</th>
-                <th style={{ width: "10%" }}>Jumlah Penarikan</th>
-                <th style={{ width: "10%" }}>Status</th>
+                <th style={{ width: "30%" }}>Tanggal</th> {/* Lebar disesuaikan */}
+                <th style={{ width: "40%" }}>Nomor Surat</th> {/* Lebar disesuaikan */}
+                <th style={{ width: "25%" }}>Jumlah Penarikan</th> {/* Lebar disesuaikan */}
+                {/* Kolom Operator dan Status DIHAPUS untuk mencocokkan style tersimpan */}
               </tr>
             </thead>
             <tbody className={pageStyles.tableBody}>
               {paginatedSppr.length > 0 ? (
                 paginatedSppr.map((sppr, index) => (
-                  <tr key={sppr.id} onClick={() => handleRowClick(sppr)} className={`${pageStyles.tableRow} ${selectedSppr?.id === sppr.id ? pageStyles.selected : ""}`}>
+                  <tr
+                    key={sppr.id}
+                    onClick={() => handleRowClick(sppr)}
+                    className={`${pageStyles.tableRow} ${selectedSppr?.id === sppr.id ? pageStyles.selected : ""}`}
+                  >
                     <td>{startIndex + index + 1}</td>
                     <td>{formatTanggal(sppr.tanggal)}</td>
                     <td>{sppr.nomor_surat}</td>
-                    <td>{sppr.operator}</td>
                     <td>{formatAngka(sppr.jumlah_penarikan)}</td>
-                    <td>{sppr.status_sppr}</td>
+                    {/* Data Operator dan Status TIDAK ditampilkan di sini sesuai style tersimpan */}
                   </tr>
                 ))
               ) : (
-                <tr><td colSpan={6} className={pageStyles.tableEmpty}>Tidak ada data SPPR yang ditemukan.</td></tr>
+                <tr>
+                  <td colSpan={4} className={pageStyles.tableEmpty}> {/* Colspan disesuaikan menjadi 4 */}
+                    Tidak ada data SPPR yang ditemukan.
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>
