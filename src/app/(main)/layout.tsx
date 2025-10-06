@@ -23,6 +23,35 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const [fullName, setFullName] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
 
+  // Tambahkan state untuk track ukuran layar
+  const [isMobile, setIsMobile] = useState<boolean>(false);
+
+  // Effect untuk mendeteksi ukuran layar
+  useEffect(() => {
+    const checkScreenSize = () => {
+      const mobile = window.innerWidth < 768; // Breakpoint untuk mobile (bisa disesuaikan)
+      setIsMobile(mobile);
+      
+      // Auto-hide sidebar di mobile
+      if (mobile) {
+        setIsSidebarVisible(false);
+      } else {
+        setIsSidebarVisible(true);
+      }
+    };
+
+    // Check saat pertama kali load
+    checkScreenSize();
+
+    // Add event listener untuk resize
+    window.addEventListener('resize', checkScreenSize);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('resize', checkScreenSize);
+    };
+  }, []);
+
   useEffect(() => {
     const fetchUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -113,6 +142,11 @@ export default function MainLayout({ children }: MainLayoutProps) {
 
   const handleDataToggle = () => {
     setOpenFolder(openFolder === 'data' ? null : 'data');
+  };
+
+  // Fungsi toggle sidebar yang juga menangani mobile behavior
+  const handleSidebarToggle = () => {
+    setIsSidebarVisible(!isSidebarVisible);
   };
 
   const baseMenuItemStyle: React.CSSProperties = {
@@ -223,7 +257,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
             }}
         >
             <button
-                onClick={() => setIsSidebarVisible(!isSidebarVisible)}
+                onClick={handleSidebarToggle}
                 style={{
                   background: "none",
                   border: "none",
@@ -351,7 +385,10 @@ export default function MainLayout({ children }: MainLayoutProps) {
             >
               <div style={{ display: "flex", flexDirection: "column", gap: "0rem" }}>
                 <button
-                  onClick={() => router.push("/pejabatkeuangan")}
+                  onClick={() => {
+                    router.push("/pejabatkeuangan");
+                    if (isMobile) setIsSidebarVisible(false); // Auto-close sidebar di mobile
+                  }}
                   onMouseEnter={() => setHoveredItem('pejabatkeuangan')}
                   onMouseLeave={() => setHoveredItem(null)}
                   style={
@@ -365,7 +402,10 @@ export default function MainLayout({ children }: MainLayoutProps) {
                   </span> Pejabat Keuangan
                 </button>
                 <button
-                  onClick={() => router.push("/daftarakun")}
+                  onClick={() => {
+                    router.push("/daftarakun");
+                    if (isMobile) setIsSidebarVisible(false); // Auto-close sidebar di mobile
+                  }}
                   onMouseEnter={() => setHoveredItem('daftarakun')}
                   onMouseLeave={() => setHoveredItem(null)}
                   style={
@@ -415,7 +455,10 @@ export default function MainLayout({ children }: MainLayoutProps) {
               >
               <div style={{ display: "flex", flexDirection: "column", gap: "0rem" }}>
                 <button
-                  onClick={() => router.push("/pegawai")}
+                  onClick={() => {
+                    router.push("/pegawai");
+                    if (isMobile) setIsSidebarVisible(false); // Auto-close sidebar di mobile
+                  }}
                   onMouseEnter={() => setHoveredItem('pegawai')}
                   onMouseLeave={() => setHoveredItem(null)}
                   style={
@@ -429,7 +472,10 @@ export default function MainLayout({ children }: MainLayoutProps) {
                   </span> Pegawai
                 </button>
                 <button
-                  onClick={() => router.push("/pencatatanpasien")}
+                  onClick={() => {
+                    router.push("/pencatatanpasien");
+                    if (isMobile) setIsSidebarVisible(false); // Auto-close sidebar di mobile
+                  }}
                   onMouseEnter={() => setHoveredItem('pencatatanpasien')}
                   onMouseLeave={() => setHoveredItem(null)}
                   style={
@@ -443,7 +489,10 @@ export default function MainLayout({ children }: MainLayoutProps) {
                   </span> Pencatatan Pasien
                 </button>
                 <button
-                  onClick={() => router.push("/sppr")}
+                  onClick={() => {
+                    router.push("/sppr");
+                    if (isMobile) setIsSidebarVisible(false); // Auto-close sidebar di mobile
+                  }}
                   onMouseEnter={() => setHoveredItem('sppr')}
                   onMouseLeave={() => setHoveredItem(null)}
                   style={
@@ -457,7 +506,10 @@ export default function MainLayout({ children }: MainLayoutProps) {
                   </span> SPPR
                 </button>
                 <button
-                  onClick={() => router.push("/jurnalumum")}
+                  onClick={() => {
+                    router.push("/jurnalumum");
+                    if (isMobile) setIsSidebarVisible(false); // Auto-close sidebar di mobile
+                  }}
                   onMouseEnter={() => setHoveredItem('jurnalumum')}
                   onMouseLeave={() => setHoveredItem(null)}
                   style={
@@ -507,7 +559,10 @@ export default function MainLayout({ children }: MainLayoutProps) {
               >
               <div style={{ display: "flex", flexDirection: "column", gap: "0rem" }}>
                 <button
-                  onClick={() => router.push("/rekening")}
+                  onClick={() => {
+                    router.push("/rekening");
+                    if (isMobile) setIsSidebarVisible(false); // Auto-close sidebar di mobile
+                  }}
                   onMouseEnter={() => setHoveredItem('rekening')}
                   onMouseLeave={() => setHoveredItem(null)}
                   style={
@@ -527,12 +582,29 @@ export default function MainLayout({ children }: MainLayoutProps) {
             
           </nav>
         </aside>
+        
+        {/* Overlay untuk mobile */}
+        {isMobile && isSidebarVisible && (
+          <div
+            style={{
+              position: "fixed",
+              top: "50px",
+              left: "0",
+              right: "0",
+              bottom: "0",
+              backgroundColor: "rgba(0, 0, 0, 0.5)",
+              zIndex: 499,
+            }}
+            onClick={() => setIsSidebarVisible(false)}
+          />
+        )}
+        
         <main 
           style={{ 
             flex: 1, 
             backgroundColor: "#F3F4F6",
             overflowY: "auto",
-            marginLeft: isSidebarVisible ? "200px" : "0px",
+            marginLeft: isSidebarVisible && !isMobile ? "200px" : "0px",
             transition: "margin-left 0.3s cubic-bezier(.4,0,.2,1)",
             zIndex: 3,
           }}
