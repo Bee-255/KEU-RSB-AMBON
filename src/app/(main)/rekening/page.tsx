@@ -38,6 +38,8 @@ interface Rekening {
     kelompok: string;
     status_rekening: string;
     kode_akun_bank: string | null;
+    // Kolom baru
+    nama_kode_akun_bank: string | null; 
     created_at: string;
 }
 
@@ -55,6 +57,8 @@ interface RekeningFormData {
     kelompok: string;
     status_rekening: string;
     kode_akun_bank: string;
+    // Properti baru di Form Data
+    nama_kode_akun_bank: string; 
 }
 
 // === Komponen Utama Daftar Rekening ===
@@ -81,6 +85,7 @@ const DaftarRekening: React.FC = () => {
         kelompok: "", // Default empty for placeholder
         status_rekening: "Aktif",
         kode_akun_bank: "", // Default empty for placeholder
+        nama_kode_akun_bank: "", // Default value untuk kolom baru
     });
     
     const [userRole, setUserRole] = useState("");
@@ -109,9 +114,10 @@ const DaftarRekening: React.FC = () => {
     const fetchRekening = useCallback(async () => {
         setIsLoading(true);
         try {
+            // Pastikan Anda juga memilih kolom 'nama_kode_akun_bank'
             const { data, error } = await supabase
                 .from("data_rekening") 
-                .select("*")
+                .select("*") 
                 .order("created_at", { ascending: false });
             
             if (error) {
@@ -160,16 +166,33 @@ const DaftarRekening: React.FC = () => {
         const akun = akunBankOptions.find(opt => opt.kode_akun === kode);
         return akun ? `${akun.kode_akun} - ${akun.nama_akun}` : kode;
     }, [akunBankOptions]);
+    
+    // *** FUNGSI BARU: Mendapatkan Nama Akun dari Kode Akun ***
+    const getNamaAkunFromKode = useCallback((kode: string): string => {
+        const akun = akunBankOptions.find(opt => opt.kode_akun === kode);
+        return akun ? akun.nama_akun : "";
+    }, [akunBankOptions]);
     // *************************************************
 
     // --- Handler Aksi Pengguna ---
     const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        setFormData(prevData => ({
-            ...prevData,
-            [name]: value,
-        }));
-    }, []);
+        
+        // Logika untuk mengisi nama_kode_akun_bank
+        if (name === "kode_akun_bank") {
+            const namaAkun = getNamaAkunFromKode(value);
+            setFormData(prevData => ({
+                ...prevData,
+                [name]: value,
+                nama_kode_akun_bank: namaAkun, // Otomatis mengisi nama akun
+            }));
+        } else {
+            setFormData(prevData => ({
+                ...prevData,
+                [name]: value,
+            }));
+        }
+    }, [getNamaAkunFromKode]);
     
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -180,6 +203,7 @@ const DaftarRekening: React.FC = () => {
         }
 
         // Cek duplikasi nomor_rekening
+        // Logika pengecekan duplikasi tetap sama...
         const { data: existingRekening, error: fetchError } = await supabase
             .from('data_rekening')
             .select('id')
@@ -197,11 +221,14 @@ const DaftarRekening: React.FC = () => {
             return;
         }
         
+        // Data yang akan disimpan, termasuk kolom baru: nama_kode_akun_bank
         const dataToSave = { 
             ...formData, 
             nomor_izin: formData.nomor_izin || null, 
             tanggal_izin: formData.tanggal_izin || null,
             kode_akun_bank: formData.kode_akun_bank || null,
+            // Menyimpan nama akun bank. Jika kode_akun_bank kosong, nama_kode_akun_bank juga kosong.
+            nama_kode_akun_bank: formData.kode_akun_bank ? formData.nama_kode_akun_bank : null,
         };
         
         if (isEditing) {
@@ -232,6 +259,7 @@ const DaftarRekening: React.FC = () => {
     
     const handleDelete = async () => {
         if (!selectedRekening) return;
+        // Logika hapus tetap sama...
         const result = await Swal.fire({
             title: "Apakah Anda yakin?",
             text: `Anda akan menghapus rekening ${selectedRekening.nomor_rekening} (${selectedRekening.bank})`,
@@ -259,6 +287,11 @@ const DaftarRekening: React.FC = () => {
     const handleEdit = () => {
         if (!selectedRekening) return;
         setIsEditing(true);
+        // Mendapatkan nama akun bank saat ini
+        const currentNamaAkunBank = selectedRekening.kode_akun_bank 
+            ? getNamaAkunFromKode(selectedRekening.kode_akun_bank) 
+            : (selectedRekening.nama_kode_akun_bank || "");
+
         setFormData({
             kode: selectedRekening.kode,
             wilayah: selectedRekening.wilayah,
@@ -273,6 +306,8 @@ const DaftarRekening: React.FC = () => {
             kelompok: selectedRekening.kelompok,
             status_rekening: selectedRekening.status_rekening,
             kode_akun_bank: selectedRekening.kode_akun_bank || "",
+            // Mengisi kolom baru saat edit
+            nama_kode_akun_bank: currentNamaAkunBank, 
         });
         setShowModal(true);
     };
@@ -293,11 +328,13 @@ const DaftarRekening: React.FC = () => {
             kelompok: "",
             status_rekening: "Aktif",
             kode_akun_bank: "",
+            nama_kode_akun_bank: "", // Reset kolom baru
         });
         setShowModal(false);
     }, []);
     
     const handleRowClick = (rekening: Rekening) => {
+        // Logika klik baris tetap sama...
         if (selectedRekening?.id === rekening.id) {
             setSelectedRekening(null);
         } else {
@@ -324,7 +361,7 @@ const DaftarRekening: React.FC = () => {
         return rekeningList.slice(startIndex, endIndex);
     }, [rekeningList, startIndex, rowsPerPage]);
     
-    // --- Logic Akses Role ---
+    // --- Logic Akses Role (Sama) ---
     const isOwner = userRole === "Owner";
     const canCUD = ['Owner', 'Admin', 'Operator'].includes(userRole);
     
@@ -474,6 +511,8 @@ const DaftarRekening: React.FC = () => {
                                 </select>
                             </div>
                             
+                            {/* TIDAK ADA INPUT UNTUK nama_kode_akun_bank DI SINI */}
+
                             {/* Baris 5: Nomor Izin, Tanggal Izin */}
                             <div className={pageStyles.formGroup}>
                                 <label className={pageStyles.formLabel}>Nomor Izin:</label>
@@ -656,7 +695,7 @@ const DaftarRekening: React.FC = () => {
                         </div>
                         <div className={pageStyles.detailItem}>
                             <div className={pageStyles.detailLabel}>Kode Akun Bank</div>
-                            {/* PERUBAHAN DI SINI: Menggunakan fungsi getNamaAkunBank */}
+                            {/* Menggunakan fungsi getNamaAkunBank (yang sudah ada) */}
                             <div className={pageStyles.detailValue}>: <strong>{getNamaAkunBank(selectedRekening.kode_akun_bank)}</strong></div>
                         </div>
                     </div>
