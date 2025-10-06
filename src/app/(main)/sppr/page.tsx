@@ -58,6 +58,22 @@ interface SpprType {
   created_at?: string;
 }
 
+// Interface untuk Pegawai yang diambil (hanya kolom yang dibutuhkan)
+interface PegawaiMinimal {
+  nama: string;
+  pangkat: string;
+  nrp_nip_nir: string | null;
+  tipe_identitas: string | null;
+  jabatan_struktural: string;
+}
+
+// Interface untuk hasil JOIN Pejabat Keuangan dan Pegawai (untuk KPA/Bendahara)
+interface PejabatKeuanganJoin {
+  pegawai: PegawaiMinimal;
+  // Jika ada kolom lain dari pejabat_keuangan yang diambil, tambahkan di sini
+}
+
+// Interface untuk tipe data akhir yang digunakan (PersonType)
 interface PersonType {
   nama: string;
   pangkat: string;
@@ -155,9 +171,8 @@ const Sppr = () => {
         return;
       }
 
-      // 💡 PERBAIKAN: Gunakan RawRekeningData sebagai tipe
       const rawData = rekeningData as RawRekeningData[];
-
+      
       const formattedOptions: RekeningOption[] = rawData.map((item) => {
         const kodeAkun = item.kode_akun_bank || '';
         const bank = item.bank || 'Bank Tidak Diketahui';
@@ -187,31 +202,40 @@ const Sppr = () => {
 
   const fetchPejabatAndPegawai = useCallback(async () => {
     try {
+      // Data KPA (Pejabat Keuangan JOIN Pegawai)
       const { data: kpaData } = await supabase
         .from("pejabat_keuangan")
         .select("*, pegawai(nama, pangkat, nrp_nip_nir, tipe_identitas, jabatan_struktural)")
         .eq("jabatan_pengelola_keuangan", "KPA").eq("status", "Aktif");
-      const formattedKpa = kpaData?.map((item: any) => ({ // Dibiarkan any karena struktur join kompleks, namun bisa diperbaiki juga
+      
+      // 💡 PERBAIKAN BARIS 194: Tipe eksplisit PejabatKeuanganJoin[]
+      const formattedKpa = (kpaData as PejabatKeuanganJoin[])?.map(item => ({
         nama: item.pegawai.nama, pangkat: item.pegawai.pangkat, tipe_identitas: item.pegawai.tipe_identitas,
         nrp_nip_nir: item.pegawai.nrp_nip_nir, jabatan: item.pegawai.jabatan_struktural
       })) || [];
       setKpaList(formattedKpa as PersonType[]);
   
+      // Data Bendahara (Pejabat Keuangan JOIN Pegawai)
       const { data: bendaharaData } = await supabase
         .from("pejabat_keuangan")
         .select("*, pegawai(nama, pangkat, nrp_nip_nir, tipe_identitas, jabatan_struktural)")
         .eq("jabatan_pengelola_keuangan", "BPG").eq("status", "Aktif");
-      const formattedBendahara = bendaharaData?.map((item: any) => ({ // Dibiarkan any karena struktur join kompleks, namun bisa diperbaiki juga
+        
+      // 💡 PERBAIKAN BARIS 204: Tipe eksplisit PejabatKeuanganJoin[]
+      const formattedBendahara = (bendaharaData as PejabatKeuanganJoin[])?.map(item => ({
         nama: item.pegawai.nama, pangkat: item.pegawai.pangkat, tipe_identitas: item.pegawai.tipe_identitas,
         nrp_nip_nir: item.pegawai.nrp_nip_nir, jabatan: item.pegawai.jabatan_struktural
       })) || [];
       setBendaharaList(formattedBendahara as PersonType[]);
   
+      // Data Pengambil (Select langsung dari Pegawai)
       const { data: pengambilData } = await supabase
         .from("pegawai")
         .select("nama, pangkat, nrp_nip_nir, tipe_identitas, jabatan_struktural")
         .in("jabatan_struktural", ["BANUM KEU", "STAF KEU"]).eq("status", "Aktif");
-      const formattedPengambil = pengambilData?.map((item: any) => ({ // Dibiarkan any karena struktur select langsung dari tabel
+
+      // 💡 PERBAIKAN BARIS 214: Tipe eksplisit PegawaiMinimal[]
+      const formattedPengambil = (pengambilData as PegawaiMinimal[])?.map(item => ({
         nama: item.nama, pangkat: item.pangkat, tipe_identitas: item.tipe_identitas,
         nrp_nip_nir: item.nrp_nip_nir, jabatan: item.jabatan_struktural
       })) || [];
