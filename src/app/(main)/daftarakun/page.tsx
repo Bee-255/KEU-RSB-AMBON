@@ -99,7 +99,7 @@ const DaftarAkun: React.FC = () => {
     };
 
     const fetchAkun = useCallback(async () => {
-        setIsLoading(true); // Mulai loading saat fetch
+        setIsLoading(true);
         try {
             const { data, error } = await supabase
                 .from("bas_akun")
@@ -115,7 +115,7 @@ const DaftarAkun: React.FC = () => {
         } catch (error) {
             console.error("Gagal mengambil data:", error);
         } finally {
-            setIsLoading(false); // Akhiri loading setelah fetch selesai
+            setIsLoading(false);
         }
     }, []);
 
@@ -132,7 +132,8 @@ const DaftarAkun: React.FC = () => {
         if (name === "kode_akun") {
             const newKategori = getKategoriDariKode(value);
             const newIsDebit = getIsDebitDariKode(value);
-            const newIsInduk = value.trim() !== '' ? !value.includes('.') : null;
+            // Menentukan is_induk berdasarkan keberadaan titik
+            const newIsInduk = value.trim() !== '' ? !value.includes('.') : null; 
             
             setFormData(prevData => ({
                 ...prevData,
@@ -151,8 +152,14 @@ const DaftarAkun: React.FC = () => {
     
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
-        const dataToSave = { ...formData, is_induk: !formData.kode_akun.includes('.') };
         
+        // Pastikan is_induk dihitung ulang berdasarkan kode_akun sebelum disimpan
+        const dataToSave = { 
+            ...formData, 
+            is_induk: formData.kode_akun.includes('.') ? false : true 
+        };
+        
+        // Cek duplikasi kode_akun
         const { data: existingAccount, error: fetchError } = await supabase
             .from('bas_akun')
             .select('id')
@@ -256,6 +263,7 @@ const DaftarAkun: React.FC = () => {
         }
     };
     
+    // --- Logika Paginasi ---
     const handlePageChange = (pageNumber: number) => {
         setCurrentPage(pageNumber);
         setSelectedAkun(null);
@@ -277,7 +285,7 @@ const DaftarAkun: React.FC = () => {
     const isOwner = userRole === "Owner";
     const isActionDisabled = !isOwner || !selectedAkun;
 
-    // Tampilkan konten utama, termasuk tabel dengan loading overlay
+    // --- Render Komponen ---
     return (
         <div className={pageStyles.container}>
             <h2 className={pageStyles.header}>Daftar Bagan Akun Standar (BAS)</h2>
@@ -323,7 +331,8 @@ const DaftarAkun: React.FC = () => {
                                     value={formData.kode_akun}
                                     onChange={handleInputChange}
                                     required
-                                    className={pageStyles.formInput}
+                                    // PENTING: Class kondisional untuk styling abu-abu saat edit
+                                    className={`${pageStyles.formInput} ${isEditing ? pageStyles.readOnly : ''}`}
                                     readOnly={isEditing}
                                 />
                             </div>
@@ -388,8 +397,8 @@ const DaftarAkun: React.FC = () => {
                 </Modal>
             )}
             
+            {/* Table Section */}
             <div className={pageStyles.tableContainer}>
-                {/* === Tambahkan elemen tableWrapper === */}
                 <div className={pageStyles.tableWrapper}>
                     {isLoading && (
                         <div className={pageStyles.tableOverlay}>
@@ -410,15 +419,10 @@ const DaftarAkun: React.FC = () => {
                                 <th style={{ width: "20%" }}>Saldo Normal</th>
                                 <th style={{ width: "10%" }}>Jenis</th>
                             </tr>
-                        </thead>
-                        <tbody className={pageStyles.tableBody}>
+                        </thead><tbody className={pageStyles.tableBody}>
                             {paginatedAkun.length > 0 ? (
                                 paginatedAkun.map((akun, index) => (
-                                    <tr
-                                        key={akun.id}
-                                        onClick={() => handleRowClick(akun)}
-                                        className={`${pageStyles.tableRow} ${selectedAkun?.id === akun.id ? pageStyles.selected : ""}`}
-                                    >
+                                    <tr key={akun.id} onClick={() => handleRowClick(akun)} className={`${pageStyles.tableRow} ${selectedAkun?.id === akun.id ? pageStyles.selected : ""}`}>
                                         <td>{startIndex + index + 1}</td>
                                         <td>{akun.kode_akun}</td>
                                         <td>{akun.nama_akun}</td>
@@ -438,6 +442,8 @@ const DaftarAkun: React.FC = () => {
                     </table>
                 </div>
             </div>
+            {/* End Table Section */}
+            
             <Paginasi
                 currentPage={currentPage}
                 totalPages={totalPages}
@@ -446,6 +452,7 @@ const DaftarAkun: React.FC = () => {
                 onPageChange={handlePageChange}
                 onItemsPerPageChange={handleRowsPerPageChange}
             />
+            {/* Detail Section */}
             <div className={pageStyles.detailContainerSPPR}>
                 <div className={pageStyles.detailHeaderSPPR}>Detail Data Akun</div>
                 {selectedAkun ? (
@@ -479,6 +486,7 @@ const DaftarAkun: React.FC = () => {
                     <div className={pageStyles.tableEmpty}>Pilih Akun untuk Melihat Detail</div>
                 )}
             </div>
+            {/* End Detail Section */}
         </div>
     );
 };

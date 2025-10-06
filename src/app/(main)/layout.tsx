@@ -89,15 +89,19 @@ export default function MainLayout({ children }: MainLayoutProps) {
     return () => clearInterval(timerId);
   }, []);
 
+  // START: PERBAIKAN DI SINI
   useEffect(() => {
     if (pathname.startsWith('/pejabatkeuangan') || pathname.startsWith('/daftarakun')) {
       setOpenFolder('administrasi');
     } else if (pathname.startsWith('/pegawai') || pathname.startsWith('/pencatatanpasien') || pathname.startsWith('/sppr') || pathname.startsWith('/jurnalumum')) {
       setOpenFolder('rekam');
+    } else if (pathname.startsWith('/rekening')) { // <-- Ubah dari /Rekening ke /rekening dan pastikan masuk ke folder 'data'
+      setOpenFolder('data');
     } else {
       setOpenFolder(null);
     }
   }, [pathname]);
+  // END: PERBAIKAN DI SINI
 
   const handleAdminToggle = () => {
     setOpenFolder(openFolder === 'administrasi' ? null : 'administrasi');
@@ -105,6 +109,10 @@ export default function MainLayout({ children }: MainLayoutProps) {
 
   const handleRekamToggle = () => {
     setOpenFolder(openFolder === 'rekam' ? null : 'rekam');
+  };
+
+  const handleDataToggle = () => {
+    setOpenFolder(openFolder === 'data' ? null : 'data');
   };
 
   const baseMenuItemStyle: React.CSSProperties = {
@@ -153,6 +161,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
   
   const isAdminOpen = openFolder === 'administrasi';
   const isRekamOpen = openFolder === 'rekam';
+  const isDataOpen = openFolder === 'data';
   const isActive = (path: string) => pathname === path;
 
   return (
@@ -380,7 +389,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
               style={
                 isRekamOpen ? activeStyle : (hoveredItem === 'rekam' ? hoverStyle : inactiveStyle)
               }
-            >
+              >
               <span style={{ fontSize: "0.9rem" }}>
                 <FaFolder color={isRekamOpen ? '#2563eb' : '#4A5568'}  />
               </span> Rekam
@@ -403,7 +412,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 overflow: 'hidden',
                 transition: 'max-height 0.2s',
               }}
-            >
+              >
               <div style={{ display: "flex", flexDirection: "column", gap: "0rem" }}>
                 <button
                   onClick={() => router.push("/pegawai")}
@@ -463,9 +472,61 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 </button>
               </div>
             </div>
+
+            {/* Data (Folder) */}
+            <div
+              onClick={handleDataToggle}
+              onMouseEnter={() => setHoveredItem('data')}
+              onMouseLeave={() => setHoveredItem(null)}
+              style={
+                isDataOpen ? activeStyle : (hoveredItem === 'data' ? hoverStyle : inactiveStyle)
+              }
+              >
+              <span style={{ fontSize: "0.9rem" }}>
+                <FaFolder color={isDataOpen ? '#2563eb' : '#4A5568'}  />
+              </span> Data
+              <span style={{
+                display: 'inline-block',
+                marginLeft: "auto",
+                width: "1em",
+                height: "1em",
+                transform: isDataOpen ? 'rotate(-180deg)' : 'rotate(0deg)',
+                transition: 'transform 0.2s ease-in-out',
+              }}>
+                <FaAngleDown strokeWidth={4} color="#4A5568" />
+              </span>
+            </div>
+
+            {/* Sub-menu */}
+            <div 
+              style={{
+                maxHeight: isDataOpen ? '200px' : '0',
+                overflow: 'hidden',
+                transition: 'max-height 0.2s',
+              }}
+              >
+              <div style={{ display: "flex", flexDirection: "column", gap: "0rem" }}>
+                <button
+                  onClick={() => router.push("/rekening")}
+                  onMouseEnter={() => setHoveredItem('rekening')}
+                  onMouseLeave={() => setHoveredItem(null)}
+                  style={
+                    isActive("/rekening") ? 
+                    {...activeStyle, paddingLeft: "1rem"} : 
+                    (hoveredItem === 'rekening' ? {...hoverStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"})
+                  }
+                >
+                  <span style={{ fontSize: "0.9rem" }}>
+                    <FaFile color={isActive("/rekening") ? '#2563eb' : '#4A5568'} />
+                  </span> Rekening
+                </button>
+                
+              </div>
+            </div>
+
+            
           </nav>
         </aside>
-        
         <main 
           style={{ 
             flex: 1, 

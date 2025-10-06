@@ -719,7 +719,7 @@ export default function Pegawai() {
         />
       </div>
       
-
+       {/* === Detail pegawai === */}
       <div className={pageStyles.detailContainer}>
         <div className={pageStyles.detailHeader}>Detail Data Pegawai</div>
         {selectedPegawai ? (

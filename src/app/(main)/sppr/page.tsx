@@ -17,6 +17,13 @@ import { capitalizeWords, formatAngka, parseAngka, toRoman, formatTanggal } from
 import { terbilang } from "@/lib/terbilang";
 import { generateSpprPdf } from "@/lib/pdfsppr";
 
+// Interface untuk data rekening
+interface RekeningOption {
+  value: string; // Format: Nama Akun - Nomor Rekening
+  label: string; // Sama dengan value
+  kodeAkun: string; // Tambahkan untuk sorting
+}
+
 interface SpprType {
   id: number;
   tanggal: string;
@@ -30,6 +37,7 @@ interface SpprType {
   nama_pengambil: string;
   pangkat_pengambil: string;
   jabatan_pengambil: string;
+  rekening_penarikan: string; 
   jumlah_penarikan: number;
   operator: string;
   status_sppr: string;
@@ -64,6 +72,7 @@ const Sppr = () => {
   const [kpaList, setKpaList] = useState<PersonType[]>([]);
   const [bendaharaList, setBendaharaList] = useState<PersonType[]>([]);
   const [pengambilList, setPengambilList] = useState<PersonType[]>([]);
+  const [rekeningOptions, setRekeningOptions] = useState<RekeningOption[]>([]); 
   const [isEditing, setIsEditing] = useState(false);
   const [selectedSppr, setSelectedSppr] = useState<SpprType | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -73,7 +82,8 @@ const Sppr = () => {
   const [formData, setFormData] = useState<SpprType>({
     id: 0, tanggal: "", nomor_surat: "", nama_kpa: "", pangkat_kpa: "", jabatan_kpa: "",
     nama_bendahara: "", pangkat_bendahara: "", jabatan_bendahara: "", nama_pengambil: "",
-    pangkat_pengambil: "", jabatan_pengambil: "", jumlah_penarikan: 0, operator: "", status_sppr: "BARU",
+    pangkat_pengambil: "", jabatan_pengambil: "", rekening_penarikan: "", 
+    jumlah_penarikan: 0, operator: "", status_sppr: "BARU",
   });
   const [operatorName, setOperatorName] = useState("");
   const [userRole, setUserRole] = useState("");
@@ -97,6 +107,46 @@ const Sppr = () => {
       setIsTableLoading(false);
     }
   }, []);
+
+  // --- FUNGSI: Ambil Data Rekening Penarikan dengan Sorting ---
+  const fetchRekeningOptions = useCallback(async () => {
+    try {
+      const { data: rekeningData, error } = await supabase
+        .from("data_rekening")
+        .select(`
+          nomor_rekening,
+          kode_akun_bank,
+          bas_akun (nama_akun)
+        `)
+        .eq('status_rekening', 'Aktif')
+        .not('kode_akun_bank', 'is', null);
+
+      if (error) {
+        console.error("Gagal mengambil data rekening:", error);
+        return;
+      }
+
+      // Memformat data
+      let formattedOptions: RekeningOption[] = rekeningData.map((item: any) => {
+        const kodeAkun = item.kode_akun_bank || '';
+        const namaAkun = item.bas_akun?.nama_akun || 'Akun Tidak Ditemukan';
+        const value = `${namaAkun} - ${item.nomor_rekening}`;
+        return {
+          value: value,
+          label: value,
+          kodeAkun: kodeAkun, // Simpan kodeAkun untuk sorting
+        };
+      });
+      
+      // Mengurutkan berdasarkan kodeAkun
+      formattedOptions.sort((a, b) => a.kodeAkun.localeCompare(b.kodeAkun));
+
+      setRekeningOptions(formattedOptions);
+    } catch (e) {
+      console.error("Failed to fetch rekening options:", e);
+    }
+  }, []);
+  // ----------------------------------------------------
 
   const fetchPejabatAndPegawai = useCallback(async () => {
     try {
@@ -152,10 +202,10 @@ const Sppr = () => {
 
   useEffect(() => {
     const initializeData = async () => {
-      await Promise.all([getLoggedInUser(), fetchSPPR(), fetchPejabatAndPegawai()]);
+      await Promise.all([getLoggedInUser(), fetchSPPR(), fetchPejabatAndPegawai(), fetchRekeningOptions()]); 
     };
     initializeData();
-  }, [fetchSPPR, fetchPejabatAndPegawai]);
+  }, [fetchSPPR, fetchPejabatAndPegawai, fetchRekeningOptions]);
 
   useEffect(() => {
     if (showModal) {
@@ -195,7 +245,7 @@ const Sppr = () => {
 
     setFormData((prevData) => ({
       ...prevData,
-      tanggal: "",
+      tanggal: new Date().toISOString().split('T')[0], // Set tanggal hari ini sebagai default
       nomor_surat: newNomorSurat,
       status_sppr: "BARU",
     }));
@@ -223,6 +273,8 @@ const Sppr = () => {
       newFormData.nama_bendahara = value;
       newFormData.pangkat_bendahara = selectedBendahara ? `${selectedBendahara.pangkat} ${selectedBendahara.tipe_identitas || ''} ${selectedBendahara.nrp_nip_nir}`.trim() : "";
       newFormData.jabatan_bendahara = selectedBendahara ? selectedBendahara.jabatan : "";
+    } else if (name === "rekening_penarikan") { 
+      newFormData.rekening_penarikan = value;
     }
 
     setFormData(newFormData);
@@ -230,6 +282,12 @@ const Sppr = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!formData.rekening_penarikan) {
+      Swal.fire("Peringatan", "Mohon pilih Rekening Penarikan.", "warning");
+      return;
+    }
+    
     const dataToSave = { ...formData, operator: operatorName };
 
     if (isEditing) {
@@ -311,9 +369,10 @@ const Sppr = () => {
     setIsEditing(false);
     setSelectedSppr(null);
     setFormData({
-      id: 0, tanggal: "", nomor_surat: "", nama_kpa: "", pangkat_kpa: "", jabatan_kpa: "",
+      id: 0, tanggal: new Date().toISOString().split('T')[0], nomor_surat: "", nama_kpa: "", pangkat_kpa: "", jabatan_kpa: "",
       nama_bendahara: "", pangkat_bendahara: "", jabatan_bendahara: "", nama_pengambil: "",
-      pangkat_pengambil: "", jabatan_pengambil: "", jumlah_penarikan: 0, operator: operatorName, status_sppr: "BARU",
+      pangkat_pengambil: "", jabatan_pengambil: "", rekening_penarikan: "", 
+      jumlah_penarikan: 0, operator: operatorName, status_sppr: "BARU",
     });
     setShowModal(false);
   };
@@ -355,6 +414,8 @@ const Sppr = () => {
     <div className={pageStyles.container}>
       <ToastContainer />
       <h2 className={pageStyles.header}>Data Surat Perintah Pendebitan Rekening</h2>
+      
+      {/* Tombol Aksi */}
       <div className={pageStyles.buttonContainer}>
         <button onClick={() => { resetForm(); fetchPejabatAndPegawai(); setShowModal(true); }} disabled={!isAllowedToRekam} className={styles.rekamButton}>
           <FaPlus/> Rekam
@@ -373,12 +434,14 @@ const Sppr = () => {
         </button>
       </div>
 
+      {/* Modal Rekam/Edit */}
       {showModal && (
         <Modal onClose={resetForm}>
           <form onSubmit={handleSave}>
             <h3 style={{ marginTop: 0 }}>{isEditing ? "Edit Data SPPR" : "Rekam Data SPPR"}</h3>
             <hr style={{ border: "0", height: "1px", backgroundColor: "#e5e7eb", margin: "20px 0" }} />
             
+            {/* Baris 1: Tanggal dan Nomor Surat */}
             <div className={pageStyles.modalForm}>
               <div className={pageStyles.formGroup}>
                 <label className={pageStyles.formLabel}>Tanggal:</label>
@@ -390,8 +453,9 @@ const Sppr = () => {
               </div>
             </div>
 
-            <hr style={{ border: "0", height: "1px", backgroundColor: "#e5e7eb", margin: "20px 0" }} />
+            <hr style={{ border: "0", height: "1px", backgroundColor: "#e5e7eb", margin: "15px 0" }} />
             
+            {/* Baris 2 & 3: KPA */}
             <div className={pageStyles.modalForm}>
               <div className={pageStyles.formGroup}>
                 <label className={pageStyles.formLabel}>Nama KPA:</label>
@@ -405,9 +469,9 @@ const Sppr = () => {
                 <input type="text" name="pangkat_kpa" value={formData.pangkat_kpa} readOnly className={`${pageStyles.formInput} ${pageStyles.readOnly}`} />
               </div>
             </div>
+            <hr style={{ border: "0", height: "1px", backgroundColor: "#e5e7eb", margin: "15px 0" }} />
 
-            <hr style={{ border: "0", height: "1px", backgroundColor: "#e5e7eb", margin: "20px 0" }} />
-            
+            {/* Baris 4 & 5: Bendahara */}
             <div className={pageStyles.modalForm}>
               <div className={pageStyles.formGroup}>
                 <label className={pageStyles.formLabel}>Nama Bendahara:</label>
@@ -422,8 +486,9 @@ const Sppr = () => {
               </div>
             </div>
 
-            <hr style={{ border: "0", height: "1px", backgroundColor: "#e5e7eb", margin: "20px 0" }} />
-            
+            <hr style={{ border: "0", height: "1px", backgroundColor: "#e5e7eb", margin: "15px 0" }} />
+
+            {/* Baris 6 & 7: Pengambil */}
             <div className={pageStyles.modalForm}>
               <div className={pageStyles.formGroup}>
                 <label className={pageStyles.formLabel}>Nama Pengambil:</label>
@@ -440,16 +505,38 @@ const Sppr = () => {
 
             <hr style={{ border: "0", height: "1px", backgroundColor: "#e5e7eb", margin: "20px 0" }} />
             
+            {/* BARIS BARU: Rekening Penarikan (Kiri) dan Jumlah Penarikan (Kanan) */}
             <div className={pageStyles.modalForm}>
+              
+              {/* Rekening Penarikan (Kiri) */}
+              <div className={pageStyles.formGroup}>
+                <label className={pageStyles.formLabel}>Rekening Penarikan:</label>
+                <select 
+                  name="rekening_penarikan" 
+                  value={formData.rekening_penarikan} 
+                  onChange={handleInputChange} 
+                  required 
+                  className={`${pageStyles.formSelect} ${formData.rekening_penarikan === "" ? pageStyles.selectPlaceholder : ""}`}
+                >
+                  <option value="">-- Pilih Rekening --</option>
+                  {rekeningOptions.map((rekening, index) => (
+                    <option key={index} value={rekening.value}>{rekening.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Jumlah Penarikan (Kanan) */}
+              <div className={pageStyles.formGroup}>
+                <label className={pageStyles.formLabel}>Jumlah Penarikan (Rp):</label>
+                <input type="text" name="jumlah_penarikan" value={formatAngka(formData.jumlah_penarikan)} onChange={handleInputChange} className={pageStyles.formInput} />
+              </div>
+            </div>
+            
+            {/* BARIS BARU: Terbilang (Full Width di Bawah Sekali) */}
+            <div className={pageStyles.modalForm} style={{ marginTop: '10px' }}> 
               <div className={pageStyles.formGroupFull}>
-                <div className={pageStyles.formGroupNested}>
-                  <label className={pageStyles.formLabel}>Jumlah Penarikan (Rp):</label>
-                  <input type="text" name="jumlah_penarikan" value={formatAngka(formData.jumlah_penarikan)} onChange={handleInputChange} className={pageStyles.formInput} />
-                </div>
-                <div className={pageStyles.formGroupNested}>
-                  <label className={pageStyles.formLabel}>Terbilang:</label>
-                  <div className={pageStyles.formReadOnly}>{capitalizeWords(terbilang(parseInt(formData.jumlah_penarikan.toString()) || 0))} Rupiah</div>
-                </div>
+                <label className={pageStyles.formLabel}>Terbilang:</label>
+                <div className={pageStyles.formReadOnly}>{capitalizeWords(terbilang(parseInt(formData.jumlah_penarikan.toString()) || 0))} Rupiah</div>
               </div>
             </div>
 
@@ -461,6 +548,7 @@ const Sppr = () => {
         </Modal>
       )}
 
+      {/* Tabel Data SPPR */}
       <div className={pageStyles.tableContainer}>
         <div className={pageStyles.tableWrapper}>
           {isTableLoading && (
@@ -505,13 +593,13 @@ const Sppr = () => {
 
       <Paginasi currentPage={currentPage} totalPages={totalPages} totalItems={spprList.length} itemsPerPage={rowsPerPage} onPageChange={handlePageChange} onItemsPerPageChange={handleRowsPerPageChange} />
 
+      {/* Detail Data SPPR */}
       <div className={pageStyles.detailContainerSPPR}>
         <div className={pageStyles.detailHeaderSPPR}>Detail Data SPPR</div>
         {selectedSppr ? (
           <div className={pageStyles.detailContentSPPR}>
             <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Tanggal</div><div className={pageStyles.detailValueSPPR}>: {formatTanggal(selectedSppr.tanggal)}</div></div>
             <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nomor Surat</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nomor_surat}</div></div>
-            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Operator</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.operator || "N/A"}</div></div>
             <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nama KPA</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nama_kpa}</div></div>
             <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Jabatan KPA</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.jabatan_kpa || "N/A"}</div></div>
             <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Pangkat KPA</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.pangkat_kpa}</div></div>
@@ -521,10 +609,16 @@ const Sppr = () => {
             <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nama Pengambil</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nama_pengambil}</div></div>
             <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Jabatan Pengambil</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.jabatan_pengambil || "N/A"}</div></div>
             <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Pangkat Pengambil</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.pangkat_pengambil}</div></div>
+             <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Operator</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.operator || "N/A"}</div></div>
+            
+            {/* TAMBAHAN: Rekening Penarikan di Detail */}
+            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Rekening</div><div className={pageStyles.detailValueSPPR}>: **{selectedSppr.rekening_penarikan || "N/A"}**</div></div> 
+            
             <div className={pageStyles.detailItemFullSPPR}>
               <div className={pageStyles.detailLabelSPPR}>Jumlah Penarikan</div>
               <div className={pageStyles.detailValueSPPR}>: {formatAngka(selectedSppr.jumlah_penarikan)} ({capitalizeWords(terbilang(selectedSppr.jumlah_penarikan))} Rupiah)</div>
             </div>
+           
           </div>
         ) : (
           <div className={pageStyles.tableEmpty}>Data SPPR Belum Dipilih</div>
