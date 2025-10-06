@@ -17,6 +17,14 @@ import { capitalizeWords, formatAngka, parseAngka, toRoman, formatTanggal } from
 import { terbilang } from "@/lib/terbilang";
 import { generateSpprPdf } from "@/lib/pdfsppr";
 
+// Interface untuk data mentah dari Supabase (data_rekening)
+interface RawRekeningData {
+  nomor_rekening: string | null;
+  kode_akun_bank: string | null;
+  bank: string | null;
+  nama_rekening: string | null;
+}
+
 // Interface untuk data rekening
 interface RekeningOption {
   value: string;
@@ -147,7 +155,10 @@ const Sppr = () => {
         return;
       }
 
-      const formattedOptions: RekeningOption[] = rekeningData.map((item: any) => {
+      // 💡 PERBAIKAN: Gunakan RawRekeningData sebagai tipe
+      const rawData = rekeningData as RawRekeningData[];
+
+      const formattedOptions: RekeningOption[] = rawData.map((item) => {
         const kodeAkun = item.kode_akun_bank || '';
         const bank = item.bank || 'Bank Tidak Diketahui';
         const namaRekening = item.nama_rekening || 'Rekening Tidak Diketahui';
@@ -180,7 +191,7 @@ const Sppr = () => {
         .from("pejabat_keuangan")
         .select("*, pegawai(nama, pangkat, nrp_nip_nir, tipe_identitas, jabatan_struktural)")
         .eq("jabatan_pengelola_keuangan", "KPA").eq("status", "Aktif");
-      const formattedKpa = kpaData?.map(item => ({
+      const formattedKpa = kpaData?.map((item: any) => ({ // Dibiarkan any karena struktur join kompleks, namun bisa diperbaiki juga
         nama: item.pegawai.nama, pangkat: item.pegawai.pangkat, tipe_identitas: item.pegawai.tipe_identitas,
         nrp_nip_nir: item.pegawai.nrp_nip_nir, jabatan: item.pegawai.jabatan_struktural
       })) || [];
@@ -190,7 +201,7 @@ const Sppr = () => {
         .from("pejabat_keuangan")
         .select("*, pegawai(nama, pangkat, nrp_nip_nir, tipe_identitas, jabatan_struktural)")
         .eq("jabatan_pengelola_keuangan", "BPG").eq("status", "Aktif");
-      const formattedBendahara = bendaharaData?.map(item => ({
+      const formattedBendahara = bendaharaData?.map((item: any) => ({ // Dibiarkan any karena struktur join kompleks, namun bisa diperbaiki juga
         nama: item.pegawai.nama, pangkat: item.pegawai.pangkat, tipe_identitas: item.pegawai.tipe_identitas,
         nrp_nip_nir: item.pegawai.nrp_nip_nir, jabatan: item.pegawai.jabatan_struktural
       })) || [];
@@ -200,7 +211,7 @@ const Sppr = () => {
         .from("pegawai")
         .select("nama, pangkat, nrp_nip_nir, tipe_identitas, jabatan_struktural")
         .in("jabatan_struktural", ["BANUM KEU", "STAF KEU"]).eq("status", "Aktif");
-      const formattedPengambil = pengambilData?.map(item => ({
+      const formattedPengambil = pengambilData?.map((item: any) => ({ // Dibiarkan any karena struktur select langsung dari tabel
         nama: item.nama, pangkat: item.pangkat, tipe_identitas: item.tipe_identitas,
         nrp_nip_nir: item.nrp_nip_nir, jabatan: item.jabatan_struktural
       })) || [];
