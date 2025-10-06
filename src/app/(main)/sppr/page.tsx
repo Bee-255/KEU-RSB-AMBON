@@ -19,9 +19,12 @@ import { generateSpprPdf } from "@/lib/pdfsppr";
 
 // Interface untuk data rekening
 interface RekeningOption {
-  value: string; // Format: Nama Akun - Nomor Rekening
-  label: string; // Sama dengan value
-  kodeAkun: string; // Tambahkan untuk sorting
+  value: string;
+  label: string;
+  kodeAkun: string;
+  bank: string;
+  namaRekening: string;
+  nomorRekening: string;
 }
 
 interface SpprType {
@@ -37,7 +40,10 @@ interface SpprType {
   nama_pengambil: string;
   pangkat_pengambil: string;
   jabatan_pengambil: string;
-  rekening_penarikan: string; 
+  rekening_penarikan: string;
+  nama_bank: string;           // Kolom baru
+  nama_rekening: string;       // Kolom baru
+  nomor_rekening: string;      // Kolom baru
   jumlah_penarikan: number;
   operator: string;
   status_sppr: string;
@@ -50,13 +56,6 @@ interface PersonType {
   tipe_identitas: string | null;
   nrp_nip_nir: string | null;
   jabatan: string;
-}
-
-// INTERFACE YANG DIUBAH: Mengambil data langsung dari kolom di data_rekening
-interface RekeningData {
-  nomor_rekening: string;
-  kode_akun_bank: string | null;
-  nama_kode_akun_bank: string | null; // Menggunakan kolom baru yang sudah disimpan
 }
 
 interface ModalProps {
@@ -87,10 +86,25 @@ const Sppr = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [formData, setFormData] = useState<SpprType>({
-    id: 0, tanggal: "", nomor_surat: "", nama_kpa: "", pangkat_kpa: "", jabatan_kpa: "",
-    nama_bendahara: "", pangkat_bendahara: "", jabatan_bendahara: "", nama_pengambil: "",
-    pangkat_pengambil: "", jabatan_pengambil: "", rekening_penarikan: "", 
-    jumlah_penarikan: 0, operator: "", status_sppr: "BARU",
+    id: 0, 
+    tanggal: "", 
+    nomor_surat: "", 
+    nama_kpa: "", 
+    pangkat_kpa: "", 
+    jabatan_kpa: "",
+    nama_bendahara: "", 
+    pangkat_bendahara: "", 
+    jabatan_bendahara: "", 
+    nama_pengambil: "",
+    pangkat_pengambil: "", 
+    jabatan_pengambil: "", 
+    rekening_penarikan: "",
+    nama_bank: "",           // Kolom baru
+    nama_rekening: "",       // Kolom baru
+    nomor_rekening: "",      // Kolom baru
+    jumlah_penarikan: 0, 
+    operator: "", 
+    status_sppr: "BARU",
   });
   const [operatorName, setOperatorName] = useState("");
   const [userRole, setUserRole] = useState("");
@@ -114,16 +128,16 @@ const Sppr = () => {
     }
   }, []);
 
-  // --- FUNGSI: Ambil Data Rekening Penarikan dengan Sorting (DIUBAH) ---
+  // --- FUNGSI: Ambil Data Rekening Penarikan dengan Sorting ---
   const fetchRekeningOptions = useCallback(async () => {
     try {
-      // Mengambil data_rekening termasuk kolom baru nama_kode_akun_bank
       const { data: rekeningData, error } = await supabase
         .from("data_rekening")
         .select(`
           nomor_rekening,
           kode_akun_bank,
-          nama_kode_akun_bank
+          bank,
+          nama_rekening
         `)
         .eq('status_rekening', 'Aktif')
         .not('kode_akun_bank', 'is', null);
@@ -133,29 +147,32 @@ const Sppr = () => {
         return;
       }
 
-      const formattedOptions: RekeningOption[] = (rekeningData as unknown as RekeningData[]).map((item) => {
+      const formattedOptions: RekeningOption[] = rekeningData.map((item: any) => {
         const kodeAkun = item.kode_akun_bank || '';
-        // Menggunakan nama_kode_akun_bank yang sudah tersimpan
-        const namaAkun = item.nama_kode_akun_bank || 'Akun Tidak Ditemukan'; 
+        const bank = item.bank || 'Bank Tidak Diketahui';
+        const namaRekening = item.nama_rekening || 'Rekening Tidak Diketahui';
+        const nomorRekening = item.nomor_rekening || '000000';
         
-        // Memformat value dan label sesuai permintaan sebelumnya
-        const value = `${namaAkun} - ${item.nomor_rekening}`;
+        // Format value untuk dropdown: "Nama Rekening - Nomor Rekening"
+        const value = `${namaRekening} - ${nomorRekening}`;
+        
         return {
           value: value,
           label: value,
           kodeAkun: kodeAkun,
+          bank: bank,
+          namaRekening: namaRekening,
+          nomorRekening: nomorRekening
         };
       });
       
       // Mengurutkan berdasarkan kodeAkun
       formattedOptions.sort((a, b) => a.kodeAkun.localeCompare(b.kodeAkun));
-
       setRekeningOptions(formattedOptions);
     } catch (e) {
       console.error("Failed to fetch rekening options:", e);
     }
   }, []);
-  // ----------------------------------------------------
 
   const fetchPejabatAndPegawai = useCallback(async () => {
     try {
@@ -211,7 +228,6 @@ const Sppr = () => {
 
   useEffect(() => {
     const initializeData = async () => {
-      // Memastikan fetchRekeningOptions dijalankan
       await Promise.all([getLoggedInUser(), fetchSPPR(), fetchPejabatAndPegawai(), fetchRekeningOptions()]); 
     };
     initializeData();
@@ -260,7 +276,7 @@ const Sppr = () => {
 
     setFormData((prevData) => ({
       ...prevData,
-      tanggal: new Date().toISOString().split('T')[0], // Set tanggal hari ini sebagai default
+      tanggal: new Date().toISOString().split('T')[0],
       nomor_surat: newNomorSurat,
       status_sppr: "BARU",
     }));
@@ -268,6 +284,32 @@ const Sppr = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    
+    // Jika yang berubah adalah rekening_penarikan, isi otomatis 3 kolom baru
+    if (name === "rekening_penarikan") {
+      const selectedRekening = rekeningOptions.find(opt => opt.value === value);
+      
+      if (selectedRekening) {
+        setFormData(prevData => ({
+          ...prevData,
+          rekening_penarikan: value,
+          nama_bank: selectedRekening.bank,
+          nama_rekening: selectedRekening.namaRekening,
+          nomor_rekening: selectedRekening.nomorRekening
+        }));
+      } else {
+        setFormData(prevData => ({
+          ...prevData,
+          rekening_penarikan: value,
+          nama_bank: "",
+          nama_rekening: "",
+          nomor_rekening: ""
+        }));
+      }
+      return;
+    }
+
+    // Untuk input lainnya
     const newFormData = { ...formData, [name]: value };
 
     if (name === "jumlah_penarikan") {
@@ -288,8 +330,6 @@ const Sppr = () => {
       newFormData.nama_bendahara = value;
       newFormData.pangkat_bendahara = selectedBendahara ? `${selectedBendahara.pangkat} ${selectedBendahara.tipe_identitas || ''} ${selectedBendahara.nrp_nip_nir}`.trim() : "";
       newFormData.jabatan_bendahara = selectedBendahara ? selectedBendahara.jabatan : "";
-    } else if (name === "rekening_penarikan") { 
-      newFormData.rekening_penarikan = value;
     }
 
     setFormData(newFormData);
@@ -384,10 +424,25 @@ const Sppr = () => {
     setIsEditing(false);
     setSelectedSppr(null);
     setFormData({
-      id: 0, tanggal: new Date().toISOString().split('T')[0], nomor_surat: "", nama_kpa: "", pangkat_kpa: "", jabatan_kpa: "",
-      nama_bendahara: "", pangkat_bendahara: "", jabatan_bendahara: "", nama_pengambil: "",
-      pangkat_pengambil: "", jabatan_pengambil: "", rekening_penarikan: "", 
-      jumlah_penarikan: 0, operator: operatorName, status_sppr: "BARU",
+      id: 0, 
+      tanggal: new Date().toISOString().split('T')[0], 
+      nomor_surat: "", 
+      nama_kpa: "", 
+      pangkat_kpa: "", 
+      jabatan_kpa: "",
+      nama_bendahara: "", 
+      pangkat_bendahara: "", 
+      jabatan_bendahara: "", 
+      nama_pengambil: "",
+      pangkat_pengambil: "", 
+      jabatan_pengambil: "", 
+      rekening_penarikan: "",
+      nama_bank: "",           // Kolom baru
+      nama_rekening: "",       // Kolom baru
+      nomor_rekening: "",      // Kolom baru
+      jumlah_penarikan: 0, 
+      operator: operatorName, 
+      status_sppr: "BARU",
     });
     setShowModal(false);
   };
@@ -624,10 +679,12 @@ const Sppr = () => {
             <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nama Pengambil</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nama_pengambil}</div></div>
             <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Jabatan Pengambil</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.jabatan_pengambil || "N/A"}</div></div>
             <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Pangkat Pengambil</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.pangkat_pengambil}</div></div>
-             <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Operator</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.operator || "N/A"}</div></div>
+            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Operator</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.operator || "N/A"}</div></div>
             
-            {/* TAMBAHAN: Rekening Penarikan di Detail */}
-            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Rekening</div><div className={pageStyles.detailValueSPPR}>: **{selectedSppr.rekening_penarikan || "N/A"}**</div></div> 
+            {/* TAMBAHAN: 3 Kolom Baru Rekening */}
+            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nama Bank</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nama_bank || "N/A"}</div></div>
+            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nama Rekening</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nama_rekening || "N/A"}</div></div>
+            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nomor Rekening</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nomor_rekening || "N/A"}</div></div>
             
             <div className={pageStyles.detailItemFullSPPR}>
               <div className={pageStyles.detailLabelSPPR}>Jumlah Penarikan</div>
