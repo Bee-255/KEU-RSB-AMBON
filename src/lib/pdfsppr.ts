@@ -21,6 +21,10 @@ interface Sppr {
   pangkat_pengambil: string;
   jumlah_penarikan: number;
   status_sppr: string;
+  // 👇 PERBAIKAN: Menambahkan properti yang hilang di Surat Kuasa
+  nomor_rekening: string;
+  nama_rekening: string;
+  nama_bank: string;
 }
 
 // Fungsi untuk membuat PDF sesuai template
@@ -281,23 +285,26 @@ export const generateSpprPdf = (sppr: Sppr) => {
     y += splitPenjelasanKuasa.length * lineHeight * 1.5;
 
     y += 5;
+    // Baris ini sudah benar karena properti sudah ada di interface Sppr
     doc.text("Nomor Rekening", margin, y, { lineHeightFactor: 1.5 });
     doc.text(":", margin + 40, y, { lineHeightFactor: 1.5 });
-    doc.text("652502151371000;", margin + 42, y, {
+    doc.text(sppr.nomor_rekening + ";", margin + 42, y, {
       lineHeightFactor: 1.5,
     });
 
     y += lineHeight * 1.5;
+    // Baris ini sudah benar karena properti sudah ada di interface Sppr
     doc.text("Atas Nama", margin, y, { lineHeightFactor: 1.5 });
     doc.text(":", margin + 40, y, { lineHeightFactor: 1.5 });
-    doc.text("BPG 061 RUMAH SAKIT BHAYANGKARA;", margin + 42, y, {
+    doc.text(sppr.nama_rekening + ";", margin + 42, y, {
       lineHeightFactor: 1.5,
     });
 
     y += lineHeight * 1.5;
+    // Baris ini sudah benar karena properti sudah ada di interface Sppr
     doc.text("Nama Bank", margin, y, { lineHeightFactor: 1.5 });
     doc.text(":", margin + 40, y, { lineHeightFactor: 1.5 });
-    doc.text("BANK RAKYAT INDONESIA.", margin + 42, y, {
+    doc.text(sppr.nama_bank+ ".", margin + 42, y, {
       lineHeightFactor: 1.5,
     });
 

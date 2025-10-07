@@ -1,55 +1,46 @@
-// src/app/(main)/sppr/page.tsx
+// src/app/pejabatkeuangan/page.tsx
 "use client";
 
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import { supabase } from "@/utils/supabaseClient";
 import Swal from "sweetalert2";
 import { FaPlus, FaEdit, FaRegTrashAlt } from "react-icons/fa";
-import { FiDownload } from "react-icons/fi";
-import { MdDoneAll } from "react-icons/md";
-import { toast, ToastContainer } from "react-toastify";
-import 'react-toastify/dist/ReactToastify.css';
-import Paginasi from '@/components/paginasi';
+
+// ✅ Impor file CSS Modules dengan path alias
 import styles from "@/styles/button.module.css";
 import pageStyles from "@/styles/komponen.module.css";
 import loadingStyles from "@/styles/loading.module.css";
-import { capitalizeWords, formatAngka, parseAngka, toRoman, formatTanggal } from '@/lib/format';
-import { terbilang } from "@/lib/terbilang";
-import { generateSpprPdf } from "@/lib/pdfsppr";
 
-interface SpprType {
-  id: number;
-  tanggal: string;
-  nomor_surat: string;
-  nama_kpa: string;
-  pangkat_kpa: string;
-  jabatan_kpa: string;
-  nama_bendahara: string;
-  pangkat_bendahara: string;
-  jabatan_bendahara: string;
-  nama_pengambil: string;
-  pangkat_pengambil: string;
-  jabatan_pengambil: string;
-  jumlah_penarikan: number;
-  operator: string;
-  status_sppr: string;
-  created_at?: string;
-}
-
-interface PersonType {
+// Interface untuk data
+interface Pegawai {
+  id: string;
   nama: string;
   pangkat: string;
-  tipe_identitas: string | null;
-  nrp_nip_nir: string | null;
-  jabatan: string;
+  nrp_nip_nir: string;
+  jabatan_struktural: string;
+  tipe_identitas: string;
 }
 
-interface ModalProps {
-  children: React.ReactNode;
-  onClose: () => void;
+interface Pejabat {
+  id: string;
+  pegawai_id: string;
+  jabatan_pengelola_keuangan: string;
+  deskripsi_jabatan: string;
+  status: "Aktif" | "Tidak Aktif";
+  created_at: string;
+  pegawai: Pegawai;
 }
 
-const Modal = ({ children, onClose }: ModalProps) => {
+// Tipe untuk state form
+interface FormData {
+  pegawai_id: string;
+  jabatan_pengelola_keuangan: string;
+  deskripsi_jabatan: string;
+  status: "" | "Aktif" | "Tidak Aktif";
+}
+
+// Komponen Modal Pop-up
+const Modal: React.FC<{ children: React.ReactNode; onClose: () => void }> = ({ children, onClose }) => {
   return (
     <div className={pageStyles.modalOverlay} onClick={onClose}>
       <div className={pageStyles.modalContent} onClick={(e) => e.stopPropagation()}>
@@ -59,411 +50,372 @@ const Modal = ({ children, onClose }: ModalProps) => {
   );
 };
 
-const Sppr = () => {
-  const [spprList, setSpprList] = useState<SpprType[]>([]);
-  const [kpaList, setKpaList] = useState<PersonType[]>([]);
-  const [bendaharaList, setBendaharaList] = useState<PersonType[]>([]);
-  const [pengambilList, setPengambilList] = useState<PersonType[]>([]);
-  const [isEditing, setIsEditing] = useState(false);
-  const [selectedSppr, setSelectedSppr] = useState<SpprType | null>(null);
-  const [showModal, setShowModal] = useState(false);
-  const [isTableLoading, setIsTableLoading] = useState<boolean>(true);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [formData, setFormData] = useState<SpprType>({
-    id: 0, tanggal: "", nomor_surat: "", nama_kpa: "", pangkat_kpa: "", jabatan_kpa: "",
-    nama_bendahara: "", pangkat_bendahara: "", jabatan_bendahara: "", nama_pengambil: "",
-    pangkat_pengambil: "", jabatan_pengambil: "", jumlah_penarikan: 0, operator: "", status_sppr: "BARU",
+// Objek untuk memetakan singkatan ke deskripsi
+const jabatanMap: { [key: string]: string } = {
+  KPA: "KUASA PENGGUNA ANGGARAN",
+  PPK: "PEJABAT PEMBUAT KOMITMEN",
+  PPSPM: "PEJABAT PENANDATANGANAN SURAT PERINTAH MEMBAYAR",
+  BPG: "BENDAHARA PENGELUARAN",
+  BPN: "BENDAHARA PENERIMAAN",
+};
+
+// Komponen utama Pejabat Keuangan
+const PejabatKeuangan = () => {
+  const [pejabatList, setPejabatList] = useState<Pejabat[]>([]);
+  const [pegawaiList, setPegawaiList] = useState<Pegawai[]>([]);
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [selectedPejabat, setSelectedPejabat] = useState<Pejabat | null>(null);
+  const [showModal, setShowModal] = useState<boolean>(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // State untuk form input
+  const [formData, setFormData] = useState<FormData>({
+    pegawai_id: "",
+    jabatan_pengelola_keuangan: "",
+    deskripsi_jabatan: "",
+    status: "",
   });
-  const [operatorName, setOperatorName] = useState("");
-  const [userRole, setUserRole] = useState("");
 
-  const fetchSPPR = useCallback(async () => {
-    setIsTableLoading(true);
-    try {
-      const { data, error } = await supabase.from("sppr").select("*").order("created_at", { ascending: false });
-      if (error) {
-        console.error("Gagal mengambil data:", error);
-        Swal.fire("Error", "Gagal mengambil data SPPR.", "error");
-        setSpprList([]);
-        return;
-      } else {
-        setSpprList(data as SpprType[]);
+  const getLoggedInUserRole = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+      if (profile) {
+        setUserRole(profile.role);
       }
-    } catch (e) {
-      console.error("Failed to fetch SPPR data:", e);
-      setSpprList([]);
-    } finally {
-      setIsTableLoading(false);
-    }
-  }, []);
-
-  const fetchPejabatAndPegawai = useCallback(async () => {
-    try {
-      const { data: kpaData } = await supabase
-        .from("pejabat_keuangan")
-        .select("*, pegawai(nama, pangkat, nrp_nip_nir, tipe_identitas, jabatan_struktural)")
-        .eq("jabatan_pengelola_keuangan", "KPA").eq("status", "Aktif");
-      const formattedKpa = kpaData?.map(item => ({
-        nama: item.pegawai.nama, pangkat: item.pegawai.pangkat, tipe_identitas: item.pegawai.tipe_identitas,
-        nrp_nip_nir: item.pegawai.nrp_nip_nir, jabatan: item.pegawai.jabatan_struktural
-      })) || [];
-      setKpaList(formattedKpa as PersonType[]);
-  
-      const { data: bendaharaData } = await supabase
-        .from("pejabat_keuangan")
-        .select("*, pegawai(nama, pangkat, nrp_nip_nir, tipe_identitas, jabatan_struktural)")
-        .eq("jabatan_pengelola_keuangan", "BPG").eq("status", "Aktif");
-      const formattedBendahara = bendaharaData?.map(item => ({
-        nama: item.pegawai.nama, pangkat: item.pegawai.pangkat, tipe_identitas: item.pegawai.tipe_identitas,
-        nrp_nip_nir: item.pegawai.nrp_nip_nir, jabatan: item.pegawai.jabatan_struktural
-      })) || [];
-      setBendaharaList(formattedBendahara as PersonType[]);
-  
-      const { data: pengambilData } = await supabase
-        .from("pegawai")
-        .select("nama, pangkat, nrp_nip_nir, tipe_identitas, jabatan_struktural")
-        .in("jabatan_struktural", ["BANUM KEU", "STAF KEU"]).eq("status", "Aktif");
-      const formattedPengambil = pengambilData?.map(item => ({
-        nama: item.nama, pangkat: item.pangkat, tipe_identitas: item.tipe_identitas,
-        nrp_nip_nir: item.nrp_nip_nir, jabatan: item.jabatan_struktural
-      })) || [];
-      setPengambilList(formattedPengambil as PersonType[]);
-    } catch (e) {
-      console.error("Failed to fetch person data:", e);
-    }
-  }, []);
-
-  const getLoggedInUser = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase
-          .from("profiles").select("nama_lengkap, role").eq("id", user.id).single();
-        if (profile) {
-          setOperatorName(profile.nama_lengkap);
-          setUserRole(profile.role);
-        }
-      }
-    } catch (e) {
-      console.error("Failed to fetch user role:", e);
     }
   };
 
   useEffect(() => {
-    const initializeData = async () => {
-      await Promise.all([getLoggedInUser(), fetchSPPR(), fetchPejabatAndPegawai()]);
-    };
-    initializeData();
-  }, [fetchSPPR, fetchPejabatAndPegawai]);
+    fetchPejabat();
+    fetchPegawai();
+    getLoggedInUserRole();
+  }, []);
 
-  useEffect(() => {
-    if (showModal) {
-      setFormData(prevData => ({ ...prevData, operator: operatorName }));
-    }
-  }, [showModal, operatorName]);
-
-  useEffect(() => {
-    if (showModal && !isEditing) {
-      generateNomorSurat();
-    }
-  }, [showModal, isEditing]);
-
-  const generateNomorSurat = async () => {
-    const today = new Date();
-    const currentYear = today.getFullYear();
-    const currentMonthRoman = toRoman(today.getMonth() + 1);
-
+  const fetchPejabat = async () => {
+    setIsLoading(true);
     const { data, error } = await supabase
-      .from("sppr").select("nomor_surat")
-      .gte("tanggal", `${currentYear}-01-01`).lt("tanggal", `${currentYear + 1}-01-01`)
+      .from("pejabat_keuangan")
+      .select(`
+        *,
+        pegawai (nama, pangkat, nrp_nip_nir, jabatan_struktural, tipe_identitas)
+      `)
       .order("created_at", { ascending: false });
-
-    let lastNumber = 0;
-    if (data && data.length > 0) {
-      const lastSppr = data[0];
-      const parts = lastSppr.nomor_surat.split('/');
-      if (parts.length > 0) {
-        const lastPart = parts[0];
-        const num = parseInt(lastPart, 10);
-        if (!isNaN(num)) lastNumber = num;
-      }
+    
+    if (error) {
+      console.error("Gagal mengambil data pejabat:", error);
+      Swal.fire("Error", "Gagal mengambil data pejabat. Periksa koneksi atau nama tabel.", "error");
+    } else {
+      setPejabatList(data as Pejabat[]);
     }
-    const nextNumber = lastNumber + 1;
-    const formattedNumber = String(nextNumber).padStart(3, "0");
-    const newNomorSurat = `${formattedNumber}/KEU./${currentMonthRoman}/${currentYear}/Rumkit.`;
+    setIsLoading(false);
+  };
 
-    setFormData((prevData) => ({
-      ...prevData,
-      tanggal: "",
-      nomor_surat: newNomorSurat,
-      status_sppr: "BARU",
-    }));
+  const fetchPegawai = async () => {
+    const { data, error } = await supabase.from("pegawai").select("id, nama, pangkat, nrp_nip_nir, jabatan_struktural, tipe_identitas");
+    if (error) {
+      console.error("Gagal mengambil data pegawai:", error);
+      Swal.fire("Error", "Gagal mengambil data pegawai. Periksa koneksi atau nama tabel.", "error");
+    } else {
+      setPegawaiList(data as Pegawai[]);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    const newFormData = { ...formData, [name]: value };
+    setFormData({ ...formData, [name]: value });
+  };
 
-    if (name === "jumlah_penarikan") {
-      const sanitizedValue = parseAngka(value);
-      newFormData.jumlah_penarikan = sanitizedValue;
-    } else if (name === "nama_pengambil") {
-      const selectedPengambil = pengambilList.find(p => p.nama === value);
-      newFormData.nama_pengambil = value;
-      newFormData.pangkat_pengambil = selectedPengambil ? `${selectedPengambil.pangkat} ${selectedPengambil.tipe_identitas || ''} ${selectedPengambil.nrp_nip_nir}`.trim() : "";
-      newFormData.jabatan_pengambil = selectedPengambil ? selectedPengambil.jabatan : "";
-    } else if (name === "nama_kpa") {
-      const selectedKpa = kpaList.find(p => p.nama === value);
-      newFormData.nama_kpa = value;
-      newFormData.pangkat_kpa = selectedKpa ? `${selectedKpa.pangkat} ${selectedKpa.tipe_identitas || ''} ${selectedKpa.nrp_nip_nir}`.trim() : "";
-      newFormData.jabatan_kpa = selectedKpa ? selectedKpa.jabatan : "";
-    } else if (name === "nama_bendahara") {
-      const selectedBendahara = bendaharaList.find(p => p.nama === value);
-      newFormData.nama_bendahara = value;
-      newFormData.pangkat_bendahara = selectedBendahara ? `${selectedBendahara.pangkat} ${selectedBendahara.tipe_identitas || ''} ${selectedBendahara.nrp_nip_nir}`.trim() : "";
-      newFormData.jabatan_bendahara = selectedBendahara ? selectedBendahara.jabatan : "";
+  const handlePegawaiChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedId = e.target.value;
+    const selectedPegawai = pegawaiList.find(p => p.id === selectedId);
+
+    if (selectedPegawai) {
+      setFormData({
+        ...formData,
+        pegawai_id: selectedId,
+      });
+    } else {
+      setFormData({
+        ...formData,
+        pegawai_id: "",
+      });
     }
+  };
 
-    setFormData(newFormData);
+  const handleJabatanChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    const deskripsi = jabatanMap[value] || "";
+    setFormData({
+      ...formData,
+      jabatan_pengelola_keuangan: value,
+      deskripsi_jabatan: deskripsi,
+    });
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    const dataToSave = { ...formData, operator: operatorName };
 
     if (isEditing) {
-      const { error } = await supabase.from("sppr").update(dataToSave).eq("id", selectedSppr?.id);
+      const { error } = await supabase
+        .from("pejabat_keuangan")
+        .update({
+          pegawai_id: formData.pegawai_id,
+          jabatan_pengelola_keuangan: formData.jabatan_pengelola_keuangan,
+          deskripsi_jabatan: formData.deskripsi_jabatan,
+          status: formData.status,
+        })
+        .eq("id", selectedPejabat!.id);
+
       if (error) {
         Swal.fire("Gagal!", `Data gagal diupdate: ${error.message}`, "error");
+        console.error("Error updating data:", error);
       } else {
         Swal.fire("Berhasil!", "Data berhasil diupdate.", "success");
-        fetchSPPR();
+        fetchPejabat();
         resetForm();
       }
     } else {
-      const { error } = await supabase.from("sppr").insert([dataToSave]);
+      const { error } = await supabase.from("pejabat_keuangan").insert([
+        {
+          pegawai_id: formData.pegawai_id,
+          jabatan_pengelola_keuangan: formData.jabatan_pengelola_keuangan,
+          deskripsi_jabatan: formData.deskripsi_jabatan,
+          status: formData.status,
+        },
+      ]);
+
       if (error) {
         Swal.fire("Gagal!", `Data gagal disimpan: ${error.message}`, "error");
+        console.error("Error inserting data:", error);
       } else {
         Swal.fire("Berhasil!", "Data berhasil disimpan.", "success");
-        fetchSPPR();
+        fetchPejabat();
         resetForm();
       }
     }
   };
 
   const handleDelete = async () => {
-    if (!selectedSppr) return;
+    if (!selectedPejabat) return;
+
     const result = await Swal.fire({
-      title: "Apakah Anda yakin?", text: `Anda akan menghapus data SPPR dengan nomor surat ${selectedSppr.nomor_surat}`,
-      icon: "warning", showCancelButton: true, confirmButtonColor: "#dc2626", cancelButtonColor: "#6b7280",
-      confirmButtonText: "Ya, hapus!", cancelButtonText: "Batal",
+      title: "Apakah Anda yakin?",
+      text: `Anda akan menghapus data pejabat ${selectedPejabat.pegawai.nama}`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Ya, hapus!",
+      cancelButtonText: "Batal",
     });
+
     if (result.isConfirmed) {
-      const { error } = await supabase.from("sppr").delete().eq("id", selectedSppr.id);
+      const { error } = await supabase.from("pejabat_keuangan").delete().eq("id", selectedPejabat.id);
       if (error) {
         Swal.fire("Gagal!", "Data gagal dihapus. Coba lagi.", "error");
+        console.error("Error deleting data:", error);
       } else {
         Swal.fire("Dihapus!", "Data berhasil dihapus.", "success");
-        setSelectedSppr(null);
-        fetchSPPR();
+        setSelectedPejabat(null);
+        fetchPejabat();
       }
       resetForm();
     }
   };
 
   const handleEdit = () => {
-    if (!selectedSppr) return;
+    if (!selectedPejabat) return;
     setIsEditing(true);
-    setFormData(selectedSppr);
-    setShowModal(true);
-  };
-
-  const handleApprove = async () => {
-    if (!selectedSppr || selectedSppr.status_sppr !== 'BARU') return;
-    const result = await Swal.fire({
-      title: 'Apakah Anda yakin?', text: `Anda akan menyetujui data SPPR Nomor Surat: ${selectedSppr.nomor_surat}`,
-      icon: 'question', showCancelButton: true, confirmButtonColor: '#10B981', cancelButtonColor: '#6b7280',
-      confirmButtonText: 'Ya, Setujui', cancelButtonText: 'Batal'
+    setFormData({
+      pegawai_id: selectedPejabat.pegawai_id,
+      jabatan_pengelola_keuangan: selectedPejabat.jabatan_pengelola_keuangan,
+      deskripsi_jabatan: jabatanMap[selectedPejabat.jabatan_pengelola_keuangan] || "",
+      status: selectedPejabat.status,
     });
-    if (result.isConfirmed) {
-      const { error } = await supabase.from('sppr').update({ status_sppr: 'DISETUJUI' }).eq('id', selectedSppr.id);
-      if (error) {
-        Swal.fire('Gagal!', `Gagal menyetujui data: ${error.message}`, 'error');
-      } else {
-        toast.success("SPPR Berhasil Disetujui!", { position: "top-right", autoClose: 3000 });
-        fetchSPPR();
-        setSelectedSppr({ ...selectedSppr, status_sppr: 'DISETUJUI' });
-      }
-    }
-  };
-
-  const handleDownload = () => {
-    if (selectedSppr) {
-      generateSpprPdf(selectedSppr);
-    } else {
-      Swal.fire("Peringatan", "Pilih data SPPR yang akan diunduh.", "warning");
-    }
+    setShowModal(true);
   };
 
   const resetForm = () => {
     setIsEditing(false);
-    setSelectedSppr(null);
+    setSelectedPejabat(null);
     setFormData({
-      id: 0, tanggal: "", nomor_surat: "", nama_kpa: "", pangkat_kpa: "", jabatan_kpa: "",
-      nama_bendahara: "", pangkat_bendahara: "", jabatan_bendahara: "", nama_pengambil: "",
-      pangkat_pengambil: "", jabatan_pengambil: "", jumlah_penarikan: 0, operator: operatorName, status_sppr: "BARU",
+      pegawai_id: "",
+      jabatan_pengelola_keuangan: "",
+      deskripsi_jabatan: "",
+      status: "",
     });
     setShowModal(false);
   };
 
-  const handleRowClick = (sppr: SpprType) => {
-    if (selectedSppr?.id === sppr.id) {
-      setSelectedSppr(null);
+  const handleRowClick = (pejabat: Pejabat) => {
+    if (selectedPejabat?.id === pejabat.id) {
+      setSelectedPejabat(null);
     } else {
-      setSelectedSppr(sppr);
+      setSelectedPejabat(pejabat);
     }
   };
 
-  const handlePageChange = (pageNumber: number) => {
-    setCurrentPage(pageNumber);
-    setSelectedSppr(null);
-  };
-
-  const handleRowsPerPageChange = (rowsPerPage: number) => {
-    setRowsPerPage(rowsPerPage);
-    setCurrentPage(1);
-    setSelectedSppr(null);
-  };
-
-  const totalPages = Math.ceil(spprList.length / rowsPerPage);
-  const startIndex = (currentPage - 1) * rowsPerPage;
-  const endIndex = startIndex + rowsPerPage;
-  const paginatedSppr = useMemo(() => spprList.slice(startIndex, endIndex), [spprList, startIndex, endIndex]);
-
-  const isAllowedToRekam = userRole === "Owner" || userRole === "Operator";
-  const isAllowedToEditOrDelete = userRole === "Owner" || userRole === "Admin" || userRole === "Operator";
-  const isAllowedToApprove = userRole === "Owner" || userRole === "Admin";
-  const isAllowedToDownload = userRole === "Owner" || userRole === "Admin" || userRole === "Operator";
-
-  const isEditingOrDeletingDisabled = !isAllowedToEditOrDelete || !selectedSppr || selectedSppr?.status_sppr === "DISETUJUI";
-  const isApprovingDisabled = !isAllowedToApprove || !selectedSppr || selectedSppr?.status_sppr === "DISETUJUI";
-  const isDownloadingDisabled = !isAllowedToDownload || !selectedSppr;
+  const isAllowedToEditOrDelete = userRole === "Owner" || userRole === "Admin";
 
   return (
     <div className={pageStyles.container}>
-      <ToastContainer />
-      <h2 className={pageStyles.header}>Data Surat Perintah Pendebitan Rekening</h2>
+      <h2 className={pageStyles.header}>Data Pejabat Keuangan</h2>
+
       <div className={pageStyles.buttonContainer}>
-        <button onClick={() => { resetForm(); fetchPejabatAndPegawai(); setShowModal(true); }} disabled={!isAllowedToRekam} className={styles.rekamButton}>
-          <FaPlus/> Rekam
+        <button
+          onClick={() => {
+            resetForm();
+            setShowModal(true);
+          }}
+          disabled={!isAllowedToEditOrDelete}
+          className={styles.rekamButton}
+        >
+          <FaPlus /> Rekam
         </button>
-        <button onClick={handleEdit} disabled={isEditingOrDeletingDisabled} className={styles.editButton}>
+        <button
+          onClick={handleEdit}
+          disabled={!selectedPejabat || !isAllowedToEditOrDelete}
+          className={styles.editButton}
+        >
           <FaEdit /> Edit
         </button>
-        <button onClick={handleDelete} disabled={isEditingOrDeletingDisabled} className={styles.hapusButton}>
+        <button
+          onClick={handleDelete}
+          disabled={!selectedPejabat || !isAllowedToEditOrDelete}
+          className={styles.hapusButton}
+        >
           <FaRegTrashAlt /> Hapus
-        </button>
-        <button onClick={handleApprove} disabled={isApprovingDisabled} className={styles.rekamButton}>
-          <MdDoneAll size={16}/> Setujui
-        </button>
-        <button onClick={handleDownload} disabled={isDownloadingDisabled} className={styles.downloadButton}>
-          <FiDownload size={14} strokeWidth={3}/> Download PDF
         </button>
       </div>
 
       {showModal && (
         <Modal onClose={resetForm}>
           <form onSubmit={handleSave}>
-            <h3 style={{ marginTop: 0 }}>{isEditing ? "Edit Data SPPR" : "Rekam Data SPPR"}</h3>
-            <hr style={{ border: "0", height: "1px", backgroundColor: "#e5e7eb", margin: "20px 0" }} />
-            
-            <div className={pageStyles.modalForm}>
-              <div className={pageStyles.formGroup}>
-                <label className={pageStyles.formLabel}>Tanggal:</label>
-                <input type="date" name="tanggal" value={formData.tanggal} onChange={handleInputChange} required className={pageStyles.formInput} />
-              </div>
-              <div className={pageStyles.formGroup}>
-                <label className={pageStyles.formLabel}>Nomor Surat:</label>
-                <input type="text" name="nomor_surat" value={formData.nomor_surat} readOnly onChange={handleInputChange} required className={`${pageStyles.formInput} ${pageStyles.readOnly}`} />
-              </div>
-            </div>
+            <h3 style={{ marginTop: 0 }}>{isEditing ? "Edit Data Pejabat" : "Tambah Pejabat Baru"}</h3>
 
-            <hr style={{ border: "0", height: "1px", backgroundColor: "#e5e7eb", margin: "20px 0" }} />
-            
             <div className={pageStyles.modalForm}>
               <div className={pageStyles.formGroup}>
-                <label className={pageStyles.formLabel}>Nama KPA:</label>
-                <select name="nama_kpa" value={formData.nama_kpa} onChange={handleInputChange} required className={pageStyles.formSelect}>
-                  <option value="">-- Pilih KPA --</option>
-                  {kpaList.map((kpa, index) => (<option key={index} value={kpa.nama}>{kpa.nama}</option>))}
+                <label className={pageStyles.formLabel}>Nama:</label>
+                <select
+                  name="pegawai_id"
+                  value={formData.pegawai_id}
+                  onChange={handlePegawaiChange}
+                  required
+                  className={pageStyles.formSelect}
+                >
+                  <option value="">-- Pilih Nama Pegawai --</option>
+                  {pegawaiList.map((pegawai) => (
+                    <option key={pegawai.id} value={pegawai.id}>
+                      {pegawai.nama}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className={pageStyles.formGroup}>
-                <label className={pageStyles.formLabel}>Pangkat KPA:</label>
-                <input type="text" name="pangkat_kpa" value={formData.pangkat_kpa} readOnly className={`${pageStyles.formInput} ${pageStyles.readOnly}`} />
+                <label className={pageStyles.formLabel}>Pangkat:</label>
+                <input
+                  type="text"
+                  name="pangkat"
+                  value={pegawaiList.find(p => p.id === formData.pegawai_id)?.pangkat || ""}
+                  readOnly
+                  className={`${pageStyles.formInput} ${pageStyles.readOnly}`}
+                />
               </div>
-            </div>
-
-            <hr style={{ border: "0", height: "1px", backgroundColor: "#e5e7eb", margin: "20px 0" }} />
-            
-            <div className={pageStyles.modalForm}>
               <div className={pageStyles.formGroup}>
-                <label className={pageStyles.formLabel}>Nama Bendahara:</label>
-                <select name="nama_bendahara" value={formData.nama_bendahara} onChange={handleInputChange} required className={pageStyles.formSelect}>
-                  <option value="">-- Pilih Bendahara --</option>
-                  {bendaharaList.map((bendahara, index) => (<option key={index} value={bendahara.nama}>{bendahara.nama}</option>))}
+                <label className={pageStyles.formLabel}>Tipe NRP/NIP:</label>
+                <input
+                  type="text"
+                  name="tipe_nrp_nip"
+                  value={pegawaiList.find(p => p.id === formData.pegawai_id)?.tipe_identitas || ""}
+                  readOnly
+                  className={`${pageStyles.formInput} ${pageStyles.readOnly}`}
+                />
+              </div>
+              <div className={pageStyles.formGroup}>
+                <label className={pageStyles.formLabel}>NRP/NIP:</label>
+                <input
+                  type="text"
+                  name="nrp_nip"
+                  value={pegawaiList.find(p => p.id === formData.pegawai_id)?.nrp_nip_nir || ""}
+                  readOnly
+                  className={`${pageStyles.formInput} ${pageStyles.readOnly}`}
+                />
+              </div>
+              <div className={pageStyles.formGroup}>
+                <label className={pageStyles.formLabel}>Jabatan Struktural:</label>
+                <input
+                  type="text"
+                  name="jabatan_struktural"
+                  value={pegawaiList.find(p => p.id === formData.pegawai_id)?.jabatan_struktural || ""}
+                  readOnly
+                  className={`${pageStyles.formInput} ${pageStyles.readOnly}`}
+                />
+              </div>
+              <div className={pageStyles.formGroup}>
+                <label className={pageStyles.formLabel}>Jabatan Pengelola Keuangan:</label>
+                <select
+                  name="jabatan_pengelola_keuangan"
+                  value={formData.jabatan_pengelola_keuangan}
+                  onChange={handleJabatanChange}
+                  required
+                  className={pageStyles.formSelect}
+                >
+                  <option value="">-- Pilih Jabatan --</option>
+                  {Object.keys(jabatanMap).map((key) => (
+                    <option key={key} value={key}>
+                      {key}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className={pageStyles.formGroup}>
-                <label className={pageStyles.formLabel}>Pangkat Bendahara:</label>
-                <input type="text" name="pangkat_bendahara" value={formData.pangkat_bendahara} readOnly className={`${pageStyles.formInput} ${pageStyles.readOnly}`} />
+                <label className={pageStyles.formLabel}>Deskripsi Jabatan:</label>
+                <input
+                  type="text"
+                  name="deskripsi_jabatan"
+                  value={formData.deskripsi_jabatan}
+                  readOnly
+                  className={`${pageStyles.formInput} ${pageStyles.readOnly}`}
+                />
               </div>
-            </div>
-
-            <hr style={{ border: "0", height: "1px", backgroundColor: "#e5e7eb", margin: "20px 0" }} />
-            
-            <div className={pageStyles.modalForm}>
               <div className={pageStyles.formGroup}>
-                <label className={pageStyles.formLabel}>Nama Pengambil:</label>
-                <select name="nama_pengambil" value={formData.nama_pengambil} onChange={handleInputChange} required className={pageStyles.formSelect}>
-                  <option value="">-- Pilih Pengambil --</option>
-                  {pengambilList.map((pengambil, index) => (<option key={index} value={pengambil.nama}>{pengambil.nama}</option>))}
+                <label className={pageStyles.formLabel}>Status:</label>
+                <select
+                  name="status"
+                  value={formData.status}
+                  onChange={handleInputChange}
+                  required
+                  className={pageStyles.formSelect}
+                >
+                  <option value="">-- Pilih Status --</option>
+                  <option>Aktif</option>
+                  <option>Tidak Aktif</option>
                 </select>
-              </div>
-              <div className={pageStyles.formGroup}>
-                <label className={pageStyles.formLabel}>Pangkat Pengambil:</label>
-                <input type="text" name="pangkat_pengambil" value={formData.pangkat_pengambil} readOnly className={`${pageStyles.formInput} ${pageStyles.readOnly}`} />
-              </div>
-            </div>
-
-            <hr style={{ border: "0", height: "1px", backgroundColor: "#e5e7eb", margin: "20px 0" }} />
-            
-            <div className={pageStyles.modalForm}>
-              <div className={pageStyles.formGroupFull}>
-                <div className={pageStyles.formGroupNested}>
-                  <label className={pageStyles.formLabel}>Jumlah Penarikan (Rp):</label>
-                  <input type="text" name="jumlah_penarikan" value={formatAngka(formData.jumlah_penarikan)} onChange={handleInputChange} className={pageStyles.formInput} />
-                </div>
-                <div className={pageStyles.formGroupNested}>
-                  <label className={pageStyles.formLabel}>Terbilang:</label>
-                  <div className={pageStyles.formReadOnly}>{capitalizeWords(terbilang(parseInt(formData.jumlah_penarikan.toString()) || 0))} Rupiah</div>
-                </div>
               </div>
             </div>
 
             <div className={pageStyles.formActions}>
-              <button type="button" onClick={resetForm} className={pageStyles.formCancel}>Batal</button>
-              <button type="submit" className={styles.rekamButton}>{isEditing ? "Update" : "Simpan"}</button>
+              <button type="button" onClick={resetForm} className={pageStyles.formCancel}>
+                Batal
+              </button>
+              <button type="submit" className={styles.rekamButton}>
+                {isEditing ? "Update" : "Simpan"}
+              </button>
             </div>
           </form>
         </Modal>
       )}
 
+      {/* Table Section dengan Loading Overlay */}
       <div className={pageStyles.tableContainer}>
         <div className={pageStyles.tableWrapper}>
-          {isTableLoading && (
+          {isLoading && (
             <div className={pageStyles.tableOverlay}>
               <div className={loadingStyles.dotContainer}>
                 <div className={`${loadingStyles.dot} ${loadingStyles['dot-1']}`} />
@@ -475,63 +427,86 @@ const Sppr = () => {
           <table className={pageStyles.table}>
             <thead className={pageStyles.tableHead}>
               <tr>
-                <th style={{ width: "5%" }}>No.</th>
-                <th style={{ width: "10%" }}>Tanggal</th>
-                <th style={{ width: "20%" }}>Nomor Surat</th>
-                <th style={{ width: "25%" }}>Operator</th>
-                <th style={{ width: "10%" }}>Jumlah Penarikan</th>
-                <th style={{ width: "10%" }}>Status</th>
+                <th>No.</th>
+                <th>Nama</th>
+                <th>Pangkat</th>
+                <th>NRP/NIP</th>
+                <th>Jabatan Pengelola Keuangan</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody className={pageStyles.tableBody}>
-              {paginatedSppr.length > 0 ? (
-                paginatedSppr.map((sppr, index) => (
-                  <tr key={sppr.id} onClick={() => handleRowClick(sppr)} className={`${pageStyles.tableRow} ${selectedSppr?.id === sppr.id ? pageStyles.selected : ""}`}>
-                    <td>{startIndex + index + 1}</td>
-                    <td>{formatTanggal(sppr.tanggal)}</td>
-                    <td>{sppr.nomor_surat}</td>
-                    <td>{sppr.operator}</td>
-                    <td>{formatAngka(sppr.jumlah_penarikan)}</td>
-                    <td>{sppr.status_sppr}</td>
+              {pejabatList.length > 0 ? (
+                pejabatList.map((pejabat, index) => (
+                  <tr
+                    key={pejabat.id}
+                    onClick={() => handleRowClick(pejabat)}
+                    className={`${pageStyles.tableRow} ${selectedPejabat?.id === pejabat.id ? pageStyles.selected : ""}`}
+                  >
+                    <td>{index + 1}</td>
+                    <td>{pejabat.pegawai.nama}</td>
+                    <td>{pejabat.pegawai.pangkat}</td>
+                    <td>{pejabat.pegawai.nrp_nip_nir}</td>
+                    <td>{pejabat.jabatan_pengelola_keuangan}</td>
+                    <td>{pejabat.status}</td>
                   </tr>
                 ))
               ) : (
-                <tr><td colSpan={6} className={pageStyles.tableEmpty}>Tidak ada data SPPR yang ditemukan.</td></tr>
+                <tr>
+                  <td colSpan={6} className={pageStyles.tableEmpty}>
+                    {isLoading ? "" : "Tidak ada data pejabat yang ditemukan."}
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>
         </div>
       </div>
 
-      <Paginasi currentPage={currentPage} totalPages={totalPages} totalItems={spprList.length} itemsPerPage={rowsPerPage} onPageChange={handlePageChange} onItemsPerPageChange={handleRowsPerPageChange} />
-
-      <div className={pageStyles.detailContainerSPPR}>
-        <div className={pageStyles.detailHeaderSPPR}>Detail Data SPPR</div>
-        {selectedSppr ? (
-          <div className={pageStyles.detailContentSPPR}>
-            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Tanggal</div><div className={pageStyles.detailValueSPPR}>: {formatTanggal(selectedSppr.tanggal)}</div></div>
-            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nomor Surat</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nomor_surat}</div></div>
-            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Operator</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.operator || "N/A"}</div></div>
-            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nama KPA</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nama_kpa}</div></div>
-            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Jabatan KPA</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.jabatan_kpa || "N/A"}</div></div>
-            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Pangkat KPA</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.pangkat_kpa}</div></div>
-            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nama Bendahara</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nama_bendahara}</div></div>
-            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Jabatan Bendahara</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.jabatan_bendahara || "N/A"}</div></div>
-            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Pangkat Bendahara</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.pangkat_bendahara}</div></div>
-            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nama Pengambil</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nama_pengambil}</div></div>
-            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Jabatan Pengambil</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.jabatan_pengambil || "N/A"}</div></div>
-            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Pangkat Pengambil</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.pangkat_pengambil}</div></div>
-            <div className={pageStyles.detailItemFullSPPR}>
-              <div className={pageStyles.detailLabelSPPR}>Jumlah Penarikan</div>
-              <div className={pageStyles.detailValueSPPR}>: {formatAngka(selectedSppr.jumlah_penarikan)} ({capitalizeWords(terbilang(selectedSppr.jumlah_penarikan))} Rupiah)</div>
+      {/* Detail Data Pejabat yang Dipilih */}
+      <div className={pageStyles.detailContainer}>
+        <div className={pageStyles.detailHeader}>Detail Data Pejabat Keuangan</div>
+        {selectedPejabat ? (
+          <div className={pageStyles.detailContent}>
+            <div className={pageStyles.detailItem}>
+              <div className={pageStyles.detailLabel}>Nama</div>
+              <div className={pageStyles.detailValue}>: {selectedPejabat.pegawai.nama}</div>
+            </div>
+            <div className={pageStyles.detailItem}>
+              <div className={pageStyles.detailLabel}>Pangkat</div>
+              <div className={pageStyles.detailValue}>: {selectedPejabat.pegawai.pangkat}</div>
+            </div>
+            <div className={pageStyles.detailItem}>
+              <div className={pageStyles.detailLabel}>Tipe NRP/NIP</div>
+              <div className={pageStyles.detailValue}>: {selectedPejabat.pegawai.tipe_identitas}</div>
+            </div>
+            <div className={pageStyles.detailItem}>
+              <div className={pageStyles.detailLabel}>NRP/NIP</div>
+              <div className={pageStyles.detailValue}>: {selectedPejabat.pegawai.nrp_nip_nir}</div>
+            </div>
+            <div className={pageStyles.detailItem}>
+              <div className={pageStyles.detailLabel}>Jabatan Struktural</div>
+              <div className={pageStyles.detailValue}>: {selectedPejabat.pegawai.jabatan_struktural}</div>
+            </div>
+            <div className={pageStyles.detailItem}>
+              <div className={pageStyles.detailLabel}>Jabatan Pengelola Keuangan</div>
+              <div className={pageStyles.detailValue}>: {selectedPejabat.jabatan_pengelola_keuangan}</div>
+            </div>
+            <div className={pageStyles.detailItem}>
+              <div className={pageStyles.detailLabel}>Deskripsi Jabatan</div>
+              <div className={pageStyles.detailValue}>: {jabatanMap[selectedPejabat.jabatan_pengelola_keuangan] || ""}</div>
+            </div>
+            <div className={pageStyles.detailItem}>
+              <div className={pageStyles.detailLabel}>Status</div>
+              <div className={pageStyles.detailValue}>: {selectedPejabat.status}</div>
             </div>
           </div>
         ) : (
-          <div className={pageStyles.tableEmpty}>Data SPPR Belum Dipilih</div>
+          <div className={pageStyles.tableEmpty}>Data Pejabat Keuangan Belum Dipilih</div>
         )}
       </div>
     </div>
   );
 };
 
-export default Sppr;
+export default PejabatKeuangan;
