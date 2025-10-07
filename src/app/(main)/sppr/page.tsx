@@ -7,8 +7,7 @@ import Swal from "sweetalert2";
 import { FaPlus, FaEdit, FaRegTrashAlt } from "react-icons/fa";
 import { FiDownload } from "react-icons/fi";
 import { MdDoneAll } from "react-icons/md";
-import { toast, ToastContainer } from "react-toastify";
-import 'react-toastify/dist/ReactToastify.css';
+import { Toaster, toast } from "react-hot-toast";
 import Paginasi from '@/components/paginasi';
 import styles from "@/styles/button.module.css";
 import pageStyles from "@/styles/komponen.module.css";
@@ -16,6 +15,7 @@ import loadingStyles from "@/styles/loading.module.css";
 import { capitalizeWords, formatAngka, parseAngka, toRoman, formatTanggal } from '@/lib/format';
 import { terbilang } from "@/lib/terbilang";
 import { generateSpprPdf } from "@/lib/pdfsppr";
+import { BiAlignLeft } from "react-icons/bi";
 
 // Interface untuk data mentah dari Supabase (data_rekening)
 interface RawRekeningData {
@@ -107,6 +107,7 @@ const Sppr = () => {
   const [selectedSppr, setSelectedSppr] = useState<SpprType | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [isTableLoading, setIsTableLoading] = useState<boolean>(true);
+  const [isApproving, setIsApproving] = useState<boolean>(false); // State baru untuk loading approval
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [formData, setFormData] = useState<SpprType>({
@@ -430,18 +431,34 @@ const Sppr = () => {
 
   const handleApprove = async () => {
     if (!selectedSppr || selectedSppr.status_sppr !== 'BARU') return;
+    
     const result = await Swal.fire({
-      title: 'Apakah Anda yakin?', text: `Anda akan menyetujui data SPPR Nomor Surat: ${selectedSppr.nomor_surat}`,
-      icon: 'question', showCancelButton: true, confirmButtonColor: '#10B981', cancelButtonColor: '#6b7280',
-      confirmButtonText: 'Ya, Setujui', cancelButtonText: 'Batal'
+      title: 'Apakah Anda yakin?', 
+      text: `Anda akan menyetujui data SPPR Nomor Surat: ${selectedSppr.nomor_surat}`,
+      icon: 'question', 
+      showCancelButton: true, 
+      confirmButtonColor: '#10B981', 
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Ya, Setujui', 
+      cancelButtonText: 'Batal'
     });
+
     if (result.isConfirmed) {
+      setIsApproving(true); // Mulai loading approval
+      
       const { error } = await supabase.from('sppr').update({ status_sppr: 'DISETUJUI' }).eq('id', selectedSppr.id);
+      
       if (error) {
         Swal.fire('Gagal!', `Gagal menyetujui data: ${error.message}`, 'error');
+        setIsApproving(false); // Hentikan loading jika gagal
       } else {
-        toast.success("SPPR Berhasil Disetujui!", { position: "top-right", autoClose: 3000 });
-        fetchSPPR();
+        // Tampilkan toast dan refresh data
+        toast.success("SPPR Berhasil Disetujui!");
+        
+        // Refresh data setelah toast muncul
+        await fetchSPPR();
+        setIsApproving(false); // Hentikan loading setelah data ter-refresh
+        
         setSelectedSppr({ ...selectedSppr, status_sppr: 'DISETUJUI' });
       }
     }
@@ -517,7 +534,26 @@ const Sppr = () => {
 
   return (
     <div className={pageStyles.container}>
-      <ToastContainer />
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+            fontSize: '14px',
+            marginTop: '50px',
+            zIndex: 9999,
+          },
+          success: {
+            duration: 3000,
+            iconTheme: {
+              primary: '#10B981',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
       <h2 className={pageStyles.header}>Data Surat Perintah Pendebitan Rekening</h2>
       
       {/* Tombol Aksi */}
@@ -656,7 +692,8 @@ const Sppr = () => {
       {/* Tabel Data SPPR */}
       <div className={pageStyles.tableContainer}>
         <div className={pageStyles.tableWrapper}>
-          {isTableLoading && (
+          {/* Tampilkan loading baik saat initial load maupun saat approval */}
+          {(isTableLoading || isApproving) && (
             <div className={pageStyles.tableOverlay}>
               <div className={loadingStyles.dotContainer}>
                 <div className={`${loadingStyles.dot} ${loadingStyles['dot-1']}`} />
@@ -672,7 +709,7 @@ const Sppr = () => {
                 <th style={{ width: "10%" }}>Tanggal</th>
                 <th style={{ width: "20%" }}>Nomor Surat</th>
                 <th style={{ width: "25%" }}>Operator</th>
-                <th style={{ width: "10%" }}>Jumlah Penarikan</th>
+                <th style={{ width: "10%", textAlign: "right"}}>Jumlah Penarikan</th>
                 <th style={{ width: "10%" }}>Status</th>
               </tr>
             </thead>
@@ -684,12 +721,16 @@ const Sppr = () => {
                     <td>{formatTanggal(sppr.tanggal)}</td>
                     <td>{sppr.nomor_surat}</td>
                     <td>{sppr.operator}</td>
-                    <td>{formatAngka(sppr.jumlah_penarikan)}</td>
+                    <td style={{ textAlign: "right" }}>{formatAngka(sppr.jumlah_penarikan)}</td>
                     <td>{sppr.status_sppr}</td>
                   </tr>
                 ))
               ) : (
-                <tr><td colSpan={6} className={pageStyles.tableEmpty}>Tidak ada data SPPR yang ditemukan.</td></tr>
+                <tr>
+                  <td colSpan={6} className={pageStyles.tableEmpty}>
+                    {(isTableLoading || isApproving) ? "" : "Tidak ada data SPPR yang ditemukan."}
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>
