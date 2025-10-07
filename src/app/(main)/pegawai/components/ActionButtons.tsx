@@ -1,10 +1,11 @@
 import React from 'react';
-import { PegawaiData } from '../types';
-import pageStyles from "@/styles/komponen.module.css";
+import { FaPlus, FaEdit, FaRegTrashAlt } from "react-icons/fa";
+import styles from "@/styles/button.module.css";
+import { PegawaiData } from '../types'; // Import tipe PegawaiData
 
 interface ActionButtonsProps {
   isAllowedToEditOrDelete: boolean;
-  selectedPegawai: PegawaiData | null;
+  selectedPegawai: PegawaiData | null; // Ganti any dengan PegawaiData | null
   onAdd: () => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -18,34 +19,30 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
   onDelete
 }) => {
   return (
-    <div className={pageStyles.actionButtons}>
-      {isAllowedToEditOrDelete && (
-        <>
-          <button 
-            className={pageStyles.addButton} 
-            onClick={onAdd}
-          >
-            Tambah Pegawai
-          </button>
-          
-          <button 
-            className={pageStyles.editButton} 
-            onClick={onEdit}
-            disabled={!selectedPegawai}
-          >
-            Edit
-          </button>
-          
-          <button 
-            className={pageStyles.deleteButton} 
-            onClick={onDelete}
-            disabled={!selectedPegawai}
-          >
-            Hapus
-          </button>
-        </>
-      )}
-    </div>
+    <>
+      <button
+        onClick={onAdd}
+        disabled={!isAllowedToEditOrDelete}
+        className={styles.rekamButton}
+      >
+        <FaPlus /> Rekam
+      </button>
+      
+      <button
+        onClick={onEdit}
+        disabled={!selectedPegawai || !isAllowedToEditOrDelete}
+        className={styles.editButton}
+      >
+        <FaEdit /> Edit
+      </button>
+      <button
+        onClick={onDelete}
+        disabled={!selectedPegawai || !isAllowedToEditOrDelete}
+        className={styles.hapusButton}
+      >
+        <FaRegTrashAlt /> Hapus
+      </button>
+    </>
   );
 };
 

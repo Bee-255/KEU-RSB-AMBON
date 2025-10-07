@@ -5,7 +5,6 @@ import { supabase } from "@/utils/supabaseClient";
 import Swal from "sweetalert2";
 import Paginasi from '@/components/paginasi';
 import pageStyles from "@/styles/komponen.module.css";
-import loadingStyles from "@/styles/loading.module.css";
 
 // Import types, constants, dan components
 import { FormPegawaiData, PegawaiData } from './types';
