@@ -5,6 +5,7 @@ import { supabase } from "@/utils/supabaseClient";
 import Swal from "sweetalert2";
 import Paginasi from '@/components/paginasi';
 import pageStyles from "@/styles/komponen.module.css";
+import loadingStyles from "@/styles/loading.module.css";
 
 // Import types, constants, dan components
 import { FormPegawaiData, PegawaiData } from './types';
@@ -51,14 +52,20 @@ export default function Pegawai() {
 
   const totalPages = Math.ceil(totalItems / itemsPerPage);
 
-  // Helper function untuk safe access ke golonganByPangkatAsn
+  // Helper function untuk safe access ke golonganByPangkatAsn - TANPA ANY
   const getGolonganAsn = (pangkat: string): string[] => {
-    return (golonganByPangkatAsn as any)[pangkat] || [];
+    if (pangkat in golonganByPangkatAsn) {
+      return golonganByPangkatAsn[pangkat as keyof typeof golonganByPangkatAsn];
+    }
+    return [];
   };
 
-  // Helper function untuk safe access ke golonganByPangkatPolri
+  // Helper function untuk safe access ke golonganByPangkatPolri - TANPA ANY
   const getGolonganPolri = (pangkat: string): string[] => {
-    return (golonganByPangkatPolri as any)[pangkat] || [];
+    if (pangkat in golonganByPangkatPolri) {
+      return golonganByPangkatPolri[pangkat as keyof typeof golonganByPangkatPolri];
+    }
+    return [];
   };
 
   const fetchPegawai = useCallback(async () => {
@@ -265,19 +272,19 @@ export default function Pegawai() {
   };
 
   const handleRowClick = async (p: PegawaiData) => {
-  // Jika mengklik row yang sama, tutup detail
-  if (selectedPegawai?.id === p.id) {
-    setSelectedPegawai(null);
-    return;
-  }
-  // Tampilkan loading
-  setIsDetailLoading(true);
-  setSelectedPegawai(p);
-  // Simulasi loading (bisa disesuaikan dengan kebutuhan)
-  // Jika ada proses async yang perlu dilakukan, letakkan di sini
-  setTimeout(() => {
-    setIsDetailLoading(false);
-  }, 400); // 400ms loading effect
+    // Jika mengklik row yang sama, tutup detail
+    if (selectedPegawai?.id === p.id) {
+      setSelectedPegawai(null);
+      return;
+    }
+    // Tampilkan loading
+    setIsDetailLoading(true);
+    setSelectedPegawai(p);
+    // Simulasi loading (bisa disesuaikan dengan kebutuhan)
+    // Jika ada proses async yang perlu dilakukan, letakkan di sini
+    setTimeout(() => {
+      setIsDetailLoading(false);
+    }, 400); // 400ms loading effect
   };
   
   const handleFilterChange = (value: string) => {
@@ -427,10 +434,10 @@ export default function Pegawai() {
         />
       </div>
       
-        <PegawaiDetail
-          selectedPegawai={selectedPegawai}
-          isDetailLoading={isDetailLoading}
-        />
+      <PegawaiDetail
+        selectedPegawai={selectedPegawai}
+        isDetailLoading={isDetailLoading}
+      />
     </div>
   );
 }
