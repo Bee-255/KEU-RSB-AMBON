@@ -107,7 +107,7 @@ const Sppr = () => {
   const [selectedSppr, setSelectedSppr] = useState<SpprType | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [isTableLoading, setIsTableLoading] = useState<boolean>(true);
-  const [isApproving, setIsApproving] = useState<boolean>(false); // State baru untuk loading approval
+  const [isDetailLoading, setIsDetailLoading] = useState<boolean>(false); // Loading untuk detail
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [formData, setFormData] = useState<SpprType>({
@@ -444,20 +444,16 @@ const Sppr = () => {
     });
 
     if (result.isConfirmed) {
-      setIsApproving(true); // Mulai loading approval
-      
       const { error } = await supabase.from('sppr').update({ status_sppr: 'DISETUJUI' }).eq('id', selectedSppr.id);
       
       if (error) {
         Swal.fire('Gagal!', `Gagal menyetujui data: ${error.message}`, 'error');
-        setIsApproving(false); // Hentikan loading jika gagal
       } else {
         // Tampilkan toast dan refresh data
         toast.success("SPPR Berhasil Disetujui!");
         
         // Refresh data setelah toast muncul
         await fetchSPPR();
-        setIsApproving(false); // Hentikan loading setelah data ter-refresh
         
         setSelectedSppr({ ...selectedSppr, status_sppr: 'DISETUJUI' });
       }
@@ -499,11 +495,15 @@ const Sppr = () => {
     setShowModal(false);
   };
 
-  const handleRowClick = (sppr: SpprType) => {
+  const handleRowClick = async (sppr: SpprType) => {
     if (selectedSppr?.id === sppr.id) {
       setSelectedSppr(null);
     } else {
+      setIsDetailLoading(true); // Mulai loading detail
+      // Simulasi loading untuk efek visual (bisa dihapus jika tidak perlu)
+      await new Promise(resolve => setTimeout(resolve, 400));
       setSelectedSppr(sppr);
+      setIsDetailLoading(false); // Selesai loading detail
     }
   };
 
@@ -692,8 +692,8 @@ const Sppr = () => {
       {/* Tabel Data SPPR */}
       <div className={pageStyles.tableContainer}>
         <div className={pageStyles.tableWrapper}>
-          {/* Tampilkan loading baik saat initial load maupun saat approval */}
-          {(isTableLoading || isApproving) && (
+          {/* Tampilkan loading saat initial load */}
+          {isTableLoading && (
             <div className={pageStyles.tableOverlay}>
               <div className={loadingStyles.dotContainer}>
                 <div className={`${loadingStyles.dot} ${loadingStyles['dot-1']}`} />
@@ -728,7 +728,7 @@ const Sppr = () => {
               ) : (
                 <tr>
                   <td colSpan={6} className={pageStyles.tableEmpty}>
-                    {(isTableLoading || isApproving) ? "" : "Tidak ada data SPPR yang ditemukan."}
+                    {isTableLoading ? "" : "Tidak ada data SPPR yang ditemukan."}
                   </td>
                 </tr>
               )}
@@ -741,37 +741,46 @@ const Sppr = () => {
 
       {/* Detail Data SPPR */}
       <div className={pageStyles.detailContainerSPPR}>
-        <div className={pageStyles.detailHeaderSPPR}>Detail Data SPPR</div>
-        {selectedSppr ? (
-          <div className={pageStyles.detailContentSPPR}>
-            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Tanggal</div><div className={pageStyles.detailValueSPPR}>: {formatTanggal(selectedSppr.tanggal)}</div></div>
-            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nomor Surat</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nomor_surat}</div></div>
-            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nama KPA</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nama_kpa}</div></div>
-            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Jabatan KPA</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.jabatan_kpa || "N/A"}</div></div>
-            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Pangkat KPA</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.pangkat_kpa}</div></div>
-            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nama Bendahara</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nama_bendahara}</div></div>
-            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Jabatan Bendahara</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.jabatan_bendahara || "N/A"}</div></div>
-            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Pangkat Bendahara</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.pangkat_bendahara}</div></div>
-            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nama Pengambil</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nama_pengambil}</div></div>
-            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Jabatan Pengambil</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.jabatan_pengambil || "N/A"}</div></div>
-            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Pangkat Pengambil</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.pangkat_pengambil}</div></div>
-            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Operator</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.operator || "N/A"}</div></div>
-            
-            {/* TAMBAHAN: 3 Kolom Baru Rekening */}
-            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nama Bank</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nama_bank || "N/A"}</div></div>
-            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nama Rekening</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nama_rekening || "N/A"}</div></div>
-            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nomor Rekening</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nomor_rekening || "N/A"}</div></div>
-            
-            <div className={pageStyles.detailItemFullSPPR}>
-              <div className={pageStyles.detailLabelSPPR}>Jumlah Penarikan</div>
-              <div className={pageStyles.detailValueSPPR}>: {formatAngka(selectedSppr.jumlah_penarikan)} ({capitalizeWords(terbilang(selectedSppr.jumlah_penarikan))} Rupiah)</div>
-            </div>
-           
-          </div>
-        ) : (
-          <div className={pageStyles.tableEmpty}>Data SPPR Belum Dipilih</div>
-        )}
+  <div className={pageStyles.detailHeaderSPPR}>Detail Data SPPR</div>
+  {isDetailLoading ? (
+    <div className={pageStyles.detailContentSPPR} style={{ position: 'relative', minHeight: '160px' }}>
+      <div className={pageStyles.tableOverlay} >
+        <div className={loadingStyles.dotContainer}>
+          <div className={`${loadingStyles.dot} ${loadingStyles['dot-1']}`} />
+          <div className={`${loadingStyles.dot} ${loadingStyles['dot-2']}`} />
+          <div className={`${loadingStyles.dot} ${loadingStyles['dot-3']}`} />
+        </div>
       </div>
+    </div>
+  ) : selectedSppr ? (
+    <div className={pageStyles.detailContentSPPR}>
+      <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Tanggal</div><div className={pageStyles.detailValueSPPR}>: {formatTanggal(selectedSppr.tanggal)}</div></div>
+      <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nomor Surat</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nomor_surat}</div></div>
+      <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nama KPA</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nama_kpa}</div></div>
+      <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Jabatan KPA</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.jabatan_kpa || "N/A"}</div></div>
+      <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Pangkat KPA</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.pangkat_kpa}</div></div>
+      <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nama Bendahara</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nama_bendahara}</div></div>
+      <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Jabatan Bendahara</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.jabatan_bendahara || "N/A"}</div></div>
+      <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Pangkat Bendahara</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.pangkat_bendahara}</div></div>
+      <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nama Pengambil</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nama_pengambil}</div></div>
+      <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Jabatan Pengambil</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.jabatan_pengambil || "N/A"}</div></div>
+      <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Pangkat Pengambil</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.pangkat_pengambil}</div></div>
+      <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Operator</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.operator || "N/A"}</div></div>
+      
+      {/* TAMBAHAN: 3 Kolom Baru Rekening */}
+      <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nama Bank</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nama_bank || "N/A"}</div></div>
+      <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nama Rekening</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nama_rekening || "N/A"}</div></div>
+      <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nomor Rekening</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nomor_rekening || "N/A"}</div></div>
+      
+      <div className={pageStyles.detailItemFullSPPR}>
+        <div className={pageStyles.detailLabelSPPR}>Jumlah Penarikan</div>
+        <div className={pageStyles.detailValueSPPR}>: {formatAngka(selectedSppr.jumlah_penarikan)} ({capitalizeWords(terbilang(selectedSppr.jumlah_penarikan))} Rupiah)</div>
+      </div>
+    </div>
+  ) : (
+    <div className={pageStyles.tableEmpty}>Data SPPR Belum Dipilih</div>
+  )}
+</div>
     </div>
   );
 };

@@ -1,104 +1,20 @@
-// src/app/(main)/pegawai/page.tsx
 'use client';
 
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/utils/supabaseClient";
 import Swal from "sweetalert2";
-import { FaPlus, FaEdit, FaRegTrashAlt } from "react-icons/fa";
 import Paginasi from '@/components/paginasi';
-import styles from "@/styles/button.module.css";
 import pageStyles from "@/styles/komponen.module.css";
-import loadingStyles from "@/styles/loading.module.css";
 
-// Interface untuk data pegawai
-interface PegawaiData {
-  id: string; 
-  nama: string;
-  pekerjaan: string;
-  nrp_nip_nir: string;
-  klasifikasi: string;
-  pangkat: string;
-  tipe_identitas: string;
-  golongan: string;
-  jabatan_struktural: string;
-  status: string;
-  bank: string;
-  no_rekening: string;
-  nama_rekening: string;
-}
-
-// Interface untuk state form
-interface FormPegawaiData {
-  nama: string;
-  pekerjaan: string;
-  nrp_nip_nir: string;
-  klasifikasi: string;
-  pangkat: string;
-  tipe_identitas: string;
-  golongan: string;
-  jabatan_struktural: string;
-  status: string;
-  bank: string;
-  no_rekening: string;
-  nama_rekening: string;
-}
-
-// Interface untuk mapping golongan
-interface PangkatMap {
-  [key: string]: string[];
-}
-
-// Tambahkan deklarasi tipe untuk props komponen Modal
-interface ModalProps {
-  children: React.ReactNode;
-  onClose: () => void;
-}
-
-const Modal: React.FC<ModalProps> = ({ children, onClose }) => {
-  return (
-    <div
-      className={pageStyles.modalOverlay}
-      onClick={onClose}
-    >
-      <div
-        className={pageStyles.modalContent}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {children}
-      </div>
-    </div>
-  );
-};
-
-const allPangkatPolri: string[] = [
-  "KOMISARIS BESAR POLISI", "AJUN KOMISARIS BESAR POLISI", "KOMISARIS POLISI", "AJUN KOMISARIS POLISI",
-  "INSPEKTUR POLISI SATU", "INSPEKTUR POLISI DUA", "AIPTU", "AIPDA",
-  "BRIPKA", "BRIGADIR", "BRIPTU", "BRIPDA", "AJUN BRIGADIR POLISI",
-  "AJUN BRIGADIR POLISI DUA", "BHAYANGKARA KEPALA", "BHAYANGKARA SATU", "BHAYANGKARA DUA"
-];
-
-const allPangkatAsn: string[] = [
-  "PEMBINA UTAMA", "PEMBINA UTAMA MADYA", "PEMBINA UTAMA MUDA", "PEMBINA TK. I", "PEMBINA",
-  "PENATA TK. I", "PENATA", "PENDA TK. I", "PENDA", "PENGATUR TK. I",
-  "PENGATUR", "PENGATUR MUDA TK. I", "PENGATUR MUDA", "JURU TK. I", "JURU",
-  "JURU MUDA TK. I", "JURU MUDA"
-];
-
-const golonganByPangkatAsn: PangkatMap = {
-  "PEMBINA UTAMA": ["IV/e"], "PEMBINA UTAMA MADYA": ["IV/d"], "PEMBINA UTAMA MUDA": ["IV/c"], "PEMBINA TK. I": ["IV/b"], "PEMBINA": ["IV/a"],
-  "PENATA TK. I": ["III/d"], "PENATA": ["III/c"], "PENDA TK. I": ["III/b"], "PENDA": ["III/a"],
-  "PENGATUR TK. I": ["II/d"], "PENGATUR": ["II/c"], "PENGATUR MUDA TK. I": ["II/b"], "PENGATUR MUDA": ["II/a"],
-  "JURU TK. I": ["I/d"], "JURU": ["I/c"], "JURU MUDA TK. I": ["I/b"], "JURU MUDA": ["I/a"],
-};
-
-const golonganByPangkatPolri: PangkatMap = {
-  "KOMISARIS BESAR POLISI": ["IV/c"], "AJUN KOMISARIS BESAR POLISI": ["IV/b"], "KOMISARIS POLISI": ["IV/a"],
-  "AJUN KOMISARIS POLISI": ["III/c"], "INSPEKTUR POLISI SATU": ["III/b"], "INSPEKTUR POLISI DUA": ["III/a"],
-  "AIPTU": ["II/f"], "AIPDA": ["II/e"], "BRIPKA": ["II/d"], "BRIGADIR": ["II/c"], "BRIPTU": ["II/b"], "BRIPDA": ["II/a"],
-  "AJUN BRIGADIR POLISI": ["I/e"], "AJUN BRIGADIR POLISI DUA": ["I/d"], "BHAYANGKARA KEPALA": ["I/c"], "BHAYANGKARA SATU": ["I/b"], "BHAYANGKARA DUA": ["I/a"]
-};
-
-const pekerjaanOrder: string[] = ["Anggota Polri", "ASN", "PPPK", "TKK", "Dokter Mitra", "Tenaga Mitra"];
+// Import types, constants, dan components
+import { FormPegawaiData, PegawaiData } from './types';
+import { golonganByPangkatAsn, golonganByPangkatPolri } from './constants';
+import Modal from './components/Modal';
+import PegawaiForm from './components/PegawaiForm';
+import PegawaiTable from './components/PegawaiTable';
+import PegawaiDetail from './components/PegawaiDetail';
+import SearchAndFilter from './components/SearchAndFilter';
+import ActionButtons from './components/ActionButtons';
 
 export default function Pegawai() {
   const [editId, setEditId] = useState<string | null>(null);
@@ -106,8 +22,8 @@ export default function Pegawai() {
   const [showModal, setShowModal] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [filterPekerjaan, setFilterPekerjaan] = useState<string>("");
-  const [isTableLoading, setIsTableLoading] = useState<boolean>(true); // State untuk loading tabel
-
+  const [isTableLoading, setIsTableLoading] = useState<boolean>(true);
+  const [isDetailLoading, setIsDetailLoading] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const [totalItems, setTotalItems] = useState<number>(0);
@@ -135,8 +51,18 @@ export default function Pegawai() {
 
   const totalPages = Math.ceil(totalItems / itemsPerPage);
 
+  // Helper function untuk safe access ke golonganByPangkatAsn
+  const getGolonganAsn = (pangkat: string): string[] => {
+    return (golonganByPangkatAsn as any)[pangkat] || [];
+  };
+
+  // Helper function untuk safe access ke golonganByPangkatPolri
+  const getGolonganPolri = (pangkat: string): string[] => {
+    return (golonganByPangkatPolri as any)[pangkat] || [];
+  };
+
   const fetchPegawai = useCallback(async () => {
-    setIsTableLoading(true); // Mulai loading
+    setIsTableLoading(true);
     try {
       let query = supabase.from("pegawai").select("*", { count: "exact" });
 
@@ -156,6 +82,7 @@ export default function Pegawai() {
       }
       
       const sortedData = (data as PegawaiData[]).sort((a, b) => {
+        const pekerjaanOrder = ["Anggota Polri", "ASN", "PPPK", "TKK", "Dokter Mitra", "Tenaga Mitra"];
         const pekerjaanA = pekerjaanOrder.indexOf(a.pekerjaan);
         const pekerjaanB = pekerjaanOrder.indexOf(b.pekerjaan);
         if (pekerjaanA !== pekerjaanB) return pekerjaanA - pekerjaanB;
@@ -164,6 +91,20 @@ export default function Pegawai() {
         const statusA = statusOrder[a.status] || 3;
         const statusB = statusOrder[b.status] || 3;
         if (statusA !== statusB) return statusA - statusB;
+
+        const allPangkatPolri = [
+          "KOMISARIS BESAR POLISI", "AJUN KOMISARIS BESAR POLISI", "KOMISARIS POLISI", "AJUN KOMISARIS POLISI",
+          "INSPEKTUR POLISI SATU", "INSPEKTUR POLISI DUA", "AIPTU", "AIPDA",
+          "BRIPKA", "BRIGADIR", "BRIPTU", "BRIPDA", "AJUN BRIGADIR POLISI",
+          "AJUN BRIGADIR POLISI DUA", "BHAYANGKARA KEPALA", "BHAYANGKARA SATU", "BHAYANGKARA DUA"
+        ];
+
+        const allPangkatAsn = [
+          "PEMBINA UTAMA", "PEMBINA UTAMA MADYA", "PEMBINA UTAMA MUDA", "PEMBINA TK. I", "PEMBINA",
+          "PENATA TK. I", "PENATA", "PENDA TK. I", "PENDA", "PENGATUR TK. I",
+          "PENGATUR", "PENGATUR MUDA TK. I", "PENGATUR MUDA", "JURU TK. I", "JURU",
+          "JURU MUDA TK. I", "JURU MUDA"
+        ];
 
         const getPangkatIndex = (pangkat: string, pekerjaan: string) => {
           if (pekerjaan === "Anggota Polri") return allPangkatPolri.indexOf(pangkat);
@@ -187,7 +128,7 @@ export default function Pegawai() {
     } catch (e) {
       console.error("Failed to fetch pegawai:", e);
     } finally {
-      setIsTableLoading(false); // Selesai loading
+      setIsTableLoading(false);
     }
   }, [currentPage, itemsPerPage, searchTerm, filterPekerjaan]);
 
@@ -259,8 +200,9 @@ export default function Pegawai() {
     }
 
     if (existingPegawai && existingPegawai.length > 0) {
-        const tipeIdentitas = pegawai.pekerjaan === "Anggota Polri" ? "NRP" : pegawai.pekerjaan === "ASN" ? "NIP" : "NIR";
+        const tipeIdentitas = pegawai.pekerjaan === "Anggota Polri" ? "NRP" : pegawai.pekerjaan === "ASN" ? "NIP" : pegawai.pekerjaan === "PPPK" ? "NIP" : "NIR";
         Swal.fire("Gagal!", `Data ${tipeIdentitas} sudah ada dengan nama ${existingPegawai[0].nama}.`, "error");
+        
         return;
     }
     
@@ -322,13 +264,30 @@ export default function Pegawai() {
     setSelectedPegawai(null);
   };
 
-  const handleRowClick = (p: PegawaiData) => {
-    setSelectedPegawai((prev) => (prev?.id === p.id ? null : p));
+  const handleRowClick = async (p: PegawaiData) => {
+  // Jika mengklik row yang sama, tutup detail
+  if (selectedPegawai?.id === p.id) {
+    setSelectedPegawai(null);
+    return;
+  }
+  // Tampilkan loading
+  setIsDetailLoading(true);
+  setSelectedPegawai(p);
+  // Simulasi loading (bisa disesuaikan dengan kebutuhan)
+  // Jika ada proses async yang perlu dilakukan, letakkan di sini
+  setTimeout(() => {
+    setIsDetailLoading(false);
+  }, 400); // 400ms loading effect
   };
   
-  const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-      setFilterPekerjaan(e.target.value);
+  const handleFilterChange = (value: string) => {
+      setFilterPekerjaan(value);
       setCurrentPage(1);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
   };
 
   const fetchUserRole = useCallback(async () => {
@@ -351,13 +310,26 @@ export default function Pegawai() {
 
   useEffect(() => {
     const initializeData = async () => {
-      // Tidak perlu lagi set isLoading di sini
       await Promise.all([fetchPegawai(), fetchUserRole()]);
     };
     initializeData();
   }, [fetchPegawai, fetchUserRole]);
 
   useEffect(() => {
+    const allPangkatPolri = [
+      "KOMISARIS BESAR POLISI", "AJUN KOMISARIS BESAR POLISI", "KOMISARIS POLISI", "AJUN KOMISARIS POLISI",
+      "INSPEKTUR POLISI SATU", "INSPEKTUR POLISI DUA", "AIPTU", "AIPDA",
+      "BRIPKA", "BRIGADIR", "BRIPTU", "BRIPDA", "AJUN BRIGADIR POLISI",
+      "AJUN BRIGADIR POLISI DUA", "BHAYANGKARA KEPALA", "BHAYANGKARA SATU", "BHAYANGKARA DUA"
+    ];
+
+    const allPangkatAsn = [
+      "PEMBINA UTAMA", "PEMBINA UTAMA MADYA", "PEMBINA UTAMA MUDA", "PEMBINA TK. I", "PEMBINA",
+      "PENATA TK. I", "PENATA", "PENDA TK. I", "PENDA", "PENGATUR TK. I",
+      "PENGATUR", "PENGATUR MUDA TK. I", "PENGATUR MUDA", "JURU TK. I", "JURU",
+      "JURU MUDA TK. I", "JURU MUDA"
+    ];
+
     if (pegawai.pekerjaan === "Anggota Polri") {
       setPangkatOptions(allPangkatPolri);
     } else if (pegawai.pekerjaan === "ASN") {
@@ -370,9 +342,11 @@ export default function Pegawai() {
   useEffect(() => {
     let newGolonganOptions: string[] = [];
     if (pegawai.pekerjaan === "ASN" && pegawai.pangkat) {
-      newGolonganOptions = golonganByPangkatAsn[pegawai.pangkat] || [];
+      // Menggunakan helper function untuk safe access
+      newGolonganOptions = getGolonganAsn(pegawai.pangkat);
     } else if (pegawai.pekerjaan === "Anggota Polri" && pegawai.pangkat) {
-      newGolonganOptions = golonganByPangkatPolri[pegawai.pangkat] || [];
+      // Menggunakan helper function untuk safe access
+      newGolonganOptions = getGolonganPolri(pegawai.pangkat);
     }
 
     setGolonganOptions(newGolonganOptions);
@@ -389,6 +363,8 @@ export default function Pegawai() {
       setPegawai(prev => ({ ...prev, tipe_identitas: "NRP" }));
     } else if (pegawai.pekerjaan === "ASN") {
       setPegawai(prev => ({ ...prev, tipe_identitas: "NIP" }));
+    } else if (pegawai.pekerjaan === "PPPK") {
+      setPegawai(prev => ({ ...prev, tipe_identitas: "NIP" }));
     } else {
       setPegawai(prev => ({ ...prev, tipe_identitas: "NIR" }));
     }
@@ -401,312 +377,44 @@ export default function Pegawai() {
       <h2 className={pageStyles.header}>Data Pegawai</h2>
 
       <div className={pageStyles.buttonContainer}>
-        <button
-          onClick={() => {
-            resetForm();
-            setShowModal(true);
-          }}
-          disabled={!isAllowedToEditOrDelete}
-          className={styles.rekamButton}
-        >
-          <FaPlus /> Rekam
-        </button>
+        <ActionButtons
+          isAllowedToEditOrDelete={isAllowedToEditOrDelete}
+          selectedPegawai={selectedPegawai}
+          onAdd={() => { resetForm(); setShowModal(true); }}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
         
-        <button
-          onClick={handleEdit}
-          disabled={!selectedPegawai || !isAllowedToEditOrDelete}
-          className={styles.editButton}
-        >
-          <FaEdit /> Edit
-        </button>
-        <button
-          onClick={handleDelete}
-          disabled={!selectedPegawai || !isAllowedToEditOrDelete}
-          className={styles.hapusButton}
-        >
-          <FaRegTrashAlt /> Hapus
-        </button>
-        
-        <select
-            value={filterPekerjaan}
-            onChange={handleFilterChange}
-            className={pageStyles.filterSelect}
-        >
-            <option value="">Semua Pekerjaan</option>
-            {pekerjaanOrder.map((pekerjaan) => (
-                <option key={pekerjaan} value={pekerjaan}>{pekerjaan}</option>
-            ))}
-        </select>
-
-        <div className={pageStyles.searchContainer}>
-          <input
-            type="text"
-            placeholder="Cari pegawai..."
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1);
-            }}
-            className={pageStyles.searchInput}
-          />
-          {searchTerm && (
-            <button
-              onClick={() => setSearchTerm("")}
-              className={pageStyles.searchClearButton}
-            >
-              &#x2715;
-            </button>
-          )}
-        </div>
+        <SearchAndFilter
+          searchTerm={searchTerm}
+          filterPekerjaan={filterPekerjaan}
+          onSearchChange={handleSearchChange}
+          onFilterChange={handleFilterChange}
+        />
       </div>
       
       {showModal && (
         <Modal onClose={resetForm}>
-          <form onSubmit={handleSubmit}>
-            <h3 style={{ marginTop: 0 }}>{editId ? "Edit Data Pegawai" : "Rekam Pegawai Baru"}</h3>
-
-            <div className={pageStyles.modalForm}>
-              <div className={pageStyles.formGroup}>
-                <label className={pageStyles.formLabel}>Nama:</label>
-                <input
-                  type="text"
-                  name="nama"
-                  value={pegawai.nama}
-                  onChange={handleChange}
-                  required
-                  className={pageStyles.formInput}
-                />
-              </div>
-
-              <div className={pageStyles.formGroup}>
-                <label className={pageStyles.formLabel}>Pekerjaan:</label>
-                <select
-                  name="pekerjaan"
-                  value={pegawai.pekerjaan}
-                  onChange={handleChange}
-                  required
-                  className={pageStyles.formSelect}
-                >
-                  <option value="">-- Pilih Pekerjaan --</option>
-                  <option>Anggota Polri</option>
-                  <option>ASN</option>
-                  <option>PPPK</option>
-                  <option>TKK</option>
-                  <option>Dokter Mitra</option>
-                  <option>Tenaga Mitra</option>
-                </select>
-              </div>
-
-              <div className={pageStyles.formGroup}>
-                <label className={pageStyles.formLabel}>Tipe Identitas:</label>
-                <input
-                  type="text"
-                  name="tipe_identitas"
-                  value={pegawai.tipe_identitas}
-                  onChange={handleChange}
-                  readOnly
-                  disabled
-                  className={`${pageStyles.formInput} ${pageStyles.readOnly}`}
-                />
-              </div>
-
-              <div className={pageStyles.formGroup}>
-                <label className={pageStyles.formLabel}>NRP / NIP / NIR:</label>
-                <input
-                  type="text"
-                  name="nrp_nip_nir"
-                  value={pegawai.nrp_nip_nir}
-                  onChange={handleChange}
-                  required
-                  className={pageStyles.formInput}
-                />
-              </div>
-
-              <div className={pageStyles.formGroup}>
-                <label className={pageStyles.formLabel}>Pangkat:</label>
-                <select
-                  name="pangkat"
-                  value={pegawai.pangkat}
-                  onChange={handleChange}
-                  required={pegawai.pekerjaan === "Anggota Polri" || pegawai.pekerjaan === "ASN"}
-                  disabled={pegawai.pekerjaan !== "Anggota Polri" && pegawai.pekerjaan !== "ASN"}
-                  className={`${pageStyles.formSelect} ${pegawai.pekerjaan !== "Anggota Polri" && pegawai.pekerjaan !== "ASN" ? pageStyles.readOnly : ""}`}
-                >
-                  <option value="">-- Pilih Pangkat --</option>
-                  {pangkatOptions.map((pangkat) => (
-                    <option key={pangkat} value={pangkat}>
-                      {pangkat}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className={pageStyles.formGroup}>
-                <label className={pageStyles.formLabel}>Golongan:</label>
-                <select
-                  name="golongan"
-                  value={pegawai.golongan}
-                  onChange={handleChange}
-                  required={pegawai.pekerjaan === "ASN"}
-                  disabled={true}
-                  className={`${pageStyles.formSelect} ${pageStyles.readOnly}`}
-                >
-                  <option value="">-- Terisi Otomatis --</option>
-                  {golonganOptions.map((golongan) => (
-                    <option key={golongan} value={golongan}>
-                      {golongan}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className={pageStyles.formGroup}>
-                <label className={pageStyles.formLabel}>Jabatan Struktural:</label>
-                <input
-                  type="text"
-                  name="jabatan_struktural"
-                  value={pegawai.jabatan_struktural}
-                  onChange={handleChange}
-                  className={pageStyles.formInput}
-                />
-              </div>
-
-              <div className={pageStyles.formGroup}>
-                <label className={pageStyles.formLabel}>Klasifikasi:</label>
-                <select
-                  name="klasifikasi"
-                  value={pegawai.klasifikasi}
-                  onChange={handleChange}
-                  required
-                  className={pageStyles.formSelect}
-                >
-                  <option value="">-- Pilih Klasifikasi --</option>
-                  <option>Medis</option>
-                  <option>Paramedis</option>
-                  <option>Non Medis</option>
-                </select>
-              </div>
-              
-              <div className={pageStyles.formGroup}>
-                <label className={pageStyles.formLabel}>Status:</label>
-                <select
-                  name="status"
-                  value={pegawai.status}
-                  onChange={handleChange}
-                  required
-                  className={pageStyles.formSelect}
-                >
-                  <option value="">-- Pilih Status --</option>
-                  <option>Aktif</option>
-                  <option>Tidak Aktif</option>
-                </select>
-              </div>
-
-              <div className={pageStyles.formGroup}>
-                <label className={pageStyles.formLabel}>Bank:</label>
-                <input
-                  type="text"
-                  name="bank"
-                  value={pegawai.bank}
-                  onChange={handleChange}
-                  className={pageStyles.formInput}
-                />
-              </div>
-
-              <div className={pageStyles.formGroup}>
-                <label className={pageStyles.formLabel}>No. Rekening:</label>
-                <input
-                  type="text"
-                  name="no_rekening"
-                  value={pegawai.no_rekening}
-                  onChange={handleChange}
-                  className={pageStyles.formInput}
-                />
-              </div>
-
-              <div className={pageStyles.formGroup}>
-                <label className={pageStyles.formLabel}>Nama Rekening:</label>
-                <input
-                  type="text"
-                  name="nama_rekening"
-                  value={pegawai.nama_rekening}
-                  onChange={handleChange}
-                  className={pageStyles.formInput}
-                />
-              </div>
-            </div>
-
-            <div className={pageStyles.formActions}>
-              <button
-                type="button"
-                onClick={resetForm}
-                className={pageStyles.formCancel}
-              >
-                Batal
-              </button>
-              <button
-                type="submit"
-                className={styles.rekamButton}
-              >
-                {editId ? "Update" : "Simpan"}
-              </button>
-            </div>
-          </form>
+          <PegawaiForm
+            pegawai={pegawai}
+            editId={editId}
+            pangkatOptions={pangkatOptions}
+            golonganOptions={golonganOptions}
+            onClose={resetForm}
+            onSubmit={handleSubmit}
+            onChange={handleChange}
+          />
         </Modal>
       )}
       
-      <div className={pageStyles.tableContainer}>
-        {/* Tambahkan div pembungkus dan overlay loading di sini */}
-        <div className={pageStyles.tableWrapper}>
-          {isTableLoading && (
-            <div className={pageStyles.tableOverlay}>
-              <div className={loadingStyles.dotContainer}>
-                <div className={`${loadingStyles.dot} ${loadingStyles['dot-1']}`} />
-                <div className={`${loadingStyles.dot} ${loadingStyles['dot-2']}`} />
-                <div className={`${loadingStyles.dot} ${loadingStyles['dot-3']}`} />
-              </div>
-            </div>
-          )}
-          <table className={pageStyles.table}>
-            <thead className={pageStyles.tableHead}>
-              <tr>
-                <th>No.</th>
-                <th>Nama</th>
-                <th>Pekerjaan</th>
-                <th>Pangkat</th>
-                <th>NRP / NIP / NIR</th>
-                <th>Jabatan Struktural</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody className={pageStyles.tableBody}>
-              {listPegawai.length > 0 ? (
-                listPegawai.map((p, index) => (
-                  <tr
-                    key={p.id}
-                    onClick={() => handleRowClick(p)}
-                    className={`${pageStyles.tableRow} ${selectedPegawai?.id === p.id ? pageStyles.selected : ""}`}
-                  >
-                    <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                    <td>{p.nama}</td>
-                    <td>{p.pekerjaan}</td>
-                    <td>{p.pangkat}</td>
-                    <td>{p.nrp_nip_nir}</td>
-                    <td>{p.jabatan_struktural}</td>
-                    <td>{p.status}</td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={7} className={pageStyles.tableEmpty}>
-                    Tidak ada data pegawai yang ditemukan.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <PegawaiTable
+        listPegawai={listPegawai}
+        currentPage={currentPage}
+        itemsPerPage={itemsPerPage}
+        selectedPegawai={selectedPegawai}
+        isTableLoading={isTableLoading}
+        onRowClick={handleRowClick}
+      />
 
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
         <Paginasi
@@ -719,64 +427,10 @@ export default function Pegawai() {
         />
       </div>
       
-       {/* === Detail pegawai === */}
-      <div className={pageStyles.detailContainer}>
-        <div className={pageStyles.detailHeader}>Detail Data Pegawai</div>
-        {selectedPegawai ? (
-          <div className={pageStyles.detailContent}>
-            <div className={pageStyles.detailItem}>
-              <div className={pageStyles.detailLabel}>Nama</div>
-              <div className={pageStyles.detailValue}>: {selectedPegawai.nama}</div>
-            </div>
-            <div className={pageStyles.detailItem}>
-              <div className={pageStyles.detailLabel}>Pekerjaan</div>
-              <div className={pageStyles.detailValue}>: {selectedPegawai.pekerjaan}</div>
-            </div>
-            <div className={pageStyles.detailItem}>
-              <div className={pageStyles.detailLabel}>Tipe Identitas</div>
-              <div className={pageStyles.detailValue}>: {selectedPegawai.tipe_identitas}</div>
-            </div>
-            <div className={pageStyles.detailItem}>
-              <div className={pageStyles.detailLabel}>NRP / NIP / NIR</div>
-              <div className={pageStyles.detailValue}>: {selectedPegawai.nrp_nip_nir}</div>
-            </div>
-            <div className={pageStyles.detailItem}>
-              <div className={pageStyles.detailLabel}>Klasifikasi</div>
-              <div className={pageStyles.detailValue}>: {selectedPegawai.klasifikasi}</div>
-            </div>
-            <div className={pageStyles.detailItem}>
-              <div className={pageStyles.detailLabel}>Pangkat</div>
-              <div className={pageStyles.detailValue}>: {selectedPegawai.pangkat}</div>
-            </div>
-            <div className={pageStyles.detailItem}>
-              <div className={pageStyles.detailLabel}>Golongan</div>
-              <div className={pageStyles.detailValue}>: {selectedPegawai.golongan}</div>
-            </div>
-            <div className={pageStyles.detailItem}>
-              <div className={pageStyles.detailLabel}>Jabatan Struktural</div>
-              <div className={pageStyles.detailValue}>: {selectedPegawai.jabatan_struktural}</div>
-            </div>
-            <div className={pageStyles.detailItem}>
-              <div className={pageStyles.detailLabel}>Status</div>
-              <div className={pageStyles.detailValue}>: {selectedPegawai.status}</div>
-            </div>
-            <div className={pageStyles.detailItem}>
-              <div className={pageStyles.detailLabel}>Bank</div>
-              <div className={pageStyles.detailValue}>: {selectedPegawai.bank}</div>
-            </div>
-            <div className={pageStyles.detailItem}>
-              <div className={pageStyles.detailLabel}>No. Rekening</div>
-              <div className={pageStyles.detailValue}>: {selectedPegawai.no_rekening}</div>
-            </div>
-            <div className={pageStyles.detailItem}>
-              <div className={pageStyles.detailLabel}>Nama Rekening</div>
-              <div className={pageStyles.detailValue}>: {selectedPegawai.nama_rekening}</div>
-            </div>
-          </div>
-        ) : (
-          <div className={pageStyles.tableEmpty}>Data Pegawai Belum Dipilih</div>
-        )}
-      </div>
+        <PegawaiDetail
+          selectedPegawai={selectedPegawai}
+          isDetailLoading={isDetailLoading}
+        />
     </div>
   );
 }
