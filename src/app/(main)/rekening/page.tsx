@@ -646,17 +646,7 @@ const DaftarRekening: React.FC = () => {
             <div className={pageStyles.detailContainer}>
                 <div className={pageStyles.detailHeader}>Detail Data Rekening</div>
                 {selectedRekening ? (
-                    // START: Perubahan style untuk layout 2 kolom
-                     <div 
-                         className={pageStyles.detailContent}
-                         style={{ 
-                            display: 'grid', 
-                            gridTemplateColumns: '1fr 1fr', // 2 kolom dengan lebar 50% masing-masing
-                            gap: '10px 20px', 
-                            padding: '15px' 
-                        }}
-                     >
-
+                     <div className={pageStyles.detailContent}>
                         <div className={pageStyles.detailItem}>
                             <div className={pageStyles.detailLabel}>Kode Satker</div>
                             <div className={pageStyles.detailValue}>: {selectedRekening.kode_satker}</div>

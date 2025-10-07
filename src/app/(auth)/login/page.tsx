@@ -169,7 +169,7 @@ export default function LoginPage() {
 
     if (error) {
       setLoading(false);
-      toast.error("Email atau password yang Anda masukkan salah.");
+      toast.error("Login Gagal.");
     } else {
       const { error: sessionError } = await supabase.auth.updateUser({
         data: {

@@ -754,7 +754,9 @@ const Sppr = () => {
     </div>
   ) : selectedSppr ? (
     <div className={pageStyles.detailContentSPPR}>
-      <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Tanggal</div><div className={pageStyles.detailValueSPPR}>: {formatTanggal(selectedSppr.tanggal)}</div></div>
+      <div className={pageStyles.detailItemSPPR}>
+        <div className={pageStyles.detailLabelSPPR}>Tanggal</div>
+        <div className={pageStyles.detailValueSPPR}>: {formatTanggal(selectedSppr.tanggal)}</div></div>
       <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nomor Surat</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nomor_surat}</div></div>
       <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nama KPA</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nama_kpa}</div></div>
       <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Jabatan KPA</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.jabatan_kpa || "N/A"}</div></div>
