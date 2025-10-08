@@ -188,8 +188,24 @@ const Pembayaran = () => {
         Swal.fire('Gagal!', `Gagal menyetujui: ${error.message}`, 'error');
       } else {
         toast.success("Pembayaran Berhasil Disetujui!");
-        fetchPayments();
-        setSelectedPayment({ ...selectedPayment, status: 'DISETUJUI' });
+        
+        // --- START PERBAIKAN ---
+        const newStatus: PaymentType['status'] = 'DISETUJUI';
+        
+        // 1. Perbarui paymentList untuk me-refresh status di PaymentTable
+        setPaymentList(prevList => 
+            prevList.map(p => 
+                p.id === selectedPayment.id 
+                    ? { ...p, status: newStatus } 
+                    : p
+            )
+        );
+
+        // 2. Perbarui selectedPayment untuk me-refresh status di Detail Header
+        setSelectedPayment(prev => prev ? { ...prev, status: newStatus } : null);
+
+        // fetchPayments() tidak diperlukan karena state sudah diupdate
+        // --- END PERBAIKAN ---
       }
     }
   };
@@ -218,8 +234,24 @@ const Pembayaran = () => {
         Swal.fire('Gagal!', `Gagal menolak: ${error.message}`, 'error');
       } else {
         toast.success("Pembayaran Berhasil Ditolak!");
-        fetchPayments();
-        setSelectedPayment({ ...selectedPayment, status: 'DITOLAK' });
+        
+        // --- START PERBAIKAN ---
+        const newStatus: PaymentType['status'] = 'DITOLAK';
+        
+        // 1. Perbarui paymentList untuk me-refresh status di PaymentTable
+        setPaymentList(prevList => 
+            prevList.map(p => 
+                p.id === selectedPayment.id 
+                    ? { ...p, status: newStatus } 
+                    : p
+            )
+        );
+
+        // 2. Perbarui selectedPayment untuk me-refresh status di Detail Header
+        setSelectedPayment(prev => prev ? { ...prev, status: newStatus } : null);
+        
+        // fetchPayments() tidak diperlukan karena state sudah diupdate
+        // --- END PERBAIKAN ---
       }
     }
   };
@@ -451,13 +483,29 @@ const Pembayaran = () => {
       {/* Tabel Detail Pembayaran */}
       <div 
         className={pageStyles.detailContainer} 
-         
+        // --- PERBAIKAN: Mengembalikan style yang hilang ---
+        style={{ opacity: isTableLoading ? 0.5 : 1, paddingBottom: '20px' }} 
+        // ---
       >
         <div className={pageStyles.detailHeader}>
-          Detail Pembayaran
+          Detail Pembayaran - {selectedPayment ? selectedPayment.periode_pembayaran : "Pilih Data Rekap"}
+          {selectedPayment && (
+            <span className={pageStyles.statusBadge} data-status={selectedPayment.status}>
+              {selectedPayment.status}
+            </span>
+          )}
         </div>
         
-          <div className={pageStyles.buttonContainer} style={{ margin: "1rem" }}>
+          <div 
+            className={pageStyles.buttonContainer} 
+            // --- PERBAIKAN: Mengganti margin: "1rem" dengan style yang lebih konsisten ---
+            style={{ 
+              margin: '1rem',
+              opacity: isDisabled ? 0.5 : 1, 
+              pointerEvents: isDisabled ? 'none' : 'auto' 
+            }}
+            // ---
+          >
             <button 
                 onClick={() => toast.error("Fitur Edit belum diimplementasi.")} 
                 className={styles.rekamButton}

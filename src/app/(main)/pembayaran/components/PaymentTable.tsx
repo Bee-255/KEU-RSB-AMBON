@@ -96,7 +96,13 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
               ))
             ) : (
               <tr>
-                <td colSpan={8} className={pageStyles.tableEmpty}>
+                <td 
+                  colSpan={8} 
+                  className={pageStyles.tableEmpty}
+                  // --- PERBAIKAN: Menambahkan padding atas dan bawah 1rem ---
+                  style={{ padding: '1rem 0' }}
+                  // ---
+                >
                   {isLoading ? "" : "Tidak ada data pembayaran yang ditemukan."}
                 </td>
               </tr>
