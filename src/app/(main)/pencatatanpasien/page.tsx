@@ -1354,7 +1354,7 @@ export default function PencatatanPasien() {
             </button>
         </div>
       
-        <div className={pageStyles.tableContainer}>
+        <div className={pageStyles.detailtableContainer}>
           <table className={pageStyles.table}>
             <thead className={pageStyles.tableHead}>
               <tr>

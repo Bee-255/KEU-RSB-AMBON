@@ -15,7 +15,6 @@ import loadingStyles from "@/styles/loading.module.css";
 import { capitalizeWords, formatAngka, parseAngka, toRoman, formatTanggal } from '@/lib/format';
 import { terbilang } from "@/lib/terbilang";
 import { generateSpprPdf } from "@/lib/pdfsppr";
-import { BiAlignLeft } from "react-icons/bi";
 
 // Interface untuk data mentah dari Supabase (data_rekening)
 interface RawRekeningData {

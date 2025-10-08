@@ -124,8 +124,10 @@ export default function MainLayout({ children }: MainLayoutProps) {
       setOpenFolder('administrasi');
     } else if (pathname.startsWith('/pegawai') || pathname.startsWith('/pencatatanpasien') || pathname.startsWith('/sppr') || pathname.startsWith('/jurnalumum')) {
       setOpenFolder('rekam');
-    } else if (pathname.startsWith('/rekening')) { // <-- Ubah dari /Rekening ke /rekening dan pastikan masuk ke folder 'data'
+    } else if (pathname.startsWith('/rekening')) {
       setOpenFolder('data');
+    } else if (pathname.startsWith('/pembayaran')) {
+      setOpenFolder('pembayaran');
     } else {
       setOpenFolder(null);
     }
@@ -142,6 +144,11 @@ export default function MainLayout({ children }: MainLayoutProps) {
 
   const handleDataToggle = () => {
     setOpenFolder(openFolder === 'data' ? null : 'data');
+  };
+
+  // PERBAIKAN: Ganti nama fungsi ini agar tidak duplikat
+  const handlePembayaranToggle = () => {
+    setOpenFolder(openFolder === 'pembayaran' ? null : 'pembayaran');
   };
 
   // Fungsi toggle sidebar yang juga menangani mobile behavior
@@ -196,6 +203,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const isAdminOpen = openFolder === 'administrasi';
   const isRekamOpen = openFolder === 'rekam';
   const isDataOpen = openFolder === 'data';
+  // PERBAIKAN: Ganti nama variabel ini agar tidak duplikat
+  const isPembayaranOpen = openFolder === 'pembayaran';
   const isActive = (path: string) => pathname === path;
 
   return (
@@ -549,7 +558,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
               </span>
             </div>
 
-            {/* Sub-menu */}
+            {/* Data Sub-menu */}
             <div 
               style={{
                 maxHeight: isDataOpen ? '200px' : '0',
@@ -575,11 +584,61 @@ export default function MainLayout({ children }: MainLayoutProps) {
                     <FaFile color={isActive("/rekening") ? '#2563eb' : '#4A5568'} />
                   </span> Rekening
                 </button>
-                
               </div>
             </div>
 
-            
+            {/* PEMBAYARAN (Folder) */}
+            <div
+              onClick={handlePembayaranToggle} // PERBAIKAN: Ganti nama fungsi
+              onMouseEnter={() => setHoveredItem('pembayaran')}
+              onMouseLeave={() => setHoveredItem(null)}
+              style={
+                isPembayaranOpen ? activeStyle : (hoveredItem === 'pembayaran' ? hoverStyle : inactiveStyle) // PERBAIKAN: Ganti nama variabel
+              }
+              >
+              <span style={{ fontSize: "0.9rem" }}>
+                <FaFolder color={isPembayaranOpen ? '#2563eb' : '#4A5568'}  /> {/* PERBAIKAN: Ganti nama variabel */}
+              </span> Pembayaran
+              <span style={{
+                display: 'inline-block',
+                marginLeft: "auto",
+                width: "1em",
+                height: "1em",
+                transform: isPembayaranOpen ? 'rotate(-180deg)' : 'rotate(0deg)', // PERBAIKAN: Ganti nama variabel
+                transition: 'transform 0.2s ease-in-out',
+              }}>
+                <FaAngleDown strokeWidth={4} color="#4A5568" />
+              </span>
+            </div>
+
+            {/* Pembayaran Sub-menu */}
+            <div 
+              style={{
+                maxHeight: isPembayaranOpen ? '200px' : '0', // PERBAIKAN: Ganti nama variabel
+                overflow: 'hidden',
+                transition: 'max-height 0.2s',
+              }}
+              >
+              <div style={{ display: "flex", flexDirection: "column", gap: "0rem" }}>
+                <button
+                  onClick={() => {
+                    router.push("/pembayaran");
+                    if (isMobile) setIsSidebarVisible(false); // Auto-close sidebar di mobile
+                  }}
+                  onMouseEnter={() => setHoveredItem('pembayaran')}
+                  onMouseLeave={() => setHoveredItem(null)}
+                  style={
+                    isActive("/pembayaran") ? 
+                    {...activeStyle, paddingLeft: "1rem"} : 
+                    (hoveredItem === 'pembayaran' ? {...hoverStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"})
+                  }
+                >
+                  <span style={{ fontSize: "0.9rem" }}>
+                    <FaFile color={isActive("/pembayaran") ? '#2563eb' : '#4A5568'} />
+                  </span> Jasa
+                </button>
+              </div>
+            </div>
           </nav>
         </aside>
         

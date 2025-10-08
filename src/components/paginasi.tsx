@@ -70,6 +70,7 @@ const Paginasi: React.FC<PaginasiProps> = ({
     const maxPagesToShow = 3;
     const pageNumbers: number[] = [];
 
+    // Logika penentuan nomor halaman yang akan ditampilkan (tetap sama)
     let startPage = 1;
     let endPage = Math.min(totalPages, maxPagesToShow);
 
@@ -85,21 +86,42 @@ const Paginasi: React.FC<PaginasiProps> = ({
         }
     }
 
-    for (let i = startPage; i <= endPage; i++) {
-        pageNumbers.push(i);
-    }
-    
     // Jika total halaman kurang dari maxPagesToShow, tampilkan semua
     if (totalPages <= maxPagesToShow && totalPages > 0) {
       pageNumbers.length = 0; // Kosongkan array
       for (let i = 1; i <= totalPages; i++) {
         pageNumbers.push(i);
       }
+    } else {
+        // Jika lebih dari maxPagesToShow, gunakan logika startPage/endPage
+        for (let i = startPage; i <= endPage; i++) {
+            pageNumbers.push(i);
+        }
     }
 
+
     const isFirstPage = currentPage === 1;
-    const isLastPage = currentPage === totalPages;
+    // Jika itemsPerPage disetel ke ALL (0), kita anggap totalPages = 1
+    const isLastPage = itemsPerPage === 0 || currentPage === totalPages; 
     const allButtonsDisabled = totalItems === 0;
+    
+    // Daftar opsi ukuran halaman, menggunakan 0 untuk mewakili "All"
+    const pageSizeOptions = [5, 10, 20, 50];
+    
+    // Nilai select akan menjadi 0 jika itemsPerPage === totalItems (yaitu mode All)
+    const selectedItemsPerPage = itemsPerPage === totalItems ? 0 : itemsPerPage;
+    
+
+    // Handler yang memastikan halaman kembali ke 1 saat mengganti items per page
+    const handleItemsPerPageChange = (size: number) => {
+        // Panggil onItemsPerPageChange dengan nilai yang sesungguhnya
+        onItemsPerPageChange(size);
+        
+        // Pindah ke halaman 1 setiap kali items per page diubah
+        if (currentPage !== 1) {
+            onPageChange(1);
+        }
+    }
 
     return (
         <div style={styles.container}>
@@ -109,7 +131,8 @@ const Paginasi: React.FC<PaginasiProps> = ({
                     {/* Tombol Halaman Pertama */}
                     <button
                         onClick={() => onPageChange(1)}
-                        disabled={isFirstPage || allButtonsDisabled}
+                        // Nonaktifkan jika mode 'All' diaktifkan
+                        disabled={isFirstPage || isLastPage || allButtonsDisabled} 
                         style={{
                             ...styles.button,
                             border: "1px solid #ccc",
@@ -119,14 +142,14 @@ const Paginasi: React.FC<PaginasiProps> = ({
                     >
                         <FaStepBackward 
                             size={10} 
-                            style={{opacity: isFirstPage || allButtonsDisabled ? 0.5 : 1,
+                            style={{opacity: isFirstPage || isLastPage || allButtonsDisabled ? 0.5 : 1,
                             }}
                         />
                     </button>
                     {/* Tombol Halaman Sebelumnya */}
                     <button
                         onClick={() => onPageChange(currentPage - 1)}
-                        disabled={isFirstPage || allButtonsDisabled}
+                        disabled={isFirstPage || isLastPage || allButtonsDisabled}
                         style={{
                             ...styles.button,
                             borderTop: "1px solid #ccc",
@@ -137,13 +160,13 @@ const Paginasi: React.FC<PaginasiProps> = ({
                     >
                         <FaCaretLeft 
                             size={14} 
-                            style={{opacity: isFirstPage || allButtonsDisabled ? 0.5 : 1,
+                            style={{opacity: isFirstPage || isLastPage || allButtonsDisabled ? 0.5 : 1,
                             }}
                         />
                     </button>
 
                     {/* Tampilan Nomor Halaman */}
-                    {pageNumbers.map(page => (
+                    {itemsPerPage !== totalItems && pageNumbers.map(page => ( // Sembunyikan jika mode 'All'
                         <button
                             key={page}
                             onClick={() => onPageChange(page)}
@@ -164,6 +187,25 @@ const Paginasi: React.FC<PaginasiProps> = ({
                             {page}
                         </button>
                     ))}
+                    {/* Tampilkan indikator halaman 1 saat mode 'All' */}
+                    {itemsPerPage === totalItems && totalItems > 0 && (
+                        <button
+                            disabled
+                            style={{
+                                ...styles.pageButton,
+                                background: "#2563eb",
+                                color: "white",
+                                fontWeight: "600",
+                                borderTop: "none",
+                                borderBottom: "none",
+                                borderLeft: "none",
+                                borderRight: "none",
+                                cursor: 'default'
+                            }}
+                        >
+                            1
+                        </button>
+                    )}
 
                     {/* Tombol Halaman Selanjutnya */}
                     <button
@@ -205,14 +247,21 @@ const Paginasi: React.FC<PaginasiProps> = ({
                 </div>
                 {/* Opsi Items per Halaman */}
                 <select
-                    value={itemsPerPage}
-                    onChange={(e) => onItemsPerPageChange(Number(e.target.value))}
+                    // Gunakan selectedItemsPerPage (0 jika itemsPerPage === totalItems)
+                    value={selectedItemsPerPage} 
+                    onChange={(e) => {
+                        const value = Number(e.target.value);
+                        // Jika value 0, kirim totalItems ke handler, jika tidak kirim valuenya
+                        handleItemsPerPageChange(value === 0 ? totalItems : value); 
+                    }}
                     disabled={allButtonsDisabled}
                     style={styles.select}
                 >
-                    {[5, 10, 20, 50].map(size => (
+                    {pageSizeOptions.map(size => (
                         <option key={size} value={size}>{size}</option>
                     ))}
+                    {/* Tambahkan opsi ALL dengan value 0 */}
+                    <option key={0} value={0}>All</option> 
                 </select>
             </div>
         </div>
