@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/utils/supabaseClient";
-import Swal from "sweetalert2";
+// import Swal from "sweetalert2"; // HAPUS SWAL
 import { FaUpload, FaEdit, FaRegTrashAlt, FaCheck, FaTimes } from "react-icons/fa";
 import { FiDownload } from "react-icons/fi";
 import { Toaster, toast } from "react-hot-toast";
@@ -48,7 +48,7 @@ interface PaymentType {
 // Interface untuk detail pembayaran (baris per pegawai)
 interface PaymentDetailType {
   id: string; 
-  pembayaran_id: string; 
+  rekapan_id: string; // Foreign Key yang mengacu ke PaymentType.id
   nrp_nip_nir: string;
   nama: string;
   pekerjaan: string;
@@ -78,15 +78,13 @@ const Pembayaran = () => {
   const [showEditDetailModal, setShowEditDetailModal] = useState(false);
   const [detailToEdit, setDetailToEdit] = useState<PaymentDetailType | null>(null);
 
-  // Fetch data rekapitulasi pembayaran
+  // Fetch data rekapitulasi pembayaran (baris Rekap)
   const fetchPayments = useCallback(async () => {
     setIsTableLoading(true);
     try {
       let query = supabase
-        .from("pembayaran")
+        .from("rekapan_pembayaran") // === Tabel Rekapan ===
         .select("*")
-        .not('jumlah_pegawai', 'is', null) 
-        .is('nrp_nip_nir', null)          
         .order("created_at", { ascending: false });
       
       if (searchPeriod) {
@@ -97,7 +95,8 @@ const Pembayaran = () => {
       
       if (error) {
         console.error("Gagal mengambil data rekap pembayaran:", error);
-        Swal.fire("Error", "Gagal mengambil data rekap pembayaran.", "error");
+        // PERUBAHAN: Ganti Swal dengan toast
+        toast.error("Gagal mengambil data rekap pembayaran.", { duration: 5000 });
         setPaymentList([]);
         return;
       }
@@ -105,27 +104,36 @@ const Pembayaran = () => {
     } catch (e) {
       console.error("Failed to fetch payment data:", e);
       setPaymentList([]);
+      // PERUBAHAN: Tambahkan toast error untuk catch
+      toast.error("Terjadi kesalahan saat mengambil data pembayaran.");
     } finally {
       setIsTableLoading(false);
     }
   }, [searchPeriod]);
 
-  // Fetch detail pembayaran
+  // Fetch detail pembayaran (baris Detail)
   const fetchPaymentDetails = useCallback(async (paymentId: string) => {
     setIsDetailLoading(true);
+    console.log(`DEBUG: fetchPaymentDetails dipanggil untuk ID rekapan: ${paymentId}`); // LOG
     try {
       const { data, error } = await supabase
-        .from("pembayaran") 
+        .from("detail_pembayaran") // === Tabel Detail ===
         .select("*") 
-        .eq("pembayaran_id", paymentId) 
-        .not('nrp_nip_nir', 'is', null) 
+        .eq("rekapan_id", paymentId) // Menggunakan Foreign Key 'rekapan_id'
         .order("nama", { ascending: true });
 
       if (error) {
         console.error("Gagal mengambil detail pembayaran:", error);
+        console.log("DEBUG: Supabase DETAIL Error:", error); // LOG ERROR
         setPaymentDetailList([]);
         return;
       }
+      
+      console.log(`DEBUG: ${data.length} baris Detail DITEMUKAN.`);
+      if (data.length > 0) {
+          console.log("DEBUG: Sample Detail Data:", data.slice(0, 1));
+      }
+      
       setPaymentDetailList(data as PaymentDetailType[]);
     } catch (e) {
       console.error("Failed to fetch payment details:", e);
@@ -144,192 +152,223 @@ const Pembayaran = () => {
     if (selectedPayment?.id === payment.id) {
       setSelectedPayment(null);
       setPaymentDetailList([]);
+      console.log("DEBUG: Rekapan deselect. Detail dihapus."); // LOG
     } else {
       setSelectedPayment(payment);
+      console.log(`DEBUG: Memilih Rekapan ID: ${payment.id}. Memanggil fetch detail...`);
       await fetchPaymentDetails(payment.id); 
     }
     setSelectedDetails([]);
     setDetailCurrentPage(1);
   }, [selectedPayment, fetchPaymentDetails]);
 
-  // Handle upload success
+  // Handle upload success (Di dalamnya sudah menggunakan toast dari UploadModal)
   const handleUploadSuccess = useCallback((totalCount: number, failedCount: number) => {
     setShowUploadModal(false);
     fetchPayments();
     
-    let successMsg = `Berhasil mengupload ${totalCount - failedCount} data.`;
+    // Notifikasi di sini bersifat opsional karena sudah dihandle di UploadModal,
+    // tapi bisa dipertahankan sebagai fallback/summary:
+    let successMsg = `Upload Selesai. ${totalCount - failedCount} berhasil.`;
     if (failedCount > 0) {
-        successMsg += ` (${failedCount} gagal karena NRP/NIP/NIR tidak ditemukan).`;
+        successMsg += ` (${failedCount} gagal divalidasi).`;
+        // Hapus toast.success di sini jika Anda yakin notifikasi di UploadModal sudah cukup.
     }
-    toast.success(successMsg);
+    // Jika tidak ada notif dari UploadModal, gunakan ini:
+    // toast.success(successMsg);
   }, [fetchPayments]);
 
-  // Handle approve payment (disederhanakan)
-  const handleApprove = async () => {
+  // Fungsi Konfirmasi Kustom (Mengganti Swal.fire untuk konfirmasi)
+  const confirmAction = (title: string, text: string, confirmText: string, action: () => Promise<void>, isDestructive = false) => {
+    // Memberikan ID unik agar toast bisa di-dismiss
+    const toastId = toast.custom((t) => (
+      <div 
+        style={{ 
+          background: isDestructive ? '#FEE2E2' : '#EFF6FF', 
+          color: isDestructive ? '#991B1B' : '#1E40AF', 
+          padding: '10px 15px', 
+          borderRadius: '8px',
+          border: `1px solid ${isDestructive ? '#FCA5A5' : '#93C5FD'}`,
+          maxWidth: '300px',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
+        }}
+      >
+        <p style={{ fontWeight: 'bold', margin: '0 0 5px 0' }}>{title}</p>
+        <p style={{ margin: '0 0 10px 0', fontSize: '14px' }}>{text}</p>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+          <button 
+            onClick={() => toast.dismiss(t.id)} 
+            style={{ 
+              background: '#D1D5DB', color: '#1F2937', padding: '4px 10px', borderRadius: '4px', border: 'none', cursor: 'pointer'
+            }}
+          >
+            Batal
+          </button>
+          <button 
+            onClick={() => {
+              action();
+              toast.dismiss(t.id);
+            }} 
+            style={{ 
+              background: isDestructive ? '#EF4444' : '#3B82F6', 
+              color: 'white', 
+              padding: '4px 10px', 
+              borderRadius: '4px', 
+              border: 'none', 
+              cursor: 'pointer'
+            }}
+          >
+            {confirmText}
+          </button>
+        </div>
+      </div>
+    ), { duration: Infinity, id: 'confirm' });
+    return toastId;
+  };
+  
+
+  // Handle approve payment (Mengubah status di baris Rekap)
+  const handleApprove = () => {
     if (!selectedPayment || selectedPayment.status !== 'BARU') return;
     
-    const result = await Swal.fire({
-      title: 'Apakah Anda yakin?', 
-      text: `Anda akan menyetujui pembayaran periode ${selectedPayment.periode_pembayaran}`,
-      icon: 'question', 
-      showCancelButton: true, 
-      confirmButtonText: 'Ya, Setujui', 
-      cancelButtonText: 'Batal'
-    });
-
-    if (result.isConfirmed) {
-      const { error } = await supabase
-        .from('pembayaran')
-        .update({ status: 'DISETUJUI' })
-        .eq('id', selectedPayment.id) 
-        .is('nrp_nip_nir', null); 
-      
-      if (error) {
-        Swal.fire('Gagal!', `Gagal menyetujui: ${error.message}`, 'error');
-      } else {
-        toast.success("Pembayaran Berhasil Disetujui!");
+    confirmAction(
+      'Konfirmasi Persetujuan',
+      `Anda akan menyetujui pembayaran periode ${selectedPayment.periode_pembayaran}`,
+      'Ya, Setujui',
+      async () => {
+        // UPdate baris rekapan (di tabel rekapan_pembayaran)
+        const { error } = await supabase
+          .from('rekapan_pembayaran') // === Tabel Rekapan ===
+          .update({ status: 'DISETUJUI' })
+          .eq('id', selectedPayment.id) 
         
-        // --- START PERBAIKAN ---
-        const newStatus: PaymentType['status'] = 'DISETUJUI';
-        
-        // 1. Perbarui paymentList untuk me-refresh status di PaymentTable
-        setPaymentList(prevList => 
-            prevList.map(p => 
-                p.id === selectedPayment.id 
-                    ? { ...p, status: newStatus } 
-                    : p
-            )
-        );
-
-        // 2. Perbarui selectedPayment untuk me-refresh status di Detail Header
-        setSelectedPayment(prev => prev ? { ...prev, status: newStatus } : null);
-
-        // fetchPayments() tidak diperlukan karena state sudah diupdate
-        // --- END PERBAIKAN ---
-      }
-    }
-  };
-
-  // Handle reject payment (disederhanakan)
-  const handleReject = async () => {
-    if (!selectedPayment || selectedPayment.status !== 'BARU') return;
-    
-    const result = await Swal.fire({
-      title: 'Apakah Anda yakin?', 
-      text: `Anda akan menolak pembayaran periode ${selectedPayment.periode_pembayaran}`,
-      icon: 'warning', 
-      showCancelButton: true, 
-      confirmButtonText: 'Ya, Tolak', 
-      cancelButtonText: 'Batal'
-    });
-
-    if (result.isConfirmed) {
-      const { error } = await supabase
-        .from('pembayaran')
-        .update({ status: 'DITOLAK' })
-        .eq('id', selectedPayment.id) 
-        .is('nrp_nip_nir', null); 
-      
-      if (error) {
-        Swal.fire('Gagal!', `Gagal menolak: ${error.message}`, 'error');
-      } else {
-        toast.success("Pembayaran Berhasil Ditolak!");
-        
-        // --- START PERBAIKAN ---
-        const newStatus: PaymentType['status'] = 'DITOLAK';
-        
-        // 1. Perbarui paymentList untuk me-refresh status di PaymentTable
-        setPaymentList(prevList => 
-            prevList.map(p => 
-                p.id === selectedPayment.id 
-                    ? { ...p, status: newStatus } 
-                    : p
-            )
-        );
-
-        // 2. Perbarui selectedPayment untuk me-refresh status di Detail Header
-        setSelectedPayment(prev => prev ? { ...prev, status: newStatus } : null);
-        
-        // fetchPayments() tidak diperlukan karena state sudah diupdate
-        // --- END PERBAIKAN ---
-      }
-    }
-  };
-
-  // Handle delete selected details
-  const handleDeleteDetails = async () => {
-    if (selectedDetails.length === 0 || !selectedPayment) return;
-    
-    // Gunakan canEditDelete untuk memastikan tombol tidak aktif saat DISETUJUI
-    if (!canEditDelete) return;
-
-    const result = await Swal.fire({
-      title: "Apakah Anda yakin?",
-      text: `Anda akan menghapus ${selectedDetails.length} data detail pembayaran terpilih`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Ya, hapus!",
-      cancelButtonText: "Batal",
-    });
-
-    if (result.isConfirmed) {
-      const { error } = await supabase
-        .from("pembayaran") 
-        .delete()
-        .in("id", selectedDetails); 
-
-      if (error) {
-        Swal.fire("Gagal!", `Data gagal dihapus. Pesan: ${error.message}`, "error");
-      } else {
-        Swal.fire("Dihapus!", "Data berhasil dihapus.", "success");
-        if (selectedPayment) {
-          fetchPaymentDetails(selectedPayment.id); // Refresh detail
+        if (error) {
+          // PERUBAHAN: Ganti Swal Gagal dengan toast
+          toast.error(`Gagal menyetujui: ${error.message}`);
+        } else {
+          toast.success("Pembayaran Berhasil Disetujui!");
+          
+          const newStatus: PaymentType['status'] = 'DISETUJUI';
+          
+          // Optimistic Updates
+          setPaymentList(prevList => 
+              prevList.map(p => 
+                  p.id === selectedPayment.id 
+                      ? { ...p, status: newStatus } 
+                      : p
+              )
+          );
+          setSelectedPayment(prev => prev ? { ...prev, status: newStatus } : null);
+          
+          fetchPayments();
         }
-        setSelectedDetails([]);
       }
-    }
+    );
   };
 
-  // Handle delete rekapitulasi (disederhanakan)
-  const handleDeleteRekap = async () => {
+  // Handle reject payment (Mengubah status di baris Rekap)
+  const handleReject = () => {
+    if (!selectedPayment || selectedPayment.status !== 'BARU') return;
+    
+    confirmAction(
+      'Konfirmasi Penolakan',
+      `Anda akan menolak pembayaran periode ${selectedPayment.periode_pembayaran}`,
+      'Ya, Tolak',
+      async () => {
+        // UPdate baris rekapan (di tabel rekapan_pembayaran)
+        const { error } = await supabase
+          .from('rekapan_pembayaran') // === Tabel Rekapan ===
+          .update({ status: 'DITOLAK' })
+          .eq('id', selectedPayment.id) 
+        
+        if (error) {
+          // PERUBAHAN: Ganti Swal Gagal dengan toast
+          toast.error(`Gagal menolak: ${error.message}`);
+        } else {
+          toast.success("Pembayaran Berhasil Ditolak!");
+          
+          const newStatus: PaymentType['status'] = 'DITOLAK';
+          
+          // Optimistic Updates
+          setPaymentList(prevList => 
+              prevList.map(p => 
+                  p.id === selectedPayment.id 
+                      ? { ...p, status: newStatus } 
+                      : p
+              )
+          );
+          setSelectedPayment(prev => prev ? { ...prev, status: newStatus } : null);
+          
+          fetchPayments();
+        }
+      },
+      true // isDestructive = true
+    );
+  };
+
+  // Handle delete selected details (menghapus baris Detail)
+  const handleDeleteDetails = () => {
+    if (selectedDetails.length === 0 || !selectedPayment || !canEditDelete) return;
+    
+    confirmAction(
+      'Konfirmasi Hapus Detail',
+      `Anda akan menghapus ${selectedDetails.length} data detail pembayaran terpilih`,
+      'Ya, Hapus!',
+      async () => {
+        const { error } = await supabase
+          .from("detail_pembayaran") // === Tabel Detail ===
+          .delete()
+          .in("id", selectedDetails); 
+
+        if (error) {
+          // PERUBAHAN: Ganti Swal Gagal dengan toast
+          toast.error(`Data gagal dihapus. Pesan: ${error.message}`);
+        } else {
+          // PERUBAHAN: Ganti Swal Sukses dengan toast
+          toast.success("Data detail berhasil dihapus.");
+          if (selectedPayment) {
+            fetchPaymentDetails(selectedPayment.id); // Refresh detail
+          }
+          setSelectedDetails([]);
+          fetchPayments(); // Refresh rekap (total agregasi mungkin berubah)
+        }
+      },
+      true // isDestructive = true
+    );
+  };
+
+  // Handle delete rekapitulasi (menghapus baris Rekap dan Detail terkait)
+  const handleDeleteRekap = () => {
     if (!selectedPayment) return;
 
-    const result = await Swal.fire({
-      title: "Apakah Anda yakin?",
-      text: `Anda akan menghapus seluruh data pembayaran periode ${selectedPayment.periode_pembayaran} beserta detailnya!`,
-      icon: "error",
-      showCancelButton: true,
-      confirmButtonText: "Ya, Hapus Semua!",
-      cancelButtonText: "Batal",
-    });
-
-    if (result.isConfirmed) {
-        // Hapus baris detail
-        const { error: detailError } = await supabase
-            .from("pembayaran")
-            .delete()
-            .eq("pembayaran_id", selectedPayment.id);
-            
-        // Hapus baris rekap
+    confirmAction(
+      'Konfirmasi Hapus Rekap',
+      `Anda akan menghapus SELURUH data pembayaran periode ${selectedPayment.periode_pembayaran} beserta detailnya!`,
+      'Ya, Hapus Semua!',
+      async () => {
+        // Hapus baris rekap (menggunakan ID Rekap)
         const { error: rekapError } = await supabase
-            .from("pembayaran")
+            .from("rekapan_pembayaran") // === Tabel Rekapan ===
             .delete()
             .eq("id", selectedPayment.id);
 
-        if (detailError || rekapError) {
-            Swal.fire("Gagal!", "Gagal menghapus data pembayaran. Periksa RLS.", "error");
+        if (rekapError) {
+            // PERUBAHAN: Ganti Swal Gagal dengan toast
+            toast.error("Gagal menghapus data pembayaran. Periksa RLS.");
         } else {
-            Swal.fire("Dihapus!", "Seluruh data pembayaran berhasil dihapus.", "success");
+            // PERUBAHAN: Ganti Swal Sukses dengan toast
+            toast.success("Seluruh data pembayaran berhasil dihapus.");
             setSelectedPayment(null);
             setPaymentDetailList([]);
             fetchPayments();
         }
-    }
+      },
+      true // isDestructive = true
+    );
   };
   
   // Handle Edit Detail (Placeholder)
   const handleEditDetail = (detail: PaymentDetailType) => {
-    // Tambahkan kondisi pemeriksaan agar tidak error jika detail belum dipilih
     if (!canEditDelete || selectedDetails.length !== 1) return; 
     setDetailToEdit(detail);
     setShowEditDetailModal(true);
@@ -339,7 +378,8 @@ const Pembayaran = () => {
   // Handle download (disederhanakan)
   const handleDownload = (type: 'pdf' | 'excel') => {
     if (!selectedPayment) {
-      Swal.fire("Peringatan", "Pilih data pembayaran yang akan diunduh.", "warning");
+      // PERUBAHAN: Ganti Swal Peringatan dengan toast
+      toast.error("Pilih data pembayaran yang akan diunduh.");
       return;
     }
     
@@ -350,7 +390,7 @@ const Pembayaran = () => {
     }
   };
 
-  // Pagination untuk tabel utama
+  // Pagination dan Kalkulasi lainnya (tetap sama)
   const totalPages = Math.ceil(paymentList.length / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
   const endIndex = startIndex + rowsPerPage;
@@ -359,7 +399,6 @@ const Pembayaran = () => {
     [paymentList, startIndex, endIndex]
   );
 
-  // Pagination untuk tabel detail
   const detailTotalPages = Math.ceil(paymentDetailList.length / detailRowsPerPage);
   const detailStartIndex = (detailCurrentPage - 1) * detailRowsPerPage;
   const detailEndIndex = detailStartIndex + detailRowsPerPage;
@@ -368,11 +407,7 @@ const Pembayaran = () => {
     [paymentDetailList, detailStartIndex, detailEndIndex]
   );
 
-  // VARIABEL PENENTU KUNCI: TRUE jika status BARU atau DITOLAK
-  // Nilai ini akan menjadi false jika selectedPayment adalah null atau statusnya DISETUJUI
   const canEditDelete = selectedPayment && (selectedPayment.status === 'BARU' || selectedPayment.status === 'DITOLAK');
-
-  // Variabel untuk mengunci tombol (karena tidak ada rekap yang dipilih)
   const isDisabled = !selectedPayment || !canEditDelete; 
 
   return (
@@ -483,32 +518,24 @@ const Pembayaran = () => {
       {/* Tabel Detail Pembayaran */}
       <div 
         className={pageStyles.detailContainer} 
-        // --- PERBAIKAN: Mengembalikan style yang hilang ---
         style={{ opacity: isTableLoading ? 0.5 : 1, paddingBottom: '20px' }} 
-        // ---
       >
         <div className={pageStyles.detailHeader}>
-          Detail Pembayaran - {selectedPayment ? selectedPayment.periode_pembayaran : "Pilih Data Rekap"}
-          {selectedPayment && (
-            <span className={pageStyles.statusBadge} data-status={selectedPayment.status}>
-              {selectedPayment.status}
-            </span>
-          )}
+          Detail Pembayaran
         </div>
         
           <div 
             className={pageStyles.buttonContainer} 
-            // --- PERBAIKAN: Mengganti margin: "1rem" dengan style yang lebih konsisten ---
             style={{ 
               margin: '1rem',
               opacity: isDisabled ? 0.5 : 1, 
               pointerEvents: isDisabled ? 'none' : 'auto' 
             }}
-            // ---
           >
             <button 
+                // Menggunakan toast error untuk placeholder Edit
                 onClick={() => toast.error("Fitur Edit belum diimplementasi.")} 
-                className={styles.rekamButton}
+                className={styles.editButton}
                 disabled={isDisabled || selectedDetails.length !== 1} 
             >
                 <FaEdit /> Edit Detail
@@ -519,7 +546,7 @@ const Pembayaran = () => {
               disabled={isDisabled || selectedDetails.length === 0} 
               className={styles.hapusButton}
             >
-              <FaRegTrashAlt /> Hapus Detail Terpilih ({selectedDetails.length})
+              <FaRegTrashAlt /> Hapus Detail
             </button>
           </div>
         
@@ -530,7 +557,6 @@ const Pembayaran = () => {
           onSelectionChange={setSelectedDetails}
           onEdit={handleEditDetail} 
           isLoading={isDetailLoading}
-          // canEdit=false jika tidak ada selectedPayment atau status DISETUJUI
           canEdit={!!canEditDelete} 
           startIndex={detailStartIndex}
           formatAngka={formatAngka} 

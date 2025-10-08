@@ -4,7 +4,6 @@
 import React from "react";
 import pageStyles from "@/styles/komponen.module.css";
 import loadingStyles from "@/styles/loading.module.css";
-// import { formatAngka } from '@/lib/format'; // Kita tidak mengimpornya di sini karena akan dikirim sebagai prop
 
 // Interface untuk tipe data PaymentType (Baris Rekap)
 interface PaymentType {
@@ -26,20 +25,18 @@ interface PaymentTableProps {
   onPaymentSelect: (payment: PaymentType) => void;
   isLoading: boolean;
   startIndex: number;
-  // PERBAIKAN: Menambahkan formatAngka ke interface props
   formatAngka: (angka: number | string | null | undefined) => string; 
 }
 
 const PaymentTable: React.FC<PaymentTableProps> = ({
-  payments = [], // Default [] untuk mencegah error .length
+  payments = [],
   selectedPayment,
   onPaymentSelect,
   isLoading,
   startIndex,
-  formatAngka // PERBAIKAN: Menerima formatAngka sebagai prop
+  formatAngka
 }) => {
   const getStatusBadge = (status: string) => {
-    // Diasumsikan style badge sudah ada di pageStyles
     const statusClass = status === 'DISETUJUI' ? pageStyles.statusApproved : 
                        status === 'DITOLAK' ? pageStyles.statusRejected : 
                        pageStyles.statusNew;
@@ -73,7 +70,6 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
             </tr>
           </thead>
           <tbody className={pageStyles.tableBody}>
-            {/* Menggunakan payments.length sudah aman karena ada default value [] di atas */}
             {payments.length > 0 ? (
               payments.map((payment, index) => (
                 <tr 
@@ -87,7 +83,6 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
                   <td>{payment.periode}</td>
                   <td>{payment.periode_pembayaran}</td>
                   <td>{payment.jumlah_pegawai}</td>
-                  {/* Menggunakan formatAngka dari prop */}
                   <td style={{ textAlign: "right" }}>{formatAngka(payment.jumlah_bruto)}</td>
                   <td style={{ textAlign: "right" }}>{formatAngka(payment.jumlah_pph21)}</td>
                   <td style={{ textAlign: "right" }}>{formatAngka(payment.jumlah_netto)}</td>
@@ -99,9 +94,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
                 <td 
                   colSpan={8} 
                   className={pageStyles.tableEmpty}
-                  // --- PERBAIKAN: Menambahkan padding atas dan bawah 1rem ---
                   style={{ padding: '1rem 0' }}
-                  // ---
                 >
                   {isLoading ? "" : "Tidak ada data pembayaran yang ditemukan."}
                 </td>

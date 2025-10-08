@@ -6,18 +6,18 @@ import loadingStyles from "@/styles/loading.module.css";
 // Interface Detail
 interface PaymentDetailType {
     id: string;
-    pembayaran_id: string;
+    rekapan_id: string; // Foreign Key ke rekapan_pembayaran
     nrp_nip_nir: string;
     nama: string;
     pekerjaan: string;
     jumlah_bruto: number;
+    potongan: number; // Dipastikan ada
     pph21_persen: number;
     jumlah_pph21: number;
     jumlah_netto: number;
     nomor_rekening: string;
     bank: string;
     nama_rekening: string;
-    potongan: number;
   }
 
 interface PaymentDetailTableProps {
@@ -35,32 +35,29 @@ const PaymentDetailTable: React.FC<PaymentDetailTableProps> = ({
   details = [], 
   selectedDetails, 
   onSelectionChange, 
-  // onEdit, // Prop ini tidak digunakan di sini, jadi saya biarkan dikomentari untuk menjaga kebersihan
   isLoading, 
-  // canEdit, // Prop ini tidak digunakan di sini, jadi saya biarkan dikomentari untuk menjaga kebersihan
   startIndex,
   formatAngka 
 }) => {
 
   // Mengubah selectedDetails saat baris diklik (Single Selection Toggle)
   const handleRowClick = (id: string) => {
-    // Jika baris yang diklik sudah terpilih, batalkan seleksi
+    // Implementasi yang mengizinkan toggle atau single selection
     if (selectedDetails.includes(id)) {
-      onSelectionChange([]); 
+      onSelectionChange(selectedDetails.filter(sId => sId !== id)); // Deselect
     } else {
-      // Jika baris lain diklik, batalkan seleksi sebelumnya dan pilih baris ini
+      // Jika Anda ingin hanya single selection:
       onSelectionChange([id]); 
     }
   };
 
-  // Jumlah kolom: 1 (No.) + 9 Kolom Data = 10
   const colCount = 10; 
 
   return (
     <div className={pageStyles.detailtableContainer}>
       <div className={pageStyles.tableWrapper}>
         
-        {/* Loading Overlay */}
+        {/* Loading Overlay - Ditempatkan persis seperti di PaymentTable.tsx */}
         {isLoading && (
             
           <div className={pageStyles.tableOverlay}>
@@ -103,7 +100,7 @@ const PaymentDetailTable: React.FC<PaymentDetailTableProps> = ({
                   
                   <td style={{ textAlign: 'right' }}>{formatAngka(detail.jumlah_bruto)}</td>
                   <td style={{ textAlign: 'right' }}>{formatAngka(detail.potongan)}</td>
-                  <td style={{ textAlign: 'right' }}>{(detail.pph21_persen * 100).toFixed(1)}%</td>
+                  <td style={{ textAlign: 'right' }}>{(detail.pph21_persen * 100).toFixed(2)}%</td> 
                   <td style={{ textAlign: 'right' }}>{formatAngka(detail.jumlah_pph21)}</td>
                   <td style={{ textAlign: 'right' }}>{formatAngka(detail.jumlah_netto)}</td>
                   
