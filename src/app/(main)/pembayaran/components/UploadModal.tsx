@@ -262,7 +262,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
 
       // 3. Validasi Penuh (Dry Run)
       const detailData: Omit<PaymentDetailData, 'rekapan_id'>[] = [];
-      let failedRecords: FailedRecord[] = []; 
+      const failedRecords: FailedRecord[] = []; 
       
       const failedPeriodIndices = new Set<string>();
       const failedNrpNipNirIndices = new Set<string>();
