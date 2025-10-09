@@ -6,8 +6,12 @@ import { supabase } from "@/utils/supabaseClient";
 import pageStyles from "@/styles/komponen.module.css";
 import styles from "@/styles/button.module.css";
 import * as ExcelJS from 'exceljs';
-import toast from "react-hot-toast"; 
 
+// Import hook notifikasi kustom
+import { useNotification } from "@/lib/useNotification"; 
+
+
+// ... (Semua Interface tetap di sini)
 interface UploadModalProps {
   onClose: () => void;
   onSuccess: (totalCount: number, failedCount: number) => void;
@@ -18,7 +22,8 @@ interface PegawaiData {
   jumlah_bruto: number;
   potongan: number;
   periode_excel: string; 
-  nama_excel: string; 
+  nama_excel: string;
+  periode_pembayaran_excel: string; 
 }
 
 interface PegawaiFromDB {
@@ -50,15 +55,17 @@ interface FailedRecord {
   'NRP/NIP/NIR': string; 
   'NAMA (Excel)': string; 
   'PERIODE (Excel)': string; 
+  'PERIODE PEMBAYARAN (Excel)': string;
   'Alasan Kegagalan': string;
 }
+// ... (Akhir Interface)
+
 
 const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
+  const { showToast, showConfirm } = useNotification(); // << Gunakan hook notifikasi
   const [selectedPeriod, setSelectedPeriod] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  // Hapus state uploadResult
-  // const [uploadResult, setUploadResult] = useState<{ success: number; failed: number } | null>(null);
   
   const periodOptions: string[] = [];
   const targetYear = 2025;
@@ -72,7 +79,8 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
       const file = e.target.files[0];
       if (file.type !== 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' && 
           file.type !== 'application/vnd.ms-excel') {
-        toast.error("Harap unggah file Excel (.xlsx, .xls)", { duration: 4000 });
+        // Ganti Swal.fire("Error")
+        showToast("Harap unggah file Excel (.xlsx, .xls)", "error");
         return;
       }
       setSelectedFile(file);
@@ -95,11 +103,12 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
     return data
       .filter((row): row is Record<string, unknown> => typeof row === 'object' && row !== null)
       .map(row => ({
-        nrp_nip_nir: String(row.nrp_nip_nir || "").trim(),
-        jumlah_bruto: Number(row.jumlah_bruto) || 0,
+        nrp_nip_nir: String(row.nrp_nip_nir || row.nrp_nip_nik || "").trim(),
+        jumlah_bruto: Number(row.jumlah_bruto || row.jumlah || 0),
         potongan: Number(row.potongan) || 0,
         periode_excel: String(row.periode || row.PERIODE || "").trim(),
-        nama_excel: String(row.nama || row.NAMA || "").trim(), 
+        nama_excel: String(row.nama || row.NAMA || "").trim(),
+        periode_pembayaran_excel: String(row.periode_pembayaran || row.PERIODE_PEMBAYARAN || "").trim(),
       }))
       .filter(item => item.nrp_nip_nir && item.jumlah_bruto > 0);
   };
@@ -154,16 +163,27 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Template Pembayaran');
     
-    worksheet.addRow(['No','PERIODE','NRP_NIP_NIR','NAMA','Jumlah_Bruto', 'Potongan']);
+    worksheet.addRow(['No','PERIODE','PERIODE_PEMBAYARAN','NRP_NIP_NIR','NAMA','Jumlah_Bruto', 'Potongan']);
     
     worksheet.getRow(1).font = { bold: true };
     
     worksheet.getColumn(1).width = 5;
     worksheet.getColumn(2).width = 15;
-    worksheet.getColumn(3).width = 20;
-    worksheet.getColumn(4).width = 30; 
-    worksheet.getColumn(5).width = 15;
+    worksheet.getColumn(3).width = 25; 
+    worksheet.getColumn(4).width = 20;
+    worksheet.getColumn(5).width = 30;
     worksheet.getColumn(6).width = 15;
+    worksheet.getColumn(7).width = 15;
+    
+    worksheet.addRow([
+      '1',
+      '2025-01', 
+      'JASA BPJS JANUARI 2025',
+      '123456',
+      'Nama Contoh',
+      '5000000', 
+      '200000'
+    ]);
     
     workbook.xlsx.writeBuffer().then((buffer) => {
       const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -171,8 +191,17 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
       const a = document.createElement('a');
       a.href = url;
       a.download = `template-pembayaran.xlsx`;
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
+      
+      // Ganti Swal.fire("Success")
+      showToast("Template berhasil diunduh!", "success");
+    }).catch((error) => {
+      console.error("Error downloading template:", error);
+      // Ganti Swal.fire("Error")
+      showToast("Gagal mengunduh template", "error");
     });
   };
 
@@ -190,14 +219,14 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
         worksheet.addRow(headers.map(h => item[h]));
     });
     
-    worksheet.getColumn(1).width = 20; 
-    worksheet.getColumn(2).width = 30; 
-    worksheet.getColumn(3).width = 15; 
-    worksheet.getColumn(4).width = 50; 
+    worksheet.getColumn(1).width = 20;
+    worksheet.getColumn(2).width = 30;
+    worksheet.getColumn(3).width = 15;
+    worksheet.getColumn(4).width = 25; 
+    worksheet.getColumn(5).width = 50;
     
     try {
         const buffer = await workbook.xlsx.writeBuffer(); 
-        
         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
         return window.URL.createObjectURL(blob); 
     } catch (e) {
@@ -215,36 +244,31 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
     
-    toast.success('Laporan kegagalan berhasil diunduh!', {
-        style: { background: '#D1FAE5', color: '#065F46' },
-        duration: 3000
-    });
+    // Ganti Swal.fire("Success")
+    showToast("Laporan kegagalan berhasil diunduh!", "success");
   };
 
-  /**
-   * FUNGSI UTAMA UPLOAD DATA
-   */
   const handleUpload = async (): Promise<void> => {
     if (!selectedPeriod || !selectedFile) {
-      toast.error("Harap pilih periode dan unggah file Excel", { duration: 4000 });
+      // Ganti Swal.fire("Peringatan")
+      showToast("Harap pilih periode dan unggah file Excel", "warning");
       return;
     }
 
     setIsUploading(true);
-    // Hapus setUploadResult(null);
 
     try {
-      // 1. Baca dan Proses Data Excel
       const jsonData = await readExcelFile(selectedFile);
       const processedData = processExcelData(jsonData);
       
       if (processedData.length === 0) {
-        toast.error("Tidak ada data valid yang ditemukan dalam file. Upload dibatalkan.", { duration: 5000 });
+        // Ganti Swal.fire("Error")
+        showToast("Tidak ada data valid yang ditemukan dalam file. Upload dibatalkan.", "error");
         setIsUploading(false);
         return;
       }
 
-      // 2. Ambil data Pegawai untuk Validasi
+      // ... (Bagian ambil data pegawai tetap sama)
       const nrpNipNirList = processedData.map(item => item.nrp_nip_nir);
       const { data: pegawaiList, error: pegawaiError } = await supabase
         .from("pegawai")
@@ -259,53 +283,77 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
       pegawaiList?.forEach(p => {
         pegawaiMap.set(p.nrp_nip_nir, p);
       });
+      // ... (Akhir bagian ambil data pegawai)
 
       // 3. Validasi Penuh (Dry Run)
+      // ... (Logika Validasi tetap sama)
       const detailData: Omit<PaymentDetailData, 'rekapan_id'>[] = [];
       const failedRecords: FailedRecord[] = []; 
       
       const failedPeriodIndices = new Set<string>();
       const failedNrpNipNirIndices = new Set<string>();
+      const failedPeriodePembayaranIndices = new Set<string>();
       
       const totalDataInFile = processedData.length;
       let totalBruto = 0;
       let totalPotongan = 0;
       let totalPph21 = 0;
+      let firstPeriodePembayaran: string | null = null;
+      let isPeriodePembayaranConsistent = true;
 
       processedData.forEach((item) => {
         
         let isValid = true;
+        let errorReason = "";
         
+        // ... (Logika Validasi 1, 2, 3 tetap sama)
         // VALIDASI 1: Cek Kesesuaian Periode
         if (item.periode_excel !== selectedPeriod) {
-            failedRecords.push({
-                'NRP/NIP/NIR': item.nrp_nip_nir,
-                'NAMA (Excel)': item.nama_excel, 
-                'PERIODE (Excel)': item.periode_excel,
-                'Alasan Kegagalan': `Periode Excel (${item.periode_excel}) tidak cocok dengan periode yang dipilih (${selectedPeriod}).`
-            });
+            errorReason = `Periode Excel (${item.periode_excel}) tidak cocok dengan periode yang dipilih (${selectedPeriod}).`;
             failedPeriodIndices.add(item.nrp_nip_nir);
             isValid = false; 
         }
 
+        // VALIDASI 2: Cek PERIODE_PEMBAYARAN (KONSISTENSI)
+        if (isValid && item.periode_pembayaran_excel) {
+          if (firstPeriodePembayaran === null) {
+            firstPeriodePembayaran = item.periode_pembayaran_excel;
+          } else if (item.periode_pembayaran_excel !== firstPeriodePembayaran) {
+            errorReason = `PERIODE PEMBAYARAN tidak konsisten. Ditemukan "${item.periode_pembayaran_excel}" sedangkan sebelumnya "${firstPeriodePembayaran}".`;
+            failedPeriodePembayaranIndices.add(item.nrp_nip_nir);
+            isValid = false;
+            isPeriodePembayaranConsistent = false;
+          }
+        } else if (isValid && !item.periode_pembayaran_excel) {
+          errorReason = `Kolom PERIODE PEMBAYARAN tidak boleh kosong.`;
+          failedPeriodePembayaranIndices.add(item.nrp_nip_nir);
+          isValid = false;
+        }
+
         const pegawai = pegawaiMap.get(item.nrp_nip_nir);
         
-        // VALIDASI 2: Cek Ketersediaan Pegawai
+        // VALIDASI 3: Cek Ketersediaan Pegawai
         if (!pegawai) {
           if (isValid) {
-            failedRecords.push({
-                'NRP/NIP/NIR': item.nrp_nip_nir,
-                'NAMA (Excel)': item.nama_excel, 
-                'PERIODE (Excel)': item.periode_excel,
-                'Alasan Kegagalan': `NRP/NIP/NIR (${item.nrp_nip_nir}) tidak ditemukan di database Pegawai.`
-            });
+            errorReason = `NRP/NIP/NIR (${item.nrp_nip_nir}) tidak ditemukan di database Pegawai.`;
             failedNrpNipNirIndices.add(item.nrp_nip_nir);
             isValid = false;
           }
-          return;
+        }
+        // ... (Akhir Logika Validasi)
+
+        // Tambahkan ke failed records jika ada error
+        if (!isValid && errorReason) {
+          failedRecords.push({
+            'NRP/NIP/NIR': item.nrp_nip_nir,
+            'NAMA (Excel)': item.nama_excel,
+            'PERIODE (Excel)': item.periode_excel,
+            'PERIODE PEMBAYARAN (Excel)': item.periode_pembayaran_excel,
+            'Alasan Kegagalan': errorReason
+          });
         }
 
-        if (isValid) {
+        if (isValid && pegawai) {
             const pph21Persen = calculatePph21Persen(pegawai);
             const jumlahPph21 = item.jumlah_bruto * pph21Persen;
             const jumlahNetto = item.jumlah_bruto - item.potongan - jumlahPph21;
@@ -333,6 +381,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
       const failedCount = failedRecords.length;
       const uniqueFailedPeriodCount = failedPeriodIndices.size;
       const uniqueFailedNrpNipNirCount = failedNrpNipNirIndices.size;
+      const uniqueFailedPeriodePembayaranCount = failedPeriodePembayaranIndices.size;
 
       // 4. KEPUTUSAN TRANSAKSI (ALL-OR-NOTHING)
       if (failedCount > 0) {
@@ -344,44 +393,48 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
             failedMessage += ` ${uniqueFailedPeriodCount} periode tidak cocok.`;
         }
         if (uniqueFailedNrpNipNirCount > 0) {
-            failedMessage += ` **${uniqueFailedNrpNipNirCount}** NRP/NIP/NIR tidak valid.`;
+            failedMessage += ` ${uniqueFailedNrpNipNirCount} NRP/NIP/NIR tidak valid.`;
+        }
+        if (uniqueFailedPeriodePembayaranCount > 0) {
+            failedMessage += ` ${uniqueFailedPeriodePembayaranCount} PERIODE PEMBAYARAN tidak konsisten/kosong.`;
         }
         
-        // TOAST GAGAL dengan link download
-        toast.error((t) => (
-            <div style={{ padding: '0.5rem', fontWeight: 'bold' }}>
-                <p style={{ margin: '0 0 8px 0', color: '#991B1B' }}>{failedMessage}</p>
+        // Ganti SweetAlert untuk kegagalan dengan Confirm Modal (sebagai pengganti Modal custom)
+        // Kita gunakan ConfirmModal dengan tampilan OK/BATAL untuk memberi aksi Unduh.
+
+        const messageContent = (
+            <div style={{ textAlign: 'left', fontSize: '15px' }}>
+                <p style={{ marginBottom: '15px', color: '#B91C1C', fontWeight: 'bold' }}>{failedMessage}</p>
                 {downloadLink && (
-                    <button
-                        onClick={() => {
-                            downloadFromBlobUrl(downloadLink);
-                            toast.dismiss(t.id);
-                        }}
-                        className={styles.downloadButton}
-                        style={{ background: '#FECACA', color: '#991B1B', border: '1px solid #F87171' }}
-                    >
-                        Klik untuk Unduh Laporan Kesalahan
-                    </button>
+                    <p style={{ marginBottom: '0' }}>Klik tombol 'Unduh Laporan' untuk melihat detail kesalahan.</p>
                 )}
             </div>
-        ), {
-            style: { background: '#FEE2E2', color: '#991B1B', maxWidth: '350px' },
-            duration: 9000
+        );
+
+        const isConfirmed = await showConfirm({
+            title: 'Upload Dibatalkan',
+            message: messageContent,
+            confirmText: downloadLink ? 'Unduh Laporan' : 'OK',
+            cancelText: 'Tutup',
         });
         
-        // Hapus setUploadResult({ success: 0, failed: failedCount });
-        // Hanya memanggil onClose jika ada kegagalan total yang membatalkan upload
-        onClose(); 
+        if (isConfirmed && downloadLink) {
+          downloadFromBlobUrl(downloadLink);
+        }
+        
+        setIsUploading(false);
         return; 
       }
       
       // 5. KOMITMEN DATA (INSERT REKAPAN dan DETAIL)
       const totalNetto = totalBruto - totalPotongan - totalPph21;
       const finalSuccessCount = detailData.length;
+      const periodePembayaranFinal = firstPeriodePembayaran || `JASA BPJS ${selectedPeriod.split('-')[1]} ${selectedPeriod.split('-')[0]}`;
 
+      // ... (Logika insert Supabase tetap sama)
       const rekapanPayload = {
         periode: selectedPeriod,
-        periode_pembayaran: `JASA BPJS ${selectedPeriod.split('-')[1]} ${selectedPeriod.split('-')[0]}`,
+        periode_pembayaran: periodePembayaranFinal, 
         jumlah_pegawai: finalSuccessCount,
         jumlah_bruto: totalBruto,
         jumlah_pph21: totalPph21,
@@ -414,27 +467,18 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
           await supabase.from('rekapan_pembayaran').delete().eq('id', rekapanId);
           throw new Error(detailError.message || "Gagal insert data detail pembayaran."); 
       }
+      // ... (Akhir Logika insert Supabase)
 
       // 6. Sukses Penuh
-      // Hapus setUploadResult({ success: finalSuccessCount, failed: 0 });
       onSuccess(totalDataInFile, 0); 
       
-      // TOAST SUKSES
-      toast.success(`${finalSuccessCount} data berhasil diunggah!`, {
-          style: {
-              background: '#D1FAE5',
-              color: '#065F46',
-              fontWeight: 'bold',
-          },
-          duration: 4000
-      });
+      // Ganti toast.success
+      showToast(`${finalSuccessCount} data berhasil diunggah!`, "success");
       
-      // PERUBAHAN: Tutup modal setelah sukses
       onClose(); 
 
     } catch (error) {
       // 7. Error Handling (Error sistem)
-      
       console.error("Error processing file:", error);
       
       let errorMessage: string;
@@ -446,10 +490,8 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
           errorMessage = "Terjadi kesalahan yang tidak diketahui saat memproses file.";
       }
 
-      toast.error(`Gagal memproses file: ${errorMessage}`, {
-        style: { background: '#FEE2E2', color: '#991B1B' },
-        duration: 6000
-      });
+      // Ganti toast.error
+      showToast(`Gagal memproses file: ${errorMessage}`, "error", 6000);
 
     } finally {
       setIsUploading(false);
@@ -457,17 +499,16 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
   };
   
   return (
+    // ... (JSX untuk tampilan modal tetap sama)
     <div className={pageStyles.modalOverlay} onClick={onClose}>
       <div className={pageStyles.modalContent} onClick={(e) => e.stopPropagation()}>
         <h3 style={{ marginTop: 0, marginBottom: '20px' }}>Upload Data Pembayaran</h3>
-        
-        {/* Konten modal hanya menampilkan form upload, tidak lagi hasil akhir */}
         
         {/* Tampilan Form Upload */}
         <>
           <div className={pageStyles.modalForm} style={{display: ''}}>
             <div className={pageStyles.formGroup}>
-              <label className={pageStyles.formLabel}>Periode Pembayaran (YYY-MM):</label>
+              <label className={pageStyles.formLabel}>Periode Pembayaran (YYYY-MM):</label>
               <select 
                 value={selectedPeriod} 
                 onChange={(e) => setSelectedPeriod(e.target.value)}
@@ -490,22 +531,21 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
                 className={pageStyles.formInput}
                 required
               />
-              </div>
-              <div className={pageStyles.detailItemFullSPPR}>
-                <button 
-                  type="button" 
-                  onClick={downloadTemplate}
-                  className={styles.downloadButton}
-                  style={{ padding: '6px 12px', fontSize: '12px', marginRight: '1rem' }}
-                >
-                  Download Template
-                </button>
-                <span style={{ fontSize: '12px', color: '#666' }}>
-                    Kolom wajib: **PERIODE**, NRP_NIP_NIR, **NAMA**, Jumlah_Bruto, Potongan
-                </span>
-              </div>
             </div>
-         
+            <div className={pageStyles.detailItemFullSPPR}>
+              <button 
+                type="button" 
+                onClick={downloadTemplate}
+                className={styles.downloadButton}
+                style={{ padding: '6px 12px', fontSize: '12px', marginRight: '1rem' }}
+              >
+                Download Template
+              </button>
+              <span style={{ fontSize: '12px', color: '#666' }}>
+                  Kolom wajib: <strong>PERIODE, PERIODE_PEMBAYARAN, NRP_NIP_NIR, NAMA, Jumlah_Bruto</strong>
+              </span>
+            </div>
+          </div>
 
           <div className={pageStyles.formActions}>
             <button 

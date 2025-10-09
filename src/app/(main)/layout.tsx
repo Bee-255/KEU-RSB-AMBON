@@ -3,36 +3,39 @@
 
 import { useState, useEffect, ReactNode } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import Swal from "sweetalert2";
+// DIHAPUS: import Swal from "sweetalert2"; // << Hapus SweetAlert2
 import { supabase } from "@/utils/supabaseClient";
 import { FaFolder, FaFile, FaAngleLeft, FaAngleDown, FaSignOutAlt } from "react-icons/fa";
 import { Session, AuthChangeEvent } from '@supabase/supabase-js';
+
+// BARU: Import NotificationProvider dan useNotification
+import { NotificationProvider, useNotification } from '@/lib/useNotification'; 
 
 // Definisikan tipe untuk props
 interface MainLayoutProps {
   children: ReactNode;
 }
 
-export default function MainLayout({ children }: MainLayoutProps) {
+// Komponen Pembungkus Logout & Navigasi (untuk menggunakan useNotification)
+const LayoutContent = ({ children }: MainLayoutProps) => {
   const router = useRouter();
   const pathname = usePathname();
+  const { showConfirm, showToast } = useNotification(); // << Panggil hook di sini
+
   const [currentTime, setCurrentTime] = useState<string>("");
   const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(true);
   const [openFolder, setOpenFolder] = useState<string | null>(null);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [fullName, setFullName] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
-
-  // Tambahkan state untuk track ukuran layar
   const [isMobile, setIsMobile] = useState<boolean>(false);
 
   // Effect untuk mendeteksi ukuran layar
   useEffect(() => {
     const checkScreenSize = () => {
-      const mobile = window.innerWidth < 768; // Breakpoint untuk mobile (bisa disesuaikan)
+      const mobile = window.innerWidth < 768; 
       setIsMobile(mobile);
       
-      // Auto-hide sidebar di mobile
       if (mobile) {
         setIsSidebarVisible(false);
       } else {
@@ -40,13 +43,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
       }
     };
 
-    // Check saat pertama kali load
     checkScreenSize();
-
-    // Add event listener untuk resize
     window.addEventListener('resize', checkScreenSize);
 
-    // Cleanup
     return () => {
       window.removeEventListener('resize', checkScreenSize);
     };
@@ -79,20 +78,22 @@ export default function MainLayout({ children }: MainLayoutProps) {
     };
   }, [router]);
 
+  // Fungsi Logout yang menggunakan showConfirm
   const handleLogout = async () => {
-    const result = await Swal.fire({
-      title: "Yakin ingin keluar?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Ya, logout",
-      cancelButtonText: "Batal",
+    // Ganti Swal.fire dengan showConfirm
+    const isConfirmed = await showConfirm({
+      title: "Konfirmasi Logout",
+      message: "Yakin ingin keluar dari aplikasi?",
+      confirmText: "Ya, Logout",
+      cancelText: "Batal",
     });
 
-    if (result.isConfirmed) {
+    if (isConfirmed) {
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error("Error signing out:", error.message);
-        Swal.fire("Gagal Logout", "Terjadi kesalahan saat mencoba keluar.", "error");
+        // Ganti Swal.fire dengan showToast
+        showToast("Terjadi kesalahan saat mencoba keluar.", "error");
       }
     }
   };
@@ -146,12 +147,10 @@ export default function MainLayout({ children }: MainLayoutProps) {
     setOpenFolder(openFolder === 'data' ? null : 'data');
   };
 
-  // PERBAIKAN: Ganti nama fungsi ini agar tidak duplikat
   const handlePembayaranToggle = () => {
     setOpenFolder(openFolder === 'pembayaran' ? null : 'pembayaran');
   };
 
-  // Fungsi toggle sidebar yang juga menangani mobile behavior
   const handleSidebarToggle = () => {
     setIsSidebarVisible(!isSidebarVisible);
   };
@@ -203,10 +202,10 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const isAdminOpen = openFolder === 'administrasi';
   const isRekamOpen = openFolder === 'rekam';
   const isDataOpen = openFolder === 'data';
-  // PERBAIKAN: Ganti nama variabel ini agar tidak duplikat
   const isPembayaranOpen = openFolder === 'pembayaran';
   const isActive = (path: string) => pathname === path;
 
+  // Render komponen layout
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
       <header
@@ -396,7 +395,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 <button
                   onClick={() => {
                     router.push("/pejabatkeuangan");
-                    if (isMobile) setIsSidebarVisible(false); // Auto-close sidebar di mobile
+                    if (isMobile) setIsSidebarVisible(false); 
                   }}
                   onMouseEnter={() => setHoveredItem('pejabatkeuangan')}
                   onMouseLeave={() => setHoveredItem(null)}
@@ -413,7 +412,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 <button
                   onClick={() => {
                     router.push("/daftarakun");
-                    if (isMobile) setIsSidebarVisible(false); // Auto-close sidebar di mobile
+                    if (isMobile) setIsSidebarVisible(false); 
                   }}
                   onMouseEnter={() => setHoveredItem('daftarakun')}
                   onMouseLeave={() => setHoveredItem(null)}
@@ -466,7 +465,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 <button
                   onClick={() => {
                     router.push("/pegawai");
-                    if (isMobile) setIsSidebarVisible(false); // Auto-close sidebar di mobile
+                    if (isMobile) setIsSidebarVisible(false); 
                   }}
                   onMouseEnter={() => setHoveredItem('pegawai')}
                   onMouseLeave={() => setHoveredItem(null)}
@@ -483,7 +482,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 <button
                   onClick={() => {
                     router.push("/pencatatanpasien");
-                    if (isMobile) setIsSidebarVisible(false); // Auto-close sidebar di mobile
+                    if (isMobile) setIsSidebarVisible(false); 
                   }}
                   onMouseEnter={() => setHoveredItem('pencatatanpasien')}
                   onMouseLeave={() => setHoveredItem(null)}
@@ -500,7 +499,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 <button
                   onClick={() => {
                     router.push("/sppr");
-                    if (isMobile) setIsSidebarVisible(false); // Auto-close sidebar di mobile
+                    if (isMobile) setIsSidebarVisible(false); 
                   }}
                   onMouseEnter={() => setHoveredItem('sppr')}
                   onMouseLeave={() => setHoveredItem(null)}
@@ -517,7 +516,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 <button
                   onClick={() => {
                     router.push("/jurnalumum");
-                    if (isMobile) setIsSidebarVisible(false); // Auto-close sidebar di mobile
+                    if (isMobile) setIsSidebarVisible(false); 
                   }}
                   onMouseEnter={() => setHoveredItem('jurnalumum')}
                   onMouseLeave={() => setHoveredItem(null)}
@@ -570,7 +569,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 <button
                   onClick={() => {
                     router.push("/rekening");
-                    if (isMobile) setIsSidebarVisible(false); // Auto-close sidebar di mobile
+                    if (isMobile) setIsSidebarVisible(false); 
                   }}
                   onMouseEnter={() => setHoveredItem('rekening')}
                   onMouseLeave={() => setHoveredItem(null)}
@@ -589,22 +588,22 @@ export default function MainLayout({ children }: MainLayoutProps) {
 
             {/* PEMBAYARAN (Folder) */}
             <div
-              onClick={handlePembayaranToggle} // PERBAIKAN: Ganti nama fungsi
+              onClick={handlePembayaranToggle}
               onMouseEnter={() => setHoveredItem('pembayaran')}
               onMouseLeave={() => setHoveredItem(null)}
               style={
-                isPembayaranOpen ? activeStyle : (hoveredItem === 'pembayaran' ? hoverStyle : inactiveStyle) // PERBAIKAN: Ganti nama variabel
+                isPembayaranOpen ? activeStyle : (hoveredItem === 'pembayaran' ? hoverStyle : inactiveStyle)
               }
               >
               <span style={{ fontSize: "0.9rem" }}>
-                <FaFolder color={isPembayaranOpen ? '#2563eb' : '#4A5568'}  /> {/* PERBAIKAN: Ganti nama variabel */}
+                <FaFolder color={isPembayaranOpen ? '#2563eb' : '#4A5568'}  />
               </span> Pembayaran
               <span style={{
                 display: 'inline-block',
                 marginLeft: "auto",
                 width: "1em",
                 height: "1em",
-                transform: isPembayaranOpen ? 'rotate(-180deg)' : 'rotate(0deg)', // PERBAIKAN: Ganti nama variabel
+                transform: isPembayaranOpen ? 'rotate(-180deg)' : 'rotate(0deg)',
                 transition: 'transform 0.2s ease-in-out',
               }}>
                 <FaAngleDown strokeWidth={4} color="#4A5568" />
@@ -614,7 +613,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
             {/* Pembayaran Sub-menu */}
             <div 
               style={{
-                maxHeight: isPembayaranOpen ? '200px' : '0', // PERBAIKAN: Ganti nama variabel
+                maxHeight: isPembayaranOpen ? '200px' : '0',
                 overflow: 'hidden',
                 transition: 'max-height 0.2s',
               }}
@@ -623,7 +622,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 <button
                   onClick={() => {
                     router.push("/pembayaran");
-                    if (isMobile) setIsSidebarVisible(false); // Auto-close sidebar di mobile
+                    if (isMobile) setIsSidebarVisible(false); 
                   }}
                   onMouseEnter={() => setHoveredItem('pembayaran')}
                   onMouseLeave={() => setHoveredItem(null)}
@@ -673,4 +672,15 @@ export default function MainLayout({ children }: MainLayoutProps) {
       </div>
     </div>
   );
+};
+
+
+// Komponen Utama MainLayout (Wrapper Provider)
+export default function MainLayout({ children }: MainLayoutProps) {
+    // Memastikan NotificationProvider membungkus LayoutContent
+    return (
+        <NotificationProvider>
+            <LayoutContent>{children}</LayoutContent>
+        </NotificationProvider>
+    );
 }

@@ -1,0 +1,218 @@
+/* src/styles/notification.module.css */
+
+/* --- Toast Notification Styles --- */
+.toastContainer {
+  position: fixed;
+  z-index: 1050; /* Di atas Modal Konfirmasi */
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  gap: 10px;
+  pointer-events: none; /* agar tidak menghalangi klik di bawahnya */
+}
+
+/* Penempatan Posisi */
+.top-right { top: 20px; right: 20px; align-items: flex-end; }
+.top-center { top: 20px; left: 50%; transform: translateX(-50%); align-items: center; }
+.top-left { top: 20px; left: 20px; align-items: flex-start; }
+.bottom-right { bottom: 20px; right: 20px; align-items: flex-end; }
+
+
+.toastItem {
+  width: 100%;
+  max-width: 350px; 
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: all;
+  opacity: 0;
+  /* Animasi awal (siap masuk dari samping kanan) */
+  transform: translateX(100%); 
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Sedikit efek pegas */
+}
+
+/* Animasi Masuk (kembali ke posisi normal) */
+.toastItem.show {
+    opacity: 1;
+    transform: none; 
+}
+
+/* Header (Icon + Title + Close Button) */
+.toastHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.toastTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toastClose {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 10px;
+  font-size: 18px;
+  line-height: 1;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+.toastClose:hover {
+  opacity: 1;
+}
+
+/* Message Body */
+.toastMessage {
+  font-size: 14px;
+}
+
+/* Garis 1px Sesuai Permintaan */
+.toastDivider {
+  height: 1px;
+  background-color: rgba(255, 255, 255, 0.3);
+  margin: 5px 0;
+}
+
+/* Warna dan Styling Per Tipe */
+
+/* Sukses: Hijau */
+.success {
+  background-color: #4CAF50; 
+  color: white;
+}
+
+/* Gagal/Error: MERAH bagus (sesuai permintaan, umumnya untuk error) */
+.error {
+  background-color: #F44336; 
+  color: white;
+}
+
+/* Warning: Kuning */
+.warning {
+  background-color: #FFC107; 
+  color: #333; /* Teks gelap agar terbaca di background terang */
+}
+.warning .toastDivider {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Info: Biru */
+.info {
+  background-color: #2196F3; 
+  color: white;
+}
+
+
+/* --- Confirm Modal Styles (Muncul di tengah layar) --- */
+
+.modalBackdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1060; 
+    opacity: 0;
+    transition: opacity 0.2s ease-out;
+}
+
+.modalBackdrop.show {
+    opacity: 1;
+}
+
+.modalBox {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    width: 90%;
+    max-width: 450px; 
+    /* Animasi masuk */
+    transform: scale(0.95);
+    opacity: 0;
+    transition: all 0.2s ease-out;
+}
+
+.modalBackdrop.show .modalBox {
+    transform: scale(1);
+    opacity: 1;
+}
+
+.modalHeader {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    font-size: 18px;
+    font-weight: 700;
+    color: white;
+    background-color: #FF9800; /* Warna Orange untuk Konfirmasi */
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+.modalHeaderIcon {
+    margin-right: 10px;
+    font-size: 20px;
+}
+
+.modalBody {
+    padding: 20px 15px;
+    font-size: 15px;
+    line-height: 1.5;
+    color: #555;
+}
+
+/* Garis 1px */
+.modalDivider {
+    height: 1px;
+    background-color: #ddd;
+}
+
+.modalFooter {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 15px;
+}
+
+/* Button Styling */
+.modalButton {
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.2s, border-color 0.2s;
+    font-size: 14px;
+}
+
+.btnCancel {
+    background-color: #f0f0f0;
+    color: #333;
+    border: 1px solid #ccc;
+}
+.btnCancel:hover {
+    background-color: #e0e0e0;
+}
+
+.btnConfirm {
+    background-color: #2196F3; /* Biru/Primary */
+    color: white;
+    border: 1px solid #2196F3;
+}
+.btnConfirm:hover {
+    background-color: #0b7dda;
+    border-color: #0b7dda;
+}
