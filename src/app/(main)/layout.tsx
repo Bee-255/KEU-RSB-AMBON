@@ -6,18 +6,18 @@ import { useRouter, usePathname } from "next/navigation";
 import { supabase } from "@/utils/supabaseClient";
 import { FaFolder, FaFile, FaAngleLeft, FaAngleDown, FaSignOutAlt } from "react-icons/fa";
 import { Session, AuthChangeEvent } from '@supabase/supabase-js';
-import { NotificationProvider, keuNotification } from '@/lib/keuNotification'; 
+import { NotificationProvider, usekeuNotification } from '@/lib/usekeuNotification'; 
 
 // Definisikan tipe untuk props
 interface MainLayoutProps {
   children: ReactNode;
 }
 
-// Komponen Pembungkus Logout & Navigasi (untuk menggunakan keuNotification)
+// Komponen Pembungkus Logout & Navigasi (untuk menggunakan usekeuNotification)
 const LayoutContent = ({ children }: MainLayoutProps) => {
   const router = useRouter();
   const pathname = usePathname();
-  const { showConfirm, showToast } = keuNotification(); // << Panggil hook di sini
+  const { showConfirm, showToast } = usekeuNotification(); // << Panggil hook di sini
 
   const [currentTime, setCurrentTime] = useState<string>("");
   const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(true);

@@ -11,9 +11,7 @@ import pageStyles from "@/styles/komponen.module.css";
 import UploadModal from "./components/UploadModal";
 import PaymentTable from "./components/PaymentTable";
 import PaymentDetailTable from "./components/PaymentDetailTable";
-
-// Import keuNotification dari sistem notifikasi kustom Anda
-import { keuNotification } from "@/lib/keuNotification";
+import { usekeuNotification } from "@/lib/usekeuNotification";
 
 
 // =======================================================
@@ -64,8 +62,8 @@ interface PaymentDetailType {
 }
 
 const Pembayaran = () => {
-  // Panggil keuNotification
-  const { showToast, showConfirm } = keuNotification();
+  // Panggil usekeuNotification
+  const { showToast, showConfirm } = usekeuNotification();
 
   const [paymentList, setPaymentList] = useState<PaymentType[]>([]);
   const [paymentDetailList, setPaymentDetailList] = useState<PaymentDetailType[]>([]);

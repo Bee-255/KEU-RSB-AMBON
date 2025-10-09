@@ -7,8 +7,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import React from 'react';
 import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
-// Perubahan: Mengganti react-hot-toast dengan keuNotification
-import { keuNotification } from "@/lib/keuNotification"; 
+import { usekeuNotification } from "@/lib/usekeuNotification"; 
 
 // Gaya CSS (Tidak ada perubahan pada bagian ini)
 const containerStyle: React.CSSProperties = {
@@ -140,7 +139,7 @@ export default function LoginPage() {
   const years = generateYears(2020, new Date().getFullYear() + 1);
 
   // Inisialisasi hook notifikasi
-  const { showToast } = keuNotification(); 
+  const { showToast } = usekeuNotification(); 
 
   useEffect(() => {
     const checkUser = async () => {

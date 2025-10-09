@@ -2,7 +2,7 @@
 import { ReactNode } from "react";
 import Image from "next/image";
 // Menggunakan NotificationProvider yang Anda kirimkan
-import { NotificationProvider } from "@/lib/keuNotification"; 
+import { NotificationProvider } from "@/lib/usekeuNotification"; 
 
 interface AuthLayoutProps {
   children: ReactNode;

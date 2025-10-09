@@ -1,4 +1,4 @@
-// src/lib/keuNotification.tsx
+// src/lib/usekeuNotification.tsx
 'use client';
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
@@ -177,11 +177,11 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 /**
  * Hook untuk menggunakan fungsionalitas notifikasi di komponen
  */
-export const keuNotification = () => {
+export const usekeuNotification = () => {
   const context = useContext(NotificationContext);
   if (context === undefined) {
     // Pesan error jika hook dipanggil di luar Provider
-    throw new Error('keuNotification harus bersamaan NotificationProvider');
+    throw new Error('usekeuNotification harus bersamaan NotificationProvider');
   }
   return context;
 };
