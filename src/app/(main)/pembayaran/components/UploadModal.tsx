@@ -62,7 +62,7 @@ interface FailedRecord {
 
 
 const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
-  const { showToast, showConfirm } = useNotification(); // << Gunakan hook notifikasi
+  const { showToast, showConfirm } = useNotification(); 
   const [selectedPeriod, setSelectedPeriod] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -79,7 +79,6 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
       const file = e.target.files[0];
       if (file.type !== 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' && 
           file.type !== 'application/vnd.ms-excel') {
-        // Ganti Swal.fire("Error")
         showToast("Harap unggah file Excel (.xlsx, .xls)", "error");
         return;
       }
@@ -196,11 +195,9 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
       
-      // Ganti Swal.fire("Success")
       showToast("Template berhasil diunduh!", "success");
     }).catch((error) => {
       console.error("Error downloading template:", error);
-      // Ganti Swal.fire("Error")
       showToast("Gagal mengunduh template", "error");
     });
   };
@@ -244,13 +241,11 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
     
-    // Ganti Swal.fire("Success")
     showToast("Laporan kegagalan berhasil diunduh!", "success");
   };
 
   const handleUpload = async (): Promise<void> => {
     if (!selectedPeriod || !selectedFile) {
-      // Ganti Swal.fire("Peringatan")
       showToast("Harap pilih periode dan unggah file Excel", "warning");
       return;
     }
@@ -262,13 +257,11 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
       const processedData = processExcelData(jsonData);
       
       if (processedData.length === 0) {
-        // Ganti Swal.fire("Error")
         showToast("Tidak ada data valid yang ditemukan dalam file. Upload dibatalkan.", "error");
         setIsUploading(false);
         return;
       }
 
-      // ... (Bagian ambil data pegawai tetap sama)
       const nrpNipNirList = processedData.map(item => item.nrp_nip_nir);
       const { data: pegawaiList, error: pegawaiError } = await supabase
         .from("pegawai")
@@ -283,10 +276,8 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
       pegawaiList?.forEach(p => {
         pegawaiMap.set(p.nrp_nip_nir, p);
       });
-      // ... (Akhir bagian ambil data pegawai)
 
       // 3. Validasi Penuh (Dry Run)
-      // ... (Logika Validasi tetap sama)
       const detailData: Omit<PaymentDetailData, 'rekapan_id'>[] = [];
       const failedRecords: FailedRecord[] = []; 
       
@@ -299,14 +290,14 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
       let totalPotongan = 0;
       let totalPph21 = 0;
       let firstPeriodePembayaran: string | null = null;
-      let isPeriodePembayaranConsistent = true;
+      // Perbaikan #1: Variabel isPeriodePembayaranConsistent dihapus.
+      // let isPeriodePembayaranConsistent = true; // Dihapus karena tidak digunakan di luar loop
 
       processedData.forEach((item) => {
         
         let isValid = true;
         let errorReason = "";
         
-        // ... (Logika Validasi 1, 2, 3 tetap sama)
         // VALIDASI 1: Cek Kesesuaian Periode
         if (item.periode_excel !== selectedPeriod) {
             errorReason = `Periode Excel (${item.periode_excel}) tidak cocok dengan periode yang dipilih (${selectedPeriod}).`;
@@ -322,7 +313,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
             errorReason = `PERIODE PEMBAYARAN tidak konsisten. Ditemukan "${item.periode_pembayaran_excel}" sedangkan sebelumnya "${firstPeriodePembayaran}".`;
             failedPeriodePembayaranIndices.add(item.nrp_nip_nir);
             isValid = false;
-            isPeriodePembayaranConsistent = false;
+            // isPeriodePembayaranConsistent = false; // Dihapus karena variabel dihapus
           }
         } else if (isValid && !item.periode_pembayaran_excel) {
           errorReason = `Kolom PERIODE PEMBAYARAN tidak boleh kosong.`;
@@ -340,7 +331,6 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
             isValid = false;
           }
         }
-        // ... (Akhir Logika Validasi)
 
         // Tambahkan ke failed records jika ada error
         if (!isValid && errorReason) {
@@ -399,14 +389,11 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
             failedMessage += ` ${uniqueFailedPeriodePembayaranCount} PERIODE PEMBAYARAN tidak konsisten/kosong.`;
         }
         
-        // Ganti SweetAlert untuk kegagalan dengan Confirm Modal (sebagai pengganti Modal custom)
-        // Kita gunakan ConfirmModal dengan tampilan OK/BATAL untuk memberi aksi Unduh.
-
         const messageContent = (
             <div style={{ textAlign: 'left', fontSize: '15px' }}>
                 <p style={{ marginBottom: '15px', color: '#B91C1C', fontWeight: 'bold' }}>{failedMessage}</p>
                 {downloadLink && (
-                    <p style={{ marginBottom: '0' }}>Klik tombol 'Unduh Laporan' untuk melihat detail kesalahan.</p>
+                    <p style={{ marginBottom: '0' }}>Klik tombol &apos;Unduh Laporan&apos; untuk melihat detail kesalahan.</p>
                 )}
             </div>
         );
@@ -431,7 +418,6 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
       const finalSuccessCount = detailData.length;
       const periodePembayaranFinal = firstPeriodePembayaran || `JASA BPJS ${selectedPeriod.split('-')[1]} ${selectedPeriod.split('-')[0]}`;
 
-      // ... (Logika insert Supabase tetap sama)
       const rekapanPayload = {
         periode: selectedPeriod,
         periode_pembayaran: periodePembayaranFinal, 
@@ -467,12 +453,10 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
           await supabase.from('rekapan_pembayaran').delete().eq('id', rekapanId);
           throw new Error(detailError.message || "Gagal insert data detail pembayaran."); 
       }
-      // ... (Akhir Logika insert Supabase)
 
       // 6. Sukses Penuh
       onSuccess(totalDataInFile, 0); 
       
-      // Ganti toast.success
       showToast(`${finalSuccessCount} data berhasil diunggah!`, "success");
       
       onClose(); 
@@ -490,7 +474,6 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
           errorMessage = "Terjadi kesalahan yang tidak diketahui saat memproses file.";
       }
 
-      // Ganti toast.error
       showToast(`Gagal memproses file: ${errorMessage}`, "error", 6000);
 
     } finally {
@@ -499,7 +482,6 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
   };
   
   return (
-    // ... (JSX untuk tampilan modal tetap sama)
     <div className={pageStyles.modalOverlay} onClick={onClose}>
       <div className={pageStyles.modalContent} onClick={(e) => e.stopPropagation()}>
         <h3 style={{ marginTop: 0, marginBottom: '20px' }}>Upload Data Pembayaran</h3>
@@ -541,6 +523,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
               >
                 Download Template
               </button>
+              {/* Perbaikan #2: Mengganti tanda kutip tunggal di JSX menjadi HTML entity &apos; */}
               <span style={{ fontSize: '12px', color: '#666' }}>
                   Kolom wajib: <strong>PERIODE, PERIODE_PEMBAYARAN, NRP_NIP_NIR, NAMA, Jumlah_Bruto</strong>
               </span>
