@@ -310,8 +310,7 @@ const Pembayaran = () => {
         title: 'Konfirmasi Hapus Rekap',
         message: `Anda akan menghapus SELURUH data pembayaran periode ${selectedPayment.periode_pembayaran} beserta detailnya!`,
         confirmText: 'Ya, Hapus Semua!',
-        // BARIS INI DIHAPUS untuk menyelesaikan error 2353
-        // isDestructive: true, 
+        // isDestructive: true telah dihapus di sini untuk menyelesaikan error 2353
     });
 
     if (isConfirmed) {
@@ -453,10 +452,9 @@ const Pembayaran = () => {
         isLoading={isTableLoading}
         startIndex={startIndex}
         formatAngka={formatAngka} 
-        // --- TAMBAH PROPS YANG HILANG DI SINI ---
+        // Prop tambahan untuk mengatasi error TS2322 sebelumnya
         expandedIds={expandedIds} 
         toggleExpand={toggleExpand} 
-        // ----------------------------------------
       />
 
       {/* Pagination Tabel Utama */}
