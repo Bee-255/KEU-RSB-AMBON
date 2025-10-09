@@ -8,7 +8,7 @@ import styles from "@/styles/button.module.css";
 import * as ExcelJS from 'exceljs';
 
 // Import hook notifikasi kustom
-import { usekeuNotification } from "@/lib/usekeuNotification"; 
+import { useKeuNotification } from "@/lib/useKeuNotification"; 
 import { FiDownload } from "react-icons/fi";
 // Import Icon yang diperlukan
 import { FaUpload, FaXmark } from "react-icons/fa6"; 
@@ -62,9 +62,8 @@ interface FailedRecord {
 }
 // ... (Akhir Interface)
 
-
 const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
-  const { showToast, showConfirm } = usekeuNotification(); 
+  const { showToast, showConfirm } = useKeuNotification(); 
   const [selectedPeriod, setSelectedPeriod] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);

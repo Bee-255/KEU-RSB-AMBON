@@ -5,7 +5,7 @@ import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/utils/supabaseClient";
 import { FaPlus, FaEdit, FaRegTrashAlt } from "react-icons/fa";
 import Paginasi from '@/components/paginasi';
-import { usekeuNotification } from "@/lib/usekeuNotification";
+import { useKeuNotification } from "@/lib/useKeuNotification";
 import styles from "@/styles/button.module.css";
 import pageStyles from "@/styles/komponen.module.css";
 import loadingStyles from "@/styles/loading.module.css";
@@ -91,7 +91,7 @@ const DaftarRekening: React.FC = () => {
     const [akunBankOptions, setAkunBankOptions] = useState<{kode_akun: string, nama_akun: string}[]>([]); 
     
     // Inisialisasi hook notifikasi
-    const { showToast, showConfirm } = usekeuNotification();
+    const { showToast, showConfirm } = useKeuNotification();
 
     // --- Fungsi Pengambilan Role Pengguna ---
     const getLoggedInUser = async () => {

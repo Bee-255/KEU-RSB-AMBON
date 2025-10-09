@@ -11,7 +11,7 @@ import pageStyles from "@/styles/komponen.module.css";
 import UploadModal from "./components/UploadModal";
 import PaymentTable from "./components/PaymentTable";
 import PaymentDetailTable from "./components/PaymentDetailTable";
-import { usekeuNotification } from "@/lib/usekeuNotification";
+import { useKeuNotification } from "@/lib/useKeuNotification";
 
 
 // =======================================================
@@ -62,8 +62,8 @@ interface PaymentDetailType {
 }
 
 const Pembayaran = () => {
-  // Panggil usekeuNotification
-  const { showToast, showConfirm } = usekeuNotification();
+  // Panggil useKeuNotification
+  const { showToast, showConfirm } = useKeuNotification();
 
   const [paymentList, setPaymentList] = useState<PaymentType[]>([]);
   const [paymentDetailList, setPaymentDetailList] = useState<PaymentDetailType[]>([]);
@@ -79,6 +79,11 @@ const Pembayaran = () => {
   const [searchPeriod, setSearchPeriod] = useState("");
   const [showEditDetailModal, setShowEditDetailModal] = useState(false);
   const [detailToEdit, setDetailToEdit] = useState<PaymentDetailType | null>(null);
+  
+  // --- BARIS BARU: STATE UNTUK MENGELOLA EXPAND/COLLAPSE ---
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  // --------------------------------------------------------
+
 
   // Fetch data rekapitulasi pembayaran (baris Rekap)
   const fetchPayments = useCallback(async () => {
@@ -161,6 +166,21 @@ const Pembayaran = () => {
     setSelectedDetails([]);
     setDetailCurrentPage(1);
   }, [selectedPayment, fetchPaymentDetails]);
+
+  // --- BARIS BARU: FUNGSI UNTUK MENGELOLA EXPAND/COLLAPSE ---
+  const toggleExpand = useCallback((id: string) => {
+    setExpandedIds(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(id)) {
+            newSet.delete(id); // Tutup
+        } else {
+            newSet.add(id); // Buka
+        }
+        return newSet;
+    });
+  }, []);
+  // -------------------------------------------------------
+
 
   // Handle upload success
   const handleUploadSuccess = useCallback((totalCount: number, failedCount: number) => {
@@ -433,6 +453,10 @@ const Pembayaran = () => {
         isLoading={isTableLoading}
         startIndex={startIndex}
         formatAngka={formatAngka} 
+        // --- TAMBAH PROPS YANG HILANG DI SINI ---
+        expandedIds={expandedIds} 
+        toggleExpand={toggleExpand} 
+        // ----------------------------------------
       />
 
       {/* Pagination Tabel Utama */}

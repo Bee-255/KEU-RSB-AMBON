@@ -4,6 +4,21 @@
 import React from "react";
 import pageStyles from "@/styles/komponen.module.css";
 import loadingStyles from "@/styles/loading.module.css";
+// Import FaCircleChevronRight dari react-icons/fa
+import { FaCircleChevronRight } from "react-icons/fa6"; 
+
+// Catatan: Anda perlu membuat komponen PaymentDetailTable 
+// yang menerima paymentId dan merender detail tabelnya.
+// Untuk contoh ini, saya akan menggunakan komponen placeholder.
+const PaymentDetailTable = ({ paymentId, formatAngka }: { paymentId: string, formatAngka: (angka: number | string | null | undefined) => string }) => (
+    <div style={{ padding: '10px 20px', backgroundColor: '#f9f9f9' }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#007bff' }}>Detail Pembayaran ID: {paymentId}</h4>
+        {/* Placeholder untuk tabel detail yang sebenarnya */}
+        <p style={{ margin: 0, fontSize: '0.9em' }}>
+            Data detail (misalnya, komponen gaji, potongan, dll.) akan dimuat dan ditampilkan di sini.
+        </p>
+    </div>
+);
 
 // Interface untuk tipe data PaymentType (Baris Rekap)
 interface PaymentType {
@@ -26,6 +41,9 @@ interface PaymentTableProps {
   isLoading: boolean;
   startIndex: number;
   formatAngka: (angka: number | string | null | undefined) => string; 
+  // --- Props baru untuk Hierarki/Accordion ---
+  expandedIds: Set<string>; 
+  toggleExpand: (id: string) => void;
 }
 
 const PaymentTable: React.FC<PaymentTableProps> = ({
@@ -34,7 +52,9 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
   onPaymentSelect,
   isLoading,
   startIndex,
-  formatAngka
+  formatAngka,
+  expandedIds,
+  toggleExpand
 }) => {
   const getStatusBadge = (status: string) => {
     const statusClass = status === 'DISETUJUI' ? pageStyles.statusApproved : 
@@ -72,22 +92,48 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
           <tbody className={pageStyles.tableBody}>
             {payments.length > 0 ? (
               payments.map((payment, index) => (
-                <tr 
-                  key={payment.id} 
-                  onClick={() => onPaymentSelect(payment)}
-                  className={`${pageStyles.tableRow} ${
-                    selectedPayment?.id === payment.id ? pageStyles.selected : ""
-                  }`}
-                >
-                  <td>{startIndex + index + 1}</td>
-                  <td>{payment.periode}</td>
-                  <td>{payment.periode_pembayaran}</td>
-                  <td>{payment.jumlah_pegawai}</td>
-                  <td style={{ textAlign: "right" }}>{formatAngka(payment.jumlah_bruto)}</td>
-                  <td style={{ textAlign: "right" }}>{formatAngka(payment.jumlah_pph21)}</td>
-                  <td style={{ textAlign: "right" }}>{formatAngka(payment.jumlah_netto)}</td>
-                  <td>{getStatusBadge(payment.status)}</td>
-                </tr>
+                <React.Fragment key={payment.id}>
+                  {/* BARIS REKAPAN UTAMA */}
+                  <tr 
+                    onClick={() => onPaymentSelect(payment)}
+                    className={`${pageStyles.tableRow} ${
+                      selectedPayment?.id === payment.id ? pageStyles.selected : ""
+                    }`}
+                  >
+                    <td style={{ display: 'flex', alignItems: 'center' }}>
+                      <FaCircleChevronRight 
+                        onClick={(e) => {
+                          e.stopPropagation(); // Mencegah onPaymentSelect terpicu
+                          toggleExpand(payment.id);
+                        }}
+                        className={`${pageStyles.expandIcon} ${
+                          expandedIds.has(payment.id) ? pageStyles.expanded : ""
+                        }`}
+                        aria-label={expandedIds.has(payment.id) ? "Tutup Detail" : "Buka Detail"}
+                      />
+                      <span style={{ marginLeft: '8px' }}>
+                        {startIndex + index + 1}
+                      </span>
+                    </td>
+                    <td>{payment.periode}</td>
+                    <td>{payment.periode_pembayaran}</td>
+                    <td>{payment.jumlah_pegawai}</td>
+                    <td style={{ textAlign: "right" }}>{formatAngka(payment.jumlah_bruto)}</td>
+                    <td style={{ textAlign: "right" }}>{formatAngka(payment.jumlah_pph21)}</td>
+                    <td style={{ textAlign: "right" }}>{formatAngka(payment.jumlah_netto)}</td>
+                    <td>{getStatusBadge(payment.status)}</td>
+                  </tr>
+                  
+                  {/* BARIS DETAIL (NESTED) */}
+                  {expandedIds.has(payment.id) && (
+                    <tr className={pageStyles.detailRow}>
+                      <td colSpan={8} style={{ padding: '0' }}>
+                        {/* Ganti dengan komponen tabel detail yang sesungguhnya */}
+                        <PaymentDetailTable paymentId={payment.id} formatAngka={formatAngka} />
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               ))
             ) : (
               <tr>

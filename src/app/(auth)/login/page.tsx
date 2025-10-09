@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import React from 'react';
 import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
-import { usekeuNotification } from "@/lib/usekeuNotification"; 
+import { useKeuNotification } from "@/lib/useKeuNotification"; 
 
 // Gaya CSS (Tidak ada perubahan pada bagian ini)
 const containerStyle: React.CSSProperties = {
@@ -139,7 +139,7 @@ export default function LoginPage() {
   const years = generateYears(2020, new Date().getFullYear() + 1);
 
   // Inisialisasi hook notifikasi
-  const { showToast } = usekeuNotification(); 
+  const { showToast } = useKeuNotification(); 
 
   useEffect(() => {
     const checkUser = async () => {
