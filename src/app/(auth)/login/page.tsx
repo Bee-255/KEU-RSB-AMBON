@@ -7,9 +7,10 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import React from 'react';
 import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
-import toast, { Toaster } from 'react-hot-toast';
+// Perubahan: Mengganti react-hot-toast dengan keuNotification
+import { keuNotification } from "@/lib/keuNotification"; 
 
-// Gaya CSS
+// Gaya CSS (Tidak ada perubahan pada bagian ini)
 const containerStyle: React.CSSProperties = {
   display: "flex",
   flexDirection: "column",
@@ -138,6 +139,9 @@ export default function LoginPage() {
   const router = useRouter();
   const years = generateYears(2020, new Date().getFullYear() + 1);
 
+  // Inisialisasi hook notifikasi
+  const { showToast } = keuNotification(); 
+
   useEffect(() => {
     const checkUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -169,7 +173,8 @@ export default function LoginPage() {
 
     if (error) {
       setLoading(false);
-      toast.error("Login Gagal.");
+      // Perubahan: Menggunakan showToast untuk Error
+      showToast("Login Gagal.", "error"); 
     } else {
       const { error: sessionError } = await supabase.auth.updateUser({
         data: {
@@ -184,13 +189,15 @@ export default function LoginPage() {
         .single();
       
       if (!profile || !profile.nama_lengkap) {
-        toast.success("Login berhasil! Silakan lengkapi data profil Anda.");
+        // Perubahan: Menggunakan showToast untuk Sukses
+        showToast("Login berhasil! Silakan lengkapi data profil Anda.", "success");
         setTimeout(() => {
           setLoading(false); 
           router.push("/profile");
         }, 1500);
       } else {
-        toast.success("Login berhasil!");
+        // Perubahan: Menggunakan showToast untuk Sukses
+        showToast("Login berhasil!", "success");
         setTimeout(() => {
           setLoading(false);
           router.push("/dashboard");
@@ -205,7 +212,7 @@ export default function LoginPage() {
 
   return (
     <div style={containerStyle}>
-      <Toaster position="top-right" />
+      {/* Perubahan: Toaster dihapus karena sudah di-handle oleh NotificationProvider */}
       <div style={cardStyle}>
         <div style={iconGroupStyle}>
           <Image

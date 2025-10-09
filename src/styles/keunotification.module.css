@@ -3,24 +3,22 @@
 /* --- Toast Notification Styles --- */
 .toastContainer {
   position: fixed;
-  z-index: 1050; /* Di atas Modal Konfirmasi */
+  z-index: 1050;
   display: flex;
   flex-direction: column;
   padding: 10px;
   gap: 10px;
-  pointer-events: none; /* agar tidak menghalangi klik di bawahnya */
+  pointer-events: none;
 }
 
-/* Penempatan Posisi */
 .top-right { top: 20px; right: 20px; align-items: flex-end; }
 .top-center { top: 20px; left: 50%; transform: translateX(-50%); align-items: center; }
 .top-left { top: 20px; left: 20px; align-items: flex-start; }
 .bottom-right { bottom: 20px; right: 20px; align-items: flex-end; }
 
-
 .toastItem {
   width: 100%;
-  max-width: 350px; 
+  max-width: 350px;
   padding: 15px;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
@@ -29,18 +27,15 @@
   gap: 10px;
   pointer-events: all;
   opacity: 0;
-  /* Animasi awal (siap masuk dari samping kanan) */
-  transform: translateX(100%); 
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Sedikit efek pegas */
+  transform: translateX(100%);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* Animasi Masuk (kembali ke posisi normal) */
 .toastItem.show {
     opacity: 1;
-    transform: none; 
+    transform: none;
 }
 
-/* Header (Icon + Title + Close Button) */
 .toastHeader {
   display: flex;
   justify-content: space-between;
@@ -71,49 +66,40 @@
   opacity: 1;
 }
 
-/* Message Body */
 .toastMessage {
   font-size: 14px;
 }
 
-/* Garis 1px Sesuai Permintaan */
 .toastDivider {
   height: 1px;
   background-color: rgba(255, 255, 255, 0.3);
   margin: 5px 0;
 }
 
-/* Warna dan Styling Per Tipe */
-
-/* Sukses: Hijau */
 .success {
-  background-color: #4CAF50; 
+  background-color: #4CAF50;
   color: white;
 }
 
-/* Gagal/Error: MERAH bagus (sesuai permintaan, umumnya untuk error) */
 .error {
-  background-color: #F44336; 
+  background-color: #F44336;
   color: white;
 }
 
-/* Warning: Kuning */
 .warning {
-  background-color: #FFC107; 
-  color: #333; /* Teks gelap agar terbaca di background terang */
+  background-color: #FFC107;
+  color: #333;
 }
 .warning .toastDivider {
     background-color: rgba(0, 0, 0, 0.1);
 }
 
-/* Info: Biru */
 .info {
-  background-color: #2196F3; 
+  background-color: #2196F3;
   color: white;
 }
 
-
-/* --- Confirm Modal Styles (Muncul di tengah layar) --- */
+/* --- Confirm Modal Styles --- */
 
 .modalBackdrop {
     position: fixed;
@@ -125,7 +111,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 1060; 
+    z-index: 1060;
     opacity: 0;
     transition: opacity 0.2s ease-out;
 }
@@ -139,8 +125,7 @@
     border-radius: 8px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     width: 90%;
-    max-width: 450px; 
-    /* Animasi masuk */
+    max-width: 450px;
     transform: scale(0.95);
     opacity: 0;
     transition: all 0.2s ease-out;
@@ -154,28 +139,33 @@
 .modalHeader {
     display: flex;
     align-items: center;
-    padding: 15px;
-    font-size: 18px;
-    font-weight: 700;
-    color: white;
-    background-color: #FF9800; /* Warna Orange untuk Konfirmasi */
+    padding: 1rem;
+    font-size: 12px;
+    color: rgb(0, 0, 0);
+    background-color: #f8fafc;
     border-top-left-radius: 8px;
     border-top-right-radius: 8px;
 }
 
 .modalHeaderIcon {
     margin-right: 10px;
-    font-size: 20px;
+    font-size: 18px;
+}
+
+/* PERBAIKAN KHUSUS: Hilangkan jarak berlebihan pada judul */
+.modalHeader h2 {
+    margin: 0;
+    padding: 0;
+    line-height: 1.2;
 }
 
 .modalBody {
-    padding: 20px 15px;
-    font-size: 15px;
-    line-height: 1.5;
+    padding: 1rem;
+    font-size: 14px;
+    line-height: 1.4;
     color: #555;
 }
 
-/* Garis 1px */
 .modalDivider {
     height: 1px;
     background-color: #ddd;
@@ -184,35 +174,38 @@
 .modalFooter {
     display: flex;
     justify-content: flex-end;
-    gap: 10px;
-    padding: 15px;
+    gap: 8px;
+    padding: 1rem;
 }
 
-/* Button Styling */
 .modalButton {
-    padding: 8px 15px;
+    padding: 6px 8px;
     border-radius: 4px;
     cursor: pointer;
     font-weight: 600;
     transition: background-color 0.2s, border-color 0.2s;
-    font-size: 14px;
+    font-size: 12px;
+    border: 1px solid transparent;
+    border-radius: 6px;
 }
 
 .btnCancel {
-    background-color: #f0f0f0;
-    color: #333;
-    border: 1px solid #ccc;
+    background-color: #f8f9fa;
+    color: #495057;
+    border: 1px solid #6c757d;
 }
+
 .btnCancel:hover {
-    background-color: #e0e0e0;
+    background-color: #e9ecef;
 }
 
 .btnConfirm {
-    background-color: #2196F3; /* Biru/Primary */
+    background-color: #2196F3;
     color: white;
     border: 1px solid #2196F3;
 }
+
 .btnConfirm:hover {
-    background-color: #0b7dda;
-    border-color: #0b7dda;
+    background-color: #1976d2;
+    border-color: #1976d2;
 }

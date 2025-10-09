@@ -3,24 +3,21 @@
 
 import { useState, useEffect, ReactNode } from "react";
 import { useRouter, usePathname } from "next/navigation";
-// DIHAPUS: import Swal from "sweetalert2"; // << Hapus SweetAlert2
 import { supabase } from "@/utils/supabaseClient";
 import { FaFolder, FaFile, FaAngleLeft, FaAngleDown, FaSignOutAlt } from "react-icons/fa";
 import { Session, AuthChangeEvent } from '@supabase/supabase-js';
-
-// BARU: Import NotificationProvider dan useNotification
-import { NotificationProvider, useNotification } from '@/lib/useNotification'; 
+import { NotificationProvider, keuNotification } from '@/lib/keuNotification'; 
 
 // Definisikan tipe untuk props
 interface MainLayoutProps {
   children: ReactNode;
 }
 
-// Komponen Pembungkus Logout & Navigasi (untuk menggunakan useNotification)
+// Komponen Pembungkus Logout & Navigasi (untuk menggunakan keuNotification)
 const LayoutContent = ({ children }: MainLayoutProps) => {
   const router = useRouter();
   const pathname = usePathname();
-  const { showConfirm, showToast } = useNotification(); // << Panggil hook di sini
+  const { showConfirm, showToast } = keuNotification(); // << Panggil hook di sini
 
   const [currentTime, setCurrentTime] = useState<string>("");
   const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(true);

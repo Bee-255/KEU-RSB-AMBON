@@ -12,8 +12,8 @@ import UploadModal from "./components/UploadModal";
 import PaymentTable from "./components/PaymentTable";
 import PaymentDetailTable from "./components/PaymentDetailTable";
 
-// Import useNotification dari sistem notifikasi kustom Anda
-import { useNotification } from "@/lib/useNotification";
+// Import keuNotification dari sistem notifikasi kustom Anda
+import { keuNotification } from "@/lib/keuNotification";
 
 
 // =======================================================
@@ -64,8 +64,8 @@ interface PaymentDetailType {
 }
 
 const Pembayaran = () => {
-  // Panggil useNotification
-  const { showToast, showConfirm } = useNotification();
+  // Panggil keuNotification
+  const { showToast, showConfirm } = keuNotification();
 
   const [paymentList, setPaymentList] = useState<PaymentType[]>([]);
   const [paymentDetailList, setPaymentDetailList] = useState<PaymentDetailType[]>([]);

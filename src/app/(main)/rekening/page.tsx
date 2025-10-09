@@ -3,9 +3,11 @@
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/utils/supabaseClient";
-import Swal from "sweetalert2";
+// Menghapus import Swal (sweetalert2)
 import { FaPlus, FaEdit, FaRegTrashAlt } from "react-icons/fa";
 import Paginasi from '@/components/paginasi';
+// Import keuNotification
+import { keuNotification } from "@/lib/keuNotification";
 // Import styles yang diasumsikan ada
 import styles from "@/styles/button.module.css";
 import pageStyles from "@/styles/komponen.module.css";
@@ -90,6 +92,9 @@ const DaftarRekening: React.FC = () => {
     
     const [userRole, setUserRole] = useState("");
     const [akunBankOptions, setAkunBankOptions] = useState<{kode_akun: string, nama_akun: string}[]>([]); 
+    
+    // Inisialisasi hook notifikasi
+    const { showToast, showConfirm } = keuNotification();
 
     // --- Fungsi Pengambilan Role Pengguna ---
     const getLoggedInUser = async () => {
@@ -122,7 +127,8 @@ const DaftarRekening: React.FC = () => {
             
             if (error) {
                 console.error("Gagal mengambil data rekening:", error);
-                Swal.fire("Error", "Gagal mengambil data rekening. Periksa koneksi atau nama tabel.", "error");
+                // Perubahan: Menggunakan showToast
+                showToast("Gagal mengambil data rekening. Periksa koneksi atau nama tabel.", "error");
             } else {
                 setRekeningList(data as Rekening[]);
             }
@@ -131,7 +137,7 @@ const DaftarRekening: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [showToast]);
 
     // --- Fungsi Pengambilan Opsi Kode Akun Bank (Filtered Enum) ---
     const fetchKodeAkunBank = useCallback(async () => {
@@ -198,12 +204,12 @@ const DaftarRekening: React.FC = () => {
         e.preventDefault();
         
         if (formData.kelompok === "") {
-            Swal.fire("Peringatan", "Mohon pilih Kelompok Rekening (BPG atau RPL).", "warning");
+            // Perubahan: Menggunakan showToast
+            showToast("Mohon pilih Kelompok Rekening (BPG atau RPL).", "warning");
             return;
         }
 
         // Cek duplikasi nomor_rekening
-        // Logika pengecekan duplikasi tetap sama...
         const { data: existingRekening, error: fetchError } = await supabase
             .from('data_rekening')
             .select('id')
@@ -211,13 +217,15 @@ const DaftarRekening: React.FC = () => {
             .single();
 
         if (fetchError && fetchError.code !== 'PGRST116') {
-            Swal.fire("Error", "Gagal memeriksa nomor rekening.", "error");
+            // Perubahan: Menggunakan showToast
+            showToast("Gagal memeriksa nomor rekening.", "error");
             console.error("Error checking for duplicate:", fetchError);
             return;
         }
 
         if (existingRekening && (!isEditing || existingRekening.id !== selectedRekening?.id)) {
-            Swal.fire("Gagal!", "Nomor rekening ini sudah terdaftar. Mohon gunakan nomor lain.", "warning");
+            // Perubahan: Menggunakan showToast
+            showToast("Nomor rekening ini sudah terdaftar. Mohon gunakan nomor lain.", "warning");
             return;
         }
         
@@ -237,20 +245,24 @@ const DaftarRekening: React.FC = () => {
                 .update(dataToSave)
                 .eq("id", selectedRekening?.id);
             if (error) {
-                Swal.fire("Gagal!", `Data gagal diupdate: ${error.message}`, "error");
+                // Perubahan: Menggunakan showToast
+                showToast(`Data gagal diupdate: ${error.message}`, "error");
                 console.error("Error updating data:", error);
             } else {
-                Swal.fire("Berhasil!", "Data berhasil diupdate.", "success");
+                // Perubahan: Menggunakan showToast
+                showToast("Data berhasil diupdate.", "success");
                 await fetchRekening();
                 resetForm();
             }
         } else {
             const { error } = await supabase.from("data_rekening").insert([dataToSave]);
             if (error) {
-                Swal.fire("Gagal!", `Data gagal disimpan: ${error.message}`, "error");
+                // Perubahan: Menggunakan showToast
+                showToast(`Data gagal disimpan: ${error.message}`, "error");
                 console.error("Error inserting data:", error);
             } else {
-                Swal.fire("Berhasil!", "Data berhasil disimpan.", "success");
+                // Perubahan: Menggunakan showToast
+                showToast("Data berhasil disimpan.", "success");
                 await fetchRekening();
                 resetForm();
             }
@@ -259,24 +271,31 @@ const DaftarRekening: React.FC = () => {
     
     const handleDelete = async () => {
         if (!selectedRekening) return;
-        // Logika hapus tetap sama...
-        const result = await Swal.fire({
-            title: "Apakah Anda yakin?",
-            text: `Anda akan menghapus rekening ${selectedRekening.nomor_rekening} (${selectedRekening.bank})`,
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonColor: "#dc2626",
-            cancelButtonColor: "#6b7280",
-            confirmButtonText: "Ya, hapus!",
-            cancelButtonText: "Batal",
+        
+        // Perubahan: Menggunakan showConfirm
+        const isConfirmed = await showConfirm({
+            title: "Konfirmasi Hapus",
+            message: (
+                <>
+                    Apakah Anda yakin ingin menghapus rekening ini?
+                    <br />
+                    <strong>{selectedRekening.nomor_rekening} ({selectedRekening.bank})</strong>
+                    <p className="mt-2 text-sm text-gray-500">Aksi ini tidak dapat dibatalkan.</p>
+                </>
+            ),
+            confirmText: "Ya, Hapus!",
+            cancelText: "Batal",
         });
-        if (result.isConfirmed) {
+
+        if (isConfirmed) {
             const { error } = await supabase.from("data_rekening").delete().eq("id", selectedRekening.id);
             if (error) {
-                Swal.fire("Gagal!", "Data gagal dihapus. Coba lagi.", "error");
+                // Perubahan: Menggunakan showToast
+                showToast("Data gagal dihapus. Coba lagi.", "error");
                 console.error("Error deleting data:", error);
             } else {
-                Swal.fire("Dihapus!", "Data berhasil dihapus.", "success");
+                // Perubahan: Menggunakan showToast
+                showToast("Data berhasil dihapus.", "success");
                 setSelectedRekening(null);
                 await fetchRekening();
             }
@@ -697,5 +716,4 @@ const DaftarRekening: React.FC = () => {
         </div>
     );
 };
-
 export default DaftarRekening;

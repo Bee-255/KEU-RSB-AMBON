@@ -1,11 +1,11 @@
-// src/lib/useNotification.tsx
+// src/lib/keuNotification.tsx
 'use client';
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
 import { 
-  FaXmark, FaCheck, FaCircleExclamation, FaCircleInfo, FaTriangleExclamation } from 'react-icons/fa6';
+  FaCircleXmark, FaCircleCheck, FaCircleExclamation, FaCircleInfo, FaTriangleExclamation } from 'react-icons/fa6';
 // Import styles dari lokasi yang sudah ditentukan
-import styles from '@/styles/notification.module.css'; 
+import styles from '@/styles/keunotification.module.css'; 
 
 // --- 1. TIPE DATA ---
 
@@ -52,9 +52,9 @@ const initialConfirmState: ConfirmState = {
 const getIconAndTitle = (type: NotificationType) => {
   switch (type) {
     case 'success':
-      return { icon: <FaCheck />, title: 'Sukses' }; // Icon centang (FaCheck) untuk Sukses
+      return { icon: <FaCircleCheck />, title: 'Sukses' }; // Icon centang (FaCheck) untuk Sukses
     case 'error':
-      return { icon: <FaXmark />, title: 'Gagal' }; // Icon X (FaXmark) untuk Gagal
+      return { icon: <FaCircleXmark />, title: 'Gagal' }; // Icon X (FaCircleXmark) untuk Gagal
     case 'warning':
       return { icon: <FaCircleExclamation />, title: 'Peringatan' }; // Icon tanda seru lingkaran
     case 'info':
@@ -104,7 +104,7 @@ const ToastItem: React.FC<ToastProps & { onClose: (id: string) => void }> = ({ i
           <span>{title}</span> 
         </span>
         <button onClick={handleClose} className={styles.toastClose} aria-label="Tutup notifikasi">
-          <FaXmark />
+          <FaCircleXmark />
         </button>
       </div>
       <div className={styles.toastDivider} /> {/* Garis 1px */}
@@ -177,11 +177,11 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 /**
  * Hook untuk menggunakan fungsionalitas notifikasi di komponen
  */
-export const useNotification = () => {
+export const keuNotification = () => {
   const context = useContext(NotificationContext);
   if (context === undefined) {
     // Pesan error jika hook dipanggil di luar Provider
-    throw new Error('useNotification must be used within a NotificationProvider');
+    throw new Error('keuNotification harus bersamaan NotificationProvider');
   }
   return context;
 };

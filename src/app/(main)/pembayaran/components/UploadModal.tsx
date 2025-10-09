@@ -1,16 +1,18 @@
 // src/app/(main)/pembayaran/components/UploadModal.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/utils/supabaseClient"; 
 import pageStyles from "@/styles/komponen.module.css";
 import styles from "@/styles/button.module.css";
 import * as ExcelJS from 'exceljs';
 
 // Import hook notifikasi kustom
-import { useNotification } from "@/lib/useNotification"; 
-
-
+import { keuNotification } from "@/lib/keuNotification"; 
+import { FiDownload } from "react-icons/fi";
+// Import Icon yang diperlukan
+import { FaUpload, FaXmark } from "react-icons/fa6"; 
+// Ganti FaHourglass dengan FaUpload, FaHourglass sudah tidak digunakan
 // ... (Semua Interface tetap di sini)
 interface UploadModalProps {
   onClose: () => void;
@@ -62,10 +64,32 @@ interface FailedRecord {
 
 
 const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
-  const { showToast, showConfirm } = useNotification(); 
+  const { showToast, showConfirm } = keuNotification(); 
   const [selectedPeriod, setSelectedPeriod] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  
+  // --- STATE UNTUK ANIMASI LOADING DOTS ---
+  const [loadingDots, setLoadingDots] = useState("");
+
+  // --- LOGIKA ANIMASI LOADING DOTS ---
+  useEffect(() => {
+      let interval: NodeJS.Timeout | undefined;
+      if (isUploading) {
+          interval = setInterval(() => {
+              setLoadingDots(prev => {
+                  if (prev === "...") return "";
+                  return prev + ".";
+              });
+          }, 300); 
+      } else {
+          setLoadingDots(""); 
+      }
+      return () => {
+          if (interval) clearInterval(interval);
+      };
+  }, [isUploading]);
+  // ----------------------------------------
   
   const periodOptions: string[] = [];
   const targetYear = 2025;
@@ -107,6 +131,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
         potongan: Number(row.potongan) || 0,
         periode_excel: String(row.periode || row.PERIODE || "").trim(),
         nama_excel: String(row.nama || row.NAMA || "").trim(),
+        // Normalisasi untuk menangkap nilai periode pembayaran
         periode_pembayaran_excel: String(row.periode_pembayaran || row.PERIODE_PEMBAYARAN || "").trim(),
       }))
       .filter(item => item.nrp_nip_nir && item.jumlah_bruto > 0);
@@ -138,7 +163,13 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
             row.eachCell((cell, colNumber) => {
               const header = headers[colNumber - 1];
               if (header) {
-                rowData[header] = cell.value;
+                // Konversi tanggal/nilai Excel dengan aman
+                const cellValue = cell.value;
+                if (cellValue && typeof cellValue === 'object' && cellValue.hasOwnProperty('result')) {
+                    rowData[header] = (cellValue as { result: unknown }).result;
+                } else {
+                    rowData[header] = cellValue;
+                }
               }
             });
             
@@ -261,6 +292,38 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
         setIsUploading(false);
         return;
       }
+      
+      // Ambil periode pembayaran dari baris pertama data yang valid
+      const firstValidItem = processedData.find(item => item.periode_pembayaran_excel);
+      const periodePembayaranFromExcel = firstValidItem?.periode_pembayaran_excel || null;
+      
+      if (!periodePembayaranFromExcel) {
+          showToast("Kolom 'PERIODE_PEMBAYARAN' pada file Excel kosong. Upload dibatalkan.", "error");
+          setIsUploading(false);
+          return;
+      }
+      
+      // --- PENGECEKAN DUPLIKASI DATA ---
+      const { data: existingRekapan, error: checkError } = await supabase
+          .from('rekapan_pembayaran')
+          .select('id')
+          .eq('periode', selectedPeriod)
+          .eq('periode_pembayaran', periodePembayaranFromExcel);
+
+      if (checkError) {
+          throw new Error(checkError.message || "Gagal memeriksa data duplikat.");
+      }
+
+      if (existingRekapan && existingRekapan.length > 0) {
+          showToast(
+              `Data untuk Periode ${selectedPeriod} dengan uraian "${periodePembayaranFromExcel}" sudah pernah di-upload sebelumnya. Upload dibatalkan.`, 
+              "warning",
+              6000 // Tampilkan lebih lama
+          );
+          setIsUploading(false);
+          return;
+      }
+      // ------------------------------------
 
       const nrpNipNirList = processedData.map(item => item.nrp_nip_nir);
       const { data: pegawaiList, error: pegawaiError } = await supabase
@@ -283,15 +346,16 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
       
       const failedPeriodIndices = new Set<string>();
       const failedNrpNipNirIndices = new Set<string>();
+      // --- PERBAIKAN TS2552: TAMBAHKAN DEKLARASI INI ---
       const failedPeriodePembayaranIndices = new Set<string>();
+      // ----------------------------------------------------
       
       const totalDataInFile = processedData.length;
       let totalBruto = 0;
       let totalPotongan = 0;
       let totalPph21 = 0;
-      let firstPeriodePembayaran: string | null = null;
-      // Perbaikan #1: Variabel isPeriodePembayaranConsistent dihapus.
-      // let isPeriodePembayaranConsistent = true; // Dihapus karena tidak digunakan di luar loop
+      // Gunakan nilai yang sudah dipastikan dari pengecekan duplikasi
+      const periodePembayaranFinal = periodePembayaranFromExcel; 
 
       processedData.forEach((item) => {
         
@@ -305,20 +369,12 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
             isValid = false; 
         }
 
-        // VALIDASI 2: Cek PERIODE_PEMBAYARAN (KONSISTENSI)
-        if (isValid && item.periode_pembayaran_excel) {
-          if (firstPeriodePembayaran === null) {
-            firstPeriodePembayaran = item.periode_pembayaran_excel;
-          } else if (item.periode_pembayaran_excel !== firstPeriodePembayaran) {
-            errorReason = `PERIODE PEMBAYARAN tidak konsisten. Ditemukan "${item.periode_pembayaran_excel}" sedangkan sebelumnya "${firstPeriodePembayaran}".`;
-            failedPeriodePembayaranIndices.add(item.nrp_nip_nir);
+        // VALIDASI 2: Cek PERIODE_PEMBAYARAN (KONSISTENSI dengan nilai pertama)
+        // Cek hanya jika VALIDASI 1 LULUS
+        if (isValid && item.periode_pembayaran_excel !== periodePembayaranFinal) {
+            errorReason = `PERIODE PEMBAYARAN tidak konsisten. Ditemukan "${item.periode_pembayaran_excel}" sedangkan yang disetujui adalah "${periodePembayaranFinal}".`;
+            failedPeriodePembayaranIndices.add(item.nrp_nip_nir); // Tambahkan ke set
             isValid = false;
-            // isPeriodePembayaranConsistent = false; // Dihapus karena variabel dihapus
-          }
-        } else if (isValid && !item.periode_pembayaran_excel) {
-          errorReason = `Kolom PERIODE PEMBAYARAN tidak boleh kosong.`;
-          failedPeriodePembayaranIndices.add(item.nrp_nip_nir);
-          isValid = false;
         }
 
         const pegawai = pegawaiMap.get(item.nrp_nip_nir);
@@ -331,6 +387,15 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
             isValid = false;
           }
         }
+        
+        // VALIDASI 4: Cek Data Bank Pegawai
+        if (pegawai && (!pegawai.bank || !pegawai.no_rekening)) {
+            if (isValid) {
+                errorReason = `Data bank dan nomor rekening untuk NRP/NIP/NIR (${item.nrp_nip_nir}) belum lengkap di database Pegawai.`;
+                isValid = false;
+            }
+        }
+
 
         // Tambahkan ke failed records jika ada error
         if (!isValid && errorReason) {
@@ -343,7 +408,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
           });
         }
 
-        if (isValid && pegawai) {
+        if (isValid && pegawai && pegawai.bank && pegawai.no_rekening) {
             const pph21Persen = calculatePph21Persen(pegawai);
             const jumlahPph21 = item.jumlah_bruto * pph21Persen;
             const jumlahNetto = item.jumlah_bruto - item.potongan - jumlahPph21;
@@ -371,33 +436,59 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
       const failedCount = failedRecords.length;
       const uniqueFailedPeriodCount = failedPeriodIndices.size;
       const uniqueFailedNrpNipNirCount = failedNrpNipNirIndices.size;
+      // --- PERBAIKAN TS2552: TAMBAHKAN PERHITUNGAN INI ---
       const uniqueFailedPeriodePembayaranCount = failedPeriodePembayaranIndices.size;
+      // ----------------------------------------------------
 
       // 4. KEPUTUSAN TRANSAKSI (ALL-OR-NOTHING)
       if (failedCount > 0) {
         
         const downloadLink = await createFailedReportLink(failedRecords); 
         
-        let failedMessage = `Upload Dibatalkan. ${failedCount} data bermasalah:`;
+        // --- MODIFIKASI PESAN KEGAGALAN DIMULAI DI SINI (Format Baru) ---
+        
+        const failedHeadline = `${failedCount} total data bermasalah.`;
+
+        const detailPoints: React.ReactNode[] = [];
+        
         if (uniqueFailedPeriodCount > 0) {
-            failedMessage += ` ${uniqueFailedPeriodCount} periode tidak cocok.`;
+            detailPoints.push(
+                <p key="period" style={{ margin: '0 0 4px 0' }}>
+                    — {uniqueFailedPeriodCount} data memiliki Periode tidak cocok.
+                </p>
+            );
         }
         if (uniqueFailedNrpNipNirCount > 0) {
-            failedMessage += ` ${uniqueFailedNrpNipNirCount} NRP/NIP/NIR tidak valid.`;
+            detailPoints.push(
+                <p key="nrp" style={{ margin: '0 0 4px 0' }}>
+                   — {uniqueFailedNrpNipNirCount} data memiliki NRP/NIP/NIR yang tidak valid/ditemukan.
+                </p>
+            );
         }
-        if (uniqueFailedPeriodePembayaranCount > 0) {
-            failedMessage += ` ${uniqueFailedPeriodePembayaranCount} PERIODE PEMBAYARAN tidak konsisten/kosong.`;
+        // Gunakan variabel yang sudah diperbaiki
+        if (uniqueFailedPeriodePembayaranCount > 0) { 
+            detailPoints.push(
+                <p key="pembayaran" style={{ margin: '0 0 4px 0' }}>
+                    — {uniqueFailedPeriodePembayaranCount} data memiliki PERIODE PEMBAYARAN tidak konsisten.
+                </p>
+            );
         }
         
         const messageContent = (
-            <div style={{ textAlign: 'left', fontSize: '15px' }}>
-                <p style={{ marginBottom: '15px', color: '#B91C1C', fontWeight: 'bold' }}>{failedMessage}</p>
+            <div style={{ textAlign: 'left', fontSize: '14px' }}>
+                <p style={{ marginBottom: '1rem', fontWeight: 'bold' }}>{failedHeadline}</p>
+                
+                <div style={{ paddingLeft: '10px' }}>
+                    {detailPoints}
+                </div>
+
                 {downloadLink && (
-                    <p style={{ marginBottom: '0' }}>Klik tombol &apos;Unduh Laporan&apos; untuk melihat detail kesalahan.</p>
+                    <p style={{ marginTop: '1rem', marginBottom: '0' }}>Klik tombol &apos;Unduh Laporan&apos; untuk melihat detail kesalahan.</p>
                 )}
             </div>
         );
-
+        // --- MODIFIKASI PESAN KEGAGALAN SELESAI DI SINI ---
+        
         const isConfirmed = await showConfirm({
             title: 'Upload Dibatalkan',
             message: messageContent,
@@ -416,7 +507,6 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
       // 5. KOMITMEN DATA (INSERT REKAPAN dan DETAIL)
       const totalNetto = totalBruto - totalPotongan - totalPph21;
       const finalSuccessCount = detailData.length;
-      const periodePembayaranFinal = firstPeriodePembayaran || `JASA BPJS ${selectedPeriod.split('-')[1]} ${selectedPeriod.split('-')[0]}`;
 
       const rekapanPayload = {
         periode: selectedPeriod,
@@ -481,6 +571,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
     }
   };
   
+  // --- RENDER KOMPONEN ---
   return (
     <div className={pageStyles.modalOverlay} onClick={onClose}>
       <div className={pageStyles.modalContent} onClick={(e) => e.stopPropagation()}>
@@ -521,30 +612,41 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
                 className={styles.downloadButton}
                 style={{ padding: '6px 12px', fontSize: '12px', marginRight: '1rem' }}
               >
-                Download Template
+                <FiDownload/> Download Template
               </button>
-              {/* Perbaikan #2: Mengganti tanda kutip tunggal di JSX menjadi HTML entity &apos; */}
-              <span style={{ fontSize: '12px', color: '#666' }}>
-                  Kolom wajib: <strong>PERIODE, PERIODE_PEMBAYARAN, NRP_NIP_NIR, NAMA, Jumlah_Bruto</strong>
-              </span>
+              
             </div>
           </div>
 
           <div className={pageStyles.formActions}>
+            {/* Tombol Batal: Menggunakan Flexbox untuk perataan ikon */}
             <button 
               type="button" 
               onClick={onClose} 
               className={pageStyles.formCancel}
               disabled={isUploading}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
             >
-              Batal
+              <FaXmark/> Batal
             </button>
+            
+            {/* Tombol Upload: Menggunakan Flexbox, Ikon dan Teks Dinamis + Animasi Titik */}
             <button 
               onClick={handleUpload} 
               disabled={!selectedPeriod || !selectedFile || isUploading}
               className={styles.rekamButton}
-            >
-              {isUploading ? "Mengupload..." : "Upload"}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+              >
+              {isUploading ? (
+                  <>
+                      <FaUpload className={pageStyles.loadingIcon} /> 
+                      Mengupload<span className={pageStyles.loadingDotsContainer}>{loadingDots}</span>
+                  </>
+              ) : (
+                  <>
+                      <FaUpload /> Upload
+                  </>
+              )}
             </button>
           </div>
         </>

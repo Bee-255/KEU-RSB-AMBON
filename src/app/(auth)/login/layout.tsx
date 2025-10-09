@@ -1,6 +1,8 @@
 // src/app/(auth)/layout.tsx
 import { ReactNode } from "react";
 import Image from "next/image";
+// Menggunakan NotificationProvider yang Anda kirimkan
+import { NotificationProvider } from "@/lib/keuNotification"; 
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -89,7 +91,8 @@ const responsiveStyles = `
 
 export default function AuthLayout({ children }: AuthLayoutProps) {
   return (
-    <>
+    // Pembungkus NotificationProvider ditambahkan di sini
+    <NotificationProvider> 
       <style dangerouslySetInnerHTML={{ __html: responsiveStyles }} />
       <div className="full-screen-wrapper">
         <div className="container">
@@ -111,6 +114,6 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
           </div>
         </div>
       </div>
-    </>
+    </NotificationProvider> // Akhir dari NotificationProvider
   );
 }

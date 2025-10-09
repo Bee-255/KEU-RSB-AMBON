@@ -294,7 +294,7 @@
   background: transparent;
   border: 1px solid #cbd5e1;
   color: #475569;
-  padding: 0.75rem 1.5rem;
+  padding: 6px 8px;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease-in-out;
@@ -402,4 +402,24 @@
   justify-content: center;
   align-items: center;
   z-index: 10;
+}
+
+/* ==================================== */
+/* === LOADING STYLES FOR UPLOAD MODAL === */
+/* ==================================== */
+
+/* Gaya untuk ikon Faupload saat sedang mengupload */
+.loadingIcon {
+  /* Opsional: Membuat ikon berkedip atau memudar sedikit */
+  opacity: 0.8; 
+}
+
+/* Container untuk titik-titik loading agar lebar teks tetap stabil */
+/* Lebar 20px cukup untuk menampung tiga titik penuh */
+.loadingDotsContainer {
+  display: inline-block;
+  min-width: 20px; 
+  text-align: left;
+  /* Menerapkan font yang sama agar titik tidak terlihat melompat */
+  font-family: inherit; 
 }
