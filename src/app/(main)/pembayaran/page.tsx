@@ -510,7 +510,7 @@ const Pembayaran = () => {
 
           <button
               onClick={handleDeleteRekap}
-              disabled={!isRekapDeletable}
+              disabled={!selectedPayment || selectedPayment.status !== 'BARU'}
               className={styles.hapusButton}
           >
               <FaRegTrashAlt /> Hapus Rekap
@@ -588,12 +588,10 @@ const Pembayaran = () => {
             className={pageStyles.buttonContainer}
             style={{
               margin: '1rem',
-              opacity: isDisabledDetailActions ? 0.5 : 1,
-              pointerEvents: isDisabledDetailActions ? 'none' : 'auto'
+              
             }}
           >
             <button
-                // PERBAIKAN TS2322: Panggil handler baru yang sesuai dengan tipe MouseEventHandler
                 onClick={handleEditDetailButton} 
                 className={styles.editButton}
                 disabled={!canEditDelete || selectedDetails.length !== 1}

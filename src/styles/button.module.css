@@ -139,4 +139,5 @@
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+  pointer-events: none;
 }

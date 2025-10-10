@@ -8,26 +8,44 @@ import { FaFolder, FaFile, FaAngleLeft, FaAngleDown, FaSignOutAlt } from "react-
 import { Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { NotificationProvider, useKeuNotification } from '@/lib/useKeuNotification'; 
 
+// 🚨 IMPORT MODULE CSS BARU
+import loadingStyles from "@/styles/loading.module.css";
+
 // Definisikan tipe untuk props
 interface MainLayoutProps {
   children: ReactNode;
 }
 
+// ----------------------------------------------------------------------
 // Komponen Pembungkus Logout & Navigasi (untuk menggunakan useKeuNotification)
+// ----------------------------------------------------------------------
 const LayoutContent = ({ children }: MainLayoutProps) => {
   const router = useRouter();
   const pathname = usePathname();
-  const { showConfirm, showToast } = useKeuNotification(); // << Panggil hook di sini
+  const { showConfirm, showToast } = useKeuNotification();
 
+  // --- States ---
   const [currentTime, setCurrentTime] = useState<string>("");
   const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(true);
   const [openFolder, setOpenFolder] = useState<string | null>(null);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [fullName, setFullName] = useState<string>("");
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [isMobile, setIsMobile] = useState<boolean>(false);
+  const [isRedirecting, setIsRedirecting] = useState<boolean>(false);
 
-  // Effect untuk mendeteksi ukuran layar
+  // --- Konfigurasi Keamanan Rute ---
+  const PROTECTED_ROUTES: { [key: string]: string[] } = {
+    // Rute '/pembayaran' hanya boleh diakses oleh Owner, Admin, dan Operator
+    '/pembayaran': ['Owner', 'Admin', 'Operator'], 
+  };
+  const DASHBOARD_PATH = "/dashboard";
+  // ------------------------------------------
+
+  // ******* Efek-Efek Utama *******
+
+  // 1. Effect untuk mendeteksi ukuran layar
   useEffect(() => {
     const checkScreenSize = () => {
       const mobile = window.innerWidth < 768; 
@@ -48,22 +66,46 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
     };
   }, []);
 
+  // 2. Effect untuk otentikasi dan mengambil role pengguna
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchUserAndRole = async () => {
+      setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
+
       if (user) {
-        setFullName(user.user_metadata?.full_name || user.email || "");
+        
+        // Ambil Role dan Nama Lengkap dari tabel 'profiles'
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('role, nama_lengkap') 
+          .eq('id', user.id) 
+          .single();
+
+        if (profileError) {
+            console.error("Error fetching user role or profile:", profileError);
+            setUserRole(null);
+            setFullName(user.email || "");
+        } else if (profileData) {
+            setUserRole(profileData.role);
+            setFullName(profileData.nama_lengkap || user.email || "");
+        } else {
+             setUserRole(null);
+             setFullName(user.email || "");
+        }
+
         setLoading(false);
       } else {
         router.push('/login');
       }
     };
-    fetchUser();
+    fetchUserAndRole();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event: AuthChangeEvent, session: Session | null) => {
         if (!session) {
           router.push('/login');
+        } else if (event === 'SIGNED_IN') {
+          fetchUserAndRole(); 
         }
       }
     );
@@ -74,27 +116,41 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
       }
     };
   }, [router]);
-
-  // Fungsi Logout yang menggunakan showConfirm
-  const handleLogout = async () => {
-    // Ganti Swal.fire dengan showConfirm
-    const isConfirmed = await showConfirm({
-      title: "Konfirmasi Logout",
-      message: "Yakin ingin keluar dari aplikasi?",
-      confirmText: "Ya, Logout",
-      cancelText: "Batal",
-    });
-
-    if (isConfirmed) {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error("Error signing out:", error.message);
-        // Ganti Swal.fire dengan showToast
-        showToast("Terjadi kesalahan saat mencoba keluar.", "error");
+  
+  // 3. Effect PENGAMANAN RUTE (Disesuaikan dengan isRedirecting untuk mengatasi notif ganda) 🚨
+  useEffect(() => {
+    // Hanya proses jika loading selesai, role didapat, dan belum ada proses redirect
+    if (!loading && userRole && !isRedirecting) {
+      
+      // Cek apakah rute saat ini ada di daftar yang dilindungi
+      const currentProtectedPath = Object.keys(PROTECTED_ROUTES).find(route => pathname.startsWith(route));
+      
+      if (currentProtectedPath) {
+        const allowedRoles = PROTECTED_ROUTES[currentProtectedPath];
+        
+        // Jika role pengguna TIDAK termasuk dalam daftar yang diizinkan
+        if (!allowedRoles.includes(userRole)) {
+          console.warn(`Akses ditolak untuk role: ${userRole} pada rute: ${pathname}`);
+          
+          // Set flag ON: mencegah effect berjalan lagi
+          setIsRedirecting(true); 
+          
+          // Tampilkan notifikasi
+          showToast("Akses Ditolak: Anda tidak memiliki izin untuk halaman ini.", "error");
+          
+          // Redirect
+          router.replace(DASHBOARD_PATH); 
+        }
       }
     }
-  };
 
+    // Set flag OFF jika navigasi sudah selesai ke rute yang aman (setelah redirect)
+    if (isRedirecting && pathname.startsWith(DASHBOARD_PATH)) {
+        setIsRedirecting(false);
+    }
+  }, [loading, userRole, pathname, router, showToast, isRedirecting]); 
+
+  // 4. Effect untuk update waktu
   useEffect(() => {
     const updateTime = () => {
       const date = new Date();
@@ -116,7 +172,7 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
     return () => clearInterval(timerId);
   }, []);
 
-  // START: PERBAIKAN DI SINI
+  // 5. Effect untuk otomatis membuka folder (Menu) berdasarkan path
   useEffect(() => {
     if (pathname.startsWith('/pejabatkeuangan') || pathname.startsWith('/daftarakun')) {
       setOpenFolder('administrasi');
@@ -130,28 +186,47 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
       setOpenFolder(null);
     }
   }, [pathname]);
-  // END: PERBAIKAN DI SINI
 
-  const handleAdminToggle = () => {
-    setOpenFolder(openFolder === 'administrasi' ? null : 'administrasi');
+  // ******* Handler Fungsi & Logika Menu *******
+  
+  const handleLogout = async () => {
+    const isConfirmed = await showConfirm({
+      title: "Konfirmasi Logout",
+      message: "Yakin ingin keluar dari aplikasi?",
+      confirmText: "Ya, Logout",
+      cancelText: "Batal",
+    });
+
+    if (isConfirmed) {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error("Error signing out:", error.message);
+        showToast("Terjadi kesalahan saat mencoba keluar.", "error");
+      }
+    }
   };
 
-  const handleRekamToggle = () => {
-    setOpenFolder(openFolder === 'rekam' ? null : 'rekam');
-  };
 
-  const handleDataToggle = () => {
-    setOpenFolder(openFolder === 'data' ? null : 'data');
-  };
+  // Logika Akses Menu Pembayaran (Hanya untuk TAMPILAN SIDEBAR)
+  const allowedRolesForPembayaran = PROTECTED_ROUTES['/pembayaran']; 
+  const isPembayaranAllowed = userRole && allowedRolesForPembayaran.includes(userRole);
 
-  const handlePembayaranToggle = () => {
-    setOpenFolder(openFolder === 'pembayaran' ? null : 'pembayaran');
-  };
+  // Jika menu pembayaran sedang terbuka, tapi role tidak diizinkan, tutup foldernya
+  useEffect(() => {
+      if (openFolder === 'pembayaran' && !isPembayaranAllowed) {
+          setOpenFolder(null);
+      }
+  }, [isPembayaranAllowed, openFolder]);
 
-  const handleSidebarToggle = () => {
-    setIsSidebarVisible(!isSidebarVisible);
-  };
 
+  const handleAdminToggle = () => { setOpenFolder(openFolder === 'administrasi' ? null : 'administrasi'); };
+  const handleRekamToggle = () => { setOpenFolder(openFolder === 'rekam' ? null : 'rekam'); };
+  const handleDataToggle = () => { setOpenFolder(openFolder === 'data' ? null : 'data'); };
+  const handlePembayaranToggle = () => { setOpenFolder(openFolder === 'pembayaran' ? null : 'pembayaran'); };
+  const handleSidebarToggle = () => { setIsSidebarVisible(!isSidebarVisible); };
+  const handleDashboardClick = () => { router.push("/dashboard"); setOpenFolder(null); };
+  
+  // ... (Style Objek dan helper tetap sama) ...
   const baseMenuItemStyle: React.CSSProperties = {
     background: "none",
     border: "none",
@@ -191,20 +266,27 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
     fontWeight: "normal",
   };
 
-  const handleDashboardClick = () => {
-    router.push("/dashboard");
-    setOpenFolder(null);
-  };
-  
   const isAdminOpen = openFolder === 'administrasi';
   const isRekamOpen = openFolder === 'rekam';
   const isDataOpen = openFolder === 'data';
   const isPembayaranOpen = openFolder === 'pembayaran';
   const isActive = (path: string) => pathname === path;
+  // ----------------------------------------------------
+
+  // 🚨 REVISI: Menggunakan loadingStyles dari loading.module.css
+  if (loading || isRedirecting) { 
+    return (
+      <div className={loadingStyles.loadingContainer}>
+        {/* Asumsi: jika ada spinner, pakai class spinner */}
+        {loadingStyles.spinner && <div className={loadingStyles.spinner}></div>}
+      </div>
+    );
+  }
 
   // Render komponen layout
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
+      {/* -------------------- Header -------------------- */}
       <header
         style={{
           display: "flex",
@@ -305,7 +387,7 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
             boxSizing: "border-box",
           }}>
           <div style={{ display: "flex", flexDirection: "column" }}>
-            <span style={{ fontWeight: "400" }}>Selamat datang, {fullName}</span>
+            <span style={{ fontWeight: "400" }}>Selamat datang, {fullName.toUpperCase()}</span>
             <span style={{ fontSize: "0.8rem", opacity: 0.8 }}>{currentTime}</span>
           </div>
           <button
@@ -328,7 +410,10 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
         </div>
       </header>
       
+      {/* -------------------- Main Content (Sidebar + Main Area) -------------------- */}
       <div style={{ display: "flex", flexGrow: 1, paddingTop: "50px" }}>
+        
+        {/* --- Sidebar --- */}
         <aside
             style={{
               width: "200px",
@@ -450,7 +535,7 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
               </span>
             </div>
 
-            {/* Sub-menu */}
+            {/* Sub-menu Rekam */}
             <div 
               style={{
                 maxHeight: isRekamOpen ? '200px' : '0',
@@ -583,58 +668,62 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
               </div>
             </div>
 
-            {/* PEMBAYARAN (Folder) */}
-            <div
-              onClick={handlePembayaranToggle}
-              onMouseEnter={() => setHoveredItem('pembayaran')}
-              onMouseLeave={() => setHoveredItem(null)}
-              style={
-                isPembayaranOpen ? activeStyle : (hoveredItem === 'pembayaran' ? hoverStyle : inactiveStyle)
-              }
-              >
-              <span style={{ fontSize: "0.9rem" }}>
-                <FaFolder color={isPembayaranOpen ? '#2563eb' : '#4A5568'}  />
-              </span> Pembayaran
-              <span style={{
-                display: 'inline-block',
-                marginLeft: "auto",
-                width: "1em",
-                height: "1em",
-                transform: isPembayaranOpen ? 'rotate(-180deg)' : 'rotate(0deg)',
-                transition: 'transform 0.2s ease-in-out',
-              }}>
-                <FaAngleDown strokeWidth={4} color="#4A5568" />
-              </span>
-            </div>
-
-            {/* Pembayaran Sub-menu */}
-            <div 
-              style={{
-                maxHeight: isPembayaranOpen ? '200px' : '0',
-                overflow: 'hidden',
-                transition: 'max-height 0.2s',
-              }}
-              >
-              <div style={{ display: "flex", flexDirection: "column", gap: "0rem" }}>
-                <button
-                  onClick={() => {
-                    router.push("/pembayaran");
-                    if (isMobile) setIsSidebarVisible(false); 
-                  }}
+            {/* PEMBAYARAN (Folder) - DIBATASI ROLE */}
+            {isPembayaranAllowed && (
+              <>
+                <div
+                  onClick={handlePembayaranToggle}
                   onMouseEnter={() => setHoveredItem('pembayaran')}
                   onMouseLeave={() => setHoveredItem(null)}
                   style={
-                    isActive("/pembayaran") ? 
-                    {...activeStyle, paddingLeft: "1rem"} : 
-                    (hoveredItem === 'pembayaran' ? {...hoverStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"})
+                    isPembayaranOpen ? activeStyle : (hoveredItem === 'pembayaran' ? hoverStyle : inactiveStyle)
                   }
-                >
+                  >
                   <span style={{ fontSize: "0.9rem" }}>
-                    <FaFile color={isActive("/pembayaran") ? '#2563eb' : '#4A5568'} />
-                  </span> Jasa
-                </button>
-              </div>
-            </div>
+                    <FaFolder color={isPembayaranOpen ? '#2563eb' : '#4A5568'}  />
+                  </span> Pembayaran
+                  <span style={{
+                    display: 'inline-block',
+                    marginLeft: "auto",
+                    width: "1em",
+                    height: "1em",
+                    transform: isPembayaranOpen ? 'rotate(-180deg)' : 'rotate(0deg)',
+                    transition: 'transform 0.2s ease-in-out',
+                  }}>
+                    <FaAngleDown strokeWidth={4} color="#4A5568" />
+                  </span>
+                </div>
+
+                {/* Pembayaran Sub-menu */}
+                <div 
+                  style={{
+                    maxHeight: isPembayaranOpen ? '200px' : '0',
+                    overflow: 'hidden',
+                    transition: 'max-height 0.2s',
+                  }}
+                  >
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0rem" }}>
+                    <button
+                      onClick={() => {
+                        router.push("/pembayaran");
+                        if (isMobile) setIsSidebarVisible(false); 
+                      }}
+                      onMouseEnter={() => setHoveredItem('pembayaran-jasa')}
+                      onMouseLeave={() => setHoveredItem(null)}
+                      style={
+                        isActive("/pembayaran") ? 
+                        {...activeStyle, paddingLeft: "1rem"} : 
+                        (hoveredItem === 'pembayaran-jasa' ? {...hoverStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"})
+                      }
+                    >
+                      <span style={{ fontSize: "0.9rem" }}>
+                        <FaFile color={isActive("/pembayaran") ? '#2563eb' : '#4A5568'} />
+                      </span> Jasa
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </nav>
         </aside>
         
@@ -672,7 +761,9 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
 };
 
 
+// ----------------------------------------------------------------------
 // Komponen Utama MainLayout (Wrapper Provider)
+// ----------------------------------------------------------------------
 export default function MainLayout({ children }: MainLayoutProps) {
     // Memastikan NotificationProvider membungkus LayoutContent
     return (
