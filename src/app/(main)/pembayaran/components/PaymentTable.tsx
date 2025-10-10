@@ -94,7 +94,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
               <th style={{ width: "7%" }}>Jml Pegawai</th>
               <th style={{ width: "11%", textAlign: "right" }}>Jumlah Bruto</th>
               <th style={{ width: "11%", textAlign: "right" }}>Jumlah PPh21</th>
-              {/* BARU: Kolom Jumlah Potongan */}
+              {/* Kolom Jumlah Potongan */}
               <th style={{ width: "11%", textAlign: "right" }}>Jumlah Potongan</th>
               <th style={{ width: "11%", textAlign: "right" }}>Jumlah Netto</th>
               <th style={{ width: "17%" }}>Status</th>
@@ -123,7 +123,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
                     {/* Pembulatan diaktifkan (argumen kedua = true) */}
                     <td style={{ textAlign: "right" }}>{formatAngka(payment.jumlah_bruto, true)}</td>
                     <td style={{ textAlign: "right" }}>{formatAngka(payment.jumlah_pph21, true)}</td>
-                    {/* BARU: Tampilkan Jumlah Potongan dengan pembulatan */}
+                    {/* Tampilkan Jumlah Potongan dengan pembulatan */}
                     <td style={{ textAlign: "right" }}>{formatAngka(payment.jumlah_potongan, true)}</td>
                     <td style={{ textAlign: "right" }}>{formatAngka(payment.jumlah_netto, true)}</td>
                     <td>{getStatusBadge(payment.status)}</td>
@@ -143,7 +143,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
             )}
           </tbody>
           
-          {/* BARU: Table Footer untuk Total */}
+          {/* Table Footer untuk Total */}
           {payments.length > 0 && (
             <tfoot className={pageStyles.tableHead}>
               <tr>

@@ -14,7 +14,7 @@ import pageStyles from "@/styles/komponen.module.css";
 import loadingStyles from "@/styles/loading.module.css";
 import { capitalizeWords, formatAngka, parseAngka, toRoman, formatTanggal } from '@/lib/format';
 import { terbilang } from "@/lib/terbilang";
-import { generateSpprPdf } from "@/lib/pdfsppr";
+import { generateSpprPdf } from "./utils/pdfsppr";
 
 // Interface untuk data mentah dari Supabase (data_rekening)
 interface RawRekeningData {

@@ -273,15 +273,6 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
   const isActive = (path: string) => pathname === path;
   // ----------------------------------------------------
 
-  // 🚨 REVISI: Menggunakan loadingStyles dari loading.module.css
-  if (loading || isRedirecting) { 
-    return (
-      <div className={loadingStyles.loadingContainer}>
-        {/* Asumsi: jika ada spinner, pakai class spinner */}
-        {loadingStyles.spinner && <div className={loadingStyles.spinner}></div>}
-      </div>
-    );
-  }
 
   // Render komponen layout
   return (

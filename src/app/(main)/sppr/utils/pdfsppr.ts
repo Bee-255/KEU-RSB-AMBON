@@ -2,9 +2,9 @@
 
 import jsPDF from "jspdf";
 import "jspdf-autotable";
-import { capitalizeWords, formatAngka, formatTanggalIndonesia } from "./format";
-import { interNormalFont, interBoldFont } from "./fonts";
-import { terbilang } from "./terbilang";
+import { capitalizeWords, formatAngka, formatTanggalIndonesia } from "@/lib/format";
+import { interNormalFont, interBoldFont } from "@/lib/fonts";
+import { terbilang } from "@/lib/terbilang";
 
 // Interface untuk mendefinisikan struktur data SPPR
 interface Sppr {
@@ -21,7 +21,6 @@ interface Sppr {
   pangkat_pengambil: string;
   jumlah_penarikan: number;
   status_sppr: string;
-  // 👇 PERBAIKAN: Menambahkan properti yang hilang di Surat Kuasa
   nomor_rekening: string;
   nama_rekening: string;
   nama_bank: string;

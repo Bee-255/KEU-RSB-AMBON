@@ -28,7 +28,8 @@ interface PaymentDetailTableProps {
   isLoading: boolean;
   canEdit: boolean; 
   startIndex: number;
-  formatAngka: (angka: number | string | null | undefined) => string; 
+  // PERBAIKAN: formatAngka sekarang menerima argumen opsional untuk pembulatan
+  formatAngka: (angka: number | string | null | undefined, shouldRound?: boolean) => string; 
 }
 
 const PaymentDetailTable: React.FC<PaymentDetailTableProps> = ({ 
@@ -46,7 +47,7 @@ const PaymentDetailTable: React.FC<PaymentDetailTableProps> = ({
     if (selectedDetails.includes(id)) {
       onSelectionChange(selectedDetails.filter(sId => sId !== id)); // Deselect
     } else {
-      // Jika Anda ingin hanya single selection:
+      // Menggunakan Single Selection:
       onSelectionChange([id]); 
     }
   };
@@ -57,7 +58,7 @@ const PaymentDetailTable: React.FC<PaymentDetailTableProps> = ({
     <div className={pageStyles.detailtableContainer}>
       <div className={pageStyles.tableWrapper}>
         
-        {/* Loading Overlay - Ditempatkan persis seperti di PaymentTable.tsx */}
+        {/* Loading Overlay */}
         {isLoading && (
             
           <div className={pageStyles.tableOverlay}>
@@ -98,11 +99,15 @@ const PaymentDetailTable: React.FC<PaymentDetailTableProps> = ({
                   <td>{detail.nama}</td>
                   <td>{detail.pekerjaan}</td>
                   
-                  <td style={{ textAlign: 'right' }}>{formatAngka(detail.jumlah_bruto)}</td>
-                  <td style={{ textAlign: 'right' }}>{formatAngka(detail.potongan)}</td>
+                  {/* DITERAPKAN: Pembulatan (argumen kedua = true) */}
+                  <td style={{ textAlign: 'right' }}>{formatAngka(detail.jumlah_bruto, true)}</td>
+                  <td style={{ textAlign: 'right' }}>{formatAngka(detail.potongan, true)}</td>
+                  {/* PPH21 (%) TIDAK DIBULATKAN, HANYA DIBATASI 2 DESIMAL */}
                   <td style={{ textAlign: 'right' }}>{(detail.pph21_persen * 100).toFixed(2)}%</td> 
-                  <td style={{ textAlign: 'right' }}>{formatAngka(detail.jumlah_pph21)}</td>
-                  <td style={{ textAlign: 'right' }}>{formatAngka(detail.jumlah_netto)}</td>
+                  {/* DITERAPKAN: Pembulatan (argumen kedua = true) */}
+                  <td style={{ textAlign: 'right' }}>{formatAngka(detail.jumlah_pph21, true)}</td>
+                  {/* DITERAPKAN: Pembulatan (argumen kedua = true) */}
+                  <td style={{ textAlign: 'right' }}>{formatAngka(detail.jumlah_netto, true)}</td>
                   
                   <td>{detail.bank}</td>
                   
