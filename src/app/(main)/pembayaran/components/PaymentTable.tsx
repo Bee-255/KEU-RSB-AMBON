@@ -4,7 +4,7 @@
 import React from "react";
 import pageStyles from "@/styles/komponen.module.css";
 import loadingStyles from "@/styles/loading.module.css";
-import { FaChevronDown, FaChevronRight } from 'react-icons/fa'; // Import ikon untuk expand/collapse
+import { FaChevronDown, FaChevronRight } from 'react-icons/fa';
 
 // Interface untuk tipe data PaymentType (Baris Rekap)
 interface PaymentType {
@@ -14,23 +14,35 @@ interface PaymentType {
   jumlah_pegawai: number;
   jumlah_bruto: number;
   jumlah_pph21: number;
-  jumlah_netto: number;
-  status: "BARU" | "DISETUJUI" | "DITOLAK";
+  // BARU: Tambahkan jumlah_potongan
+  jumlah_potongan: number; 
+  // jumlah_netto tetap ada, nilainya dihitung Bruto - PPh21 - Potongan
+  jumlah_netto: number; 
+  status: "BARU" | "DISETUJUI";
   created_at: string;
 }
 
+// BARU: Interface untuk menampung nilai Total
+export interface PaymentTotals {
+  totalBruto: number;
+  totalPph21: number;
+  totalPotongan: number; 
+  totalNetto: number;
+}
+
 // Interface untuk props komponen PaymentTable
-export interface PaymentTableProps { // Pastikan ini di-export jika diimpor di file lain
+export interface PaymentTableProps {
   payments: PaymentType[];
-  // Perubahan: Mengganti Promise<void> di page.tsx dengan void di sini (sesuai cara pemanggilan di handlePaymentSelect)
   selectedPayment: PaymentType | null;
-  onPaymentSelect: (payment: PaymentType) => Promise<void>; // Diperbaiki agar sesuai dengan tipe di page.tsx
+  onPaymentSelect: (payment: PaymentType) => void; 
   isLoading: boolean;
   startIndex: number;
-  formatAngka: (angka: number | string | null | undefined) => string; 
-  // 👇 PROPS BARU DITAMBAHKAN UNTUK MENGATASI ERROR TS2322
+  // PERUBAHAN: formatAngka sekarang menerima argumen opsional untuk pembulatan
+  formatAngka: (angka: number | string | null | undefined, shouldRound?: boolean) => string; 
   expandedIds: Set<string>;
   toggleExpand: (id: string) => void;
+  // BARU: Tambahkan props untuk total
+  paymentTotals: PaymentTotals; 
 }
 
 const PaymentTable: React.FC<PaymentTableProps> = ({
@@ -40,24 +52,25 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
   isLoading,
   startIndex,
   formatAngka,
-  // 👇 PROPS BARU DIDEKONSTRUKSI
   expandedIds,
   toggleExpand,
+  paymentTotals, // Ambil props total
 }) => {
-  const getStatusBadge = (status: string) => {
-    const statusClass = status === 'DISETUJUI' ? pageStyles.statusApproved : 
-                       status === 'DITOLAK' ? pageStyles.statusRejected : 
-                       pageStyles.statusNew;
+  const getStatusBadge = (status: PaymentType["status"]) => {
+    const statusClass = status === 'DISETUJUI' ? pageStyles.statusApproved :
+                       pageStyles.statusNew; 
     return <span className={statusClass}>{status}</span>;
   };
 
   const handleRowClick = (payment: PaymentType) => {
-    // 1. Pilih/deselect baris utama
     onPaymentSelect(payment);
-    // 2. Kelola state expand/collapse
-    toggleExpand(payment.id); 
   };
   
+  // Total kolom data numerik adalah 5 (Pegawai, Bruto, PPh21, Potongan, Netto)
+  // Total kolom keseluruhan adalah 10 (Icon + No + 3 Label + 5 Data)
+  const COL_SPAN_FOR_EMPTY_ROW = 10; 
+  const COL_SPAN_FOR_TOTAL_LABEL = 5; // Icon (1) + No (1) + Periode (1) + Periode Pembayaran (1) + Jml Pegawai (1)
+
   return (
     <div className={pageStyles.tableContainer}>
       <div className={pageStyles.tableWrapper}>
@@ -74,41 +87,45 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
         <table className={pageStyles.table}>
           <thead className={pageStyles.tableHead}>
             <tr>
-              <th style={{ width: "2%" }}></th> {/* Kolom untuk Expand/Collapse */}
-              <th style={{ width: "5%" }}>No.</th>
-              <th style={{ width: "10%" }}>Periode</th>
-              <th style={{ width: "23%" }}>Periode Pembayaran</th>
-              <th style={{ width: "10%" }}>Jumlah Pegawai</th>
-              <th style={{ width: "12%", textAlign: "right" }}>Jumlah Bruto</th>
-              <th style={{ width: "12%", textAlign: "right" }}>Jumlah PPh21</th>
-              <th style={{ width: "12%", textAlign: "right" }}>Jumlah Netto</th>
-              <th style={{ width: "14%" }}>Status</th>
+              <th style={{ width: "2%" }}></th> 
+              <th style={{ width: "4%" }}>No.</th>
+              <th style={{ width: "9%" }}>Periode</th>
+              <th style={{ width: "17%" }}>Periode Pembayaran</th>
+              <th style={{ width: "7%" }}>Jml Pegawai</th>
+              <th style={{ width: "11%", textAlign: "right" }}>Jumlah Bruto</th>
+              <th style={{ width: "11%", textAlign: "right" }}>Jumlah PPh21</th>
+              {/* BARU: Kolom Jumlah Potongan */}
+              <th style={{ width: "11%", textAlign: "right" }}>Jumlah Potongan</th>
+              <th style={{ width: "11%", textAlign: "right" }}>Jumlah Netto</th>
+              <th style={{ width: "17%" }}>Status</th>
             </tr>
           </thead>
           <tbody className={pageStyles.tableBody}>
             {payments.length > 0 ? (
               payments.map((payment, index) => {
                 const isExpanded = expandedIds.has(payment.id);
+                const isRowSelected = selectedPayment?.id === payment.id;
+
                 return (
                   <tr 
                     key={payment.id} 
-                    onClick={() => handleRowClick(payment)} // Menggunakan fungsi baru
-                    className={`${pageStyles.tableRow} ${
-                      selectedPayment?.id === payment.id ? pageStyles.selected : ""
-                    }`}
+                    onClick={() => handleRowClick(payment)} 
+                    className={`${pageStyles.tableRow} ${isRowSelected ? pageStyles.selected : ""}`}
                   >
-                    {/* Kolom Expand/Collapse */}
-                    <td onClick={(e) => { e.stopPropagation(); toggleExpand(payment.id); }} style={{ cursor: 'pointer' }}>
-                        {isExpanded ? <FaChevronDown size={10} /> : <FaChevronRight size={10} />}
-                    </td>
+                    <td>
+                      {isExpanded ? <FaChevronDown size={10} /> : <FaChevronRight size={10} />}
+                    </td> 
                     
                     <td>{startIndex + index + 1}</td>
                     <td>{payment.periode}</td>
                     <td>{payment.periode_pembayaran}</td>
                     <td>{payment.jumlah_pegawai}</td>
-                    <td style={{ textAlign: "right" }}>{formatAngka(payment.jumlah_bruto)}</td>
-                    <td style={{ textAlign: "right" }}>{formatAngka(payment.jumlah_pph21)}</td>
-                    <td style={{ textAlign: "right" }}>{formatAngka(payment.jumlah_netto)}</td>
+                    {/* Pembulatan diaktifkan (argumen kedua = true) */}
+                    <td style={{ textAlign: "right" }}>{formatAngka(payment.jumlah_bruto, true)}</td>
+                    <td style={{ textAlign: "right" }}>{formatAngka(payment.jumlah_pph21, true)}</td>
+                    {/* BARU: Tampilkan Jumlah Potongan dengan pembulatan */}
+                    <td style={{ textAlign: "right" }}>{formatAngka(payment.jumlah_potongan, true)}</td>
+                    <td style={{ textAlign: "right" }}>{formatAngka(payment.jumlah_netto, true)}</td>
                     <td>{getStatusBadge(payment.status)}</td>
                   </tr>
                 );
@@ -116,7 +133,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
             ) : (
               <tr>
                 <td 
-                  colSpan={9} // Colspan disesuaikan menjadi 9 (ditambah 1 kolom expand)
+                  colSpan={COL_SPAN_FOR_EMPTY_ROW} // Colspan disesuaikan menjadi 10
                   className={pageStyles.tableEmpty}
                   style={{ padding: '1rem 0' }}
                 >
@@ -125,6 +142,41 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
               </tr>
             )}
           </tbody>
+          
+          {/* BARU: Table Footer untuk Total */}
+          {payments.length > 0 && (
+            <tfoot className={pageStyles.tableHead}>
+              <tr>
+                {/* Gabungkan sel untuk label "TOTAL KESELURUHAN" */}
+                <th colSpan={COL_SPAN_FOR_TOTAL_LABEL} style={{ textAlign: 'right', fontWeight: 'bold', paddingRight: '1rem' }}>
+                    TOTAL KESELURUHAN
+                </th>
+                
+                {/* Kolom Jumlah Bruto (dengan pembulatan) */}
+                <th style={{ textAlign: 'right', fontWeight: 'bold' }}>
+                    {formatAngka(paymentTotals.totalBruto, true)} 
+                </th>
+                
+                {/* Kolom Jumlah PPh21 (dengan pembulatan) */}
+                <th style={{ textAlign: 'right', fontWeight: 'bold' }}>
+                    {formatAngka(paymentTotals.totalPph21, true)}
+                </th>
+
+                {/* Kolom Jumlah Potongan (dengan pembulatan) */}
+                <th style={{ textAlign: 'right', fontWeight: 'bold' }}>
+                    {formatAngka(paymentTotals.totalPotongan, true)}
+                </th>
+                
+                {/* Kolom Jumlah Netto (dengan pembulatan) */}
+                <th style={{ textAlign: 'right', fontWeight: 'bold' }}>
+                    {formatAngka(paymentTotals.totalNetto, true)}
+                </th>
+                
+                {/* Kolom Status (Kosong) */}
+                <th></th> 
+              </tr>
+            </tfoot>
+          )}
         </table>
       </div>
     </div>

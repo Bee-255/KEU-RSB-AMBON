@@ -12,8 +12,7 @@ import { useKeuNotification } from "@/lib/useKeuNotification";
 import { FiDownload } from "react-icons/fi";
 // Import Icon yang diperlukan
 import { FaUpload, FaXmark } from "react-icons/fa6"; 
-// Ganti FaHourglass dengan FaUpload, FaHourglass sudah tidak digunakan
-// ... (Semua Interface tetap di sini)
+
 interface UploadModalProps {
   onClose: () => void;
   onSuccess: (totalCount: number, failedCount: number) => void;
@@ -60,7 +59,6 @@ interface FailedRecord {
   'PERIODE PEMBAYARAN (Excel)': string;
   'Alasan Kegagalan': string;
 }
-// ... (Akhir Interface)
 
 const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
   const { showToast, showConfirm } = useKeuNotification(); 
@@ -91,7 +89,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
   // ----------------------------------------
   
   const periodOptions: string[] = [];
-  const targetYear = 2025;
+  const targetYear = new Date().getFullYear(); // Ambil tahun saat ini secara dinamis
   for (let m = 1; m <= 12; m++) {
       const period = `${targetYear}-${m.toString().padStart(2, '0')}`;
       periodOptions.push(period);
@@ -124,15 +122,25 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
   const processExcelData = (data: unknown[]): PegawaiData[] => {
     return data
       .filter((row): row is Record<string, unknown> => typeof row === 'object' && row !== null)
-      .map(row => ({
-        nrp_nip_nir: String(row.nrp_nip_nir || row.nrp_nip_nik || "").trim(),
-        jumlah_bruto: Number(row.jumlah_bruto || row.jumlah || 0),
-        potongan: Number(row.potongan) || 0,
-        periode_excel: String(row.periode || row.PERIODE || "").trim(),
-        nama_excel: String(row.nama || row.NAMA || "").trim(),
-        // Normalisasi untuk menangkap nilai periode pembayaran
-        periode_pembayaran_excel: String(row.periode_pembayaran || row.PERIODE_PEMBAYARAN || "").trim(),
-      }))
+      .map(row => {
+        
+        // PASTIKAN NRP/NIP/NIR DIBACA SEBAGAI STRING DAN DITRIM
+        const nrpNipNirRaw = row.nrp_nip_nir || row.nrp_nip_nik || "";
+        const nrpNipNir = String(nrpNipNirRaw).trim(); 
+        
+        // Handle kasus Excel membaca 123456.0 menjadi 123456
+        const jumlahBruto = Number(row.jumlah_bruto || row.jumlah || 0);
+        const potongan = Number(row.potongan) || 0;
+        
+        return {
+            nrp_nip_nir: nrpNipNir,
+            jumlah_bruto: jumlahBruto,
+            potongan: potongan,
+            periode_excel: String(row.periode || row.PERIODE || "").trim(),
+            nama_excel: String(row.nama || row.NAMA || "").trim(),
+            periode_pembayaran_excel: String(row.periode_pembayaran || row.PERIODE_PEMBAYARAN || "").trim(),
+        }
+      })
       .filter(item => item.nrp_nip_nir && item.jumlah_bruto > 0);
   };
 
@@ -162,9 +170,14 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
             row.eachCell((cell, colNumber) => {
               const header = headers[colNumber - 1];
               if (header) {
-                // Konversi tanggal/nilai Excel dengan aman
                 const cellValue = cell.value;
-                if (cellValue && typeof cellValue === 'object' && cellValue.hasOwnProperty('result')) {
+                
+                // Pastikan NRP/NIP/NIR (kolom D - index 3) selalu dibaca sebagai teks untuk menghindari notasi ilmiah
+                if (colNumber === 4) { // Kolom D (NRP_NIP_NIR)
+                    rowData[header] = String(cell.text || String(cell.value) || '').trim();
+                } 
+                // Konversi tanggal/nilai Excel dengan aman
+                else if (cellValue && typeof cellValue === 'object' && cellValue.hasOwnProperty('result')) {
                     rowData[header] = (cellValue as { result: unknown }).result;
                 } else {
                     rowData[header] = cellValue;
@@ -192,26 +205,48 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Template Pembayaran');
     
+    // Tambahkan header
     worksheet.addRow(['No','PERIODE','PERIODE_PEMBAYARAN','NRP_NIP_NIR','NAMA','Jumlah_Bruto', 'Potongan']);
     
+    // Format Header
     worksheet.getRow(1).font = { bold: true };
     
-    worksheet.getColumn(1).width = 5;
-    worksheet.getColumn(2).width = 15;
-    worksheet.getColumn(3).width = 25; 
-    worksheet.getColumn(4).width = 20;
-    worksheet.getColumn(5).width = 30;
-    worksheet.getColumn(6).width = 15;
-    worksheet.getColumn(7).width = 15;
+    // Atur Lebar Kolom
+    worksheet.getColumn(1).width = 5; // No
+    worksheet.getColumn(2).width = 15; // PERIODE
+    worksheet.getColumn(3).width = 25; // PERIODE_PEMBAYARAN
+    worksheet.getColumn(4).width = 20; // NRP_NIP_NIR
+    worksheet.getColumn(5).width = 30; // NAMA
+    worksheet.getColumn(6).width = 15; // Jumlah_Bruto
+    worksheet.getColumn(7).width = 15; // Potongan
     
+    // Atur Format Sel
+    
+    // Kolom 1 (No) - Teks
+    worksheet.getColumn(1).numFmt = '@'; 
+    // Kolom 2 (PERIODE) - Teks
+    worksheet.getColumn(2).numFmt = '@'; 
+    // Kolom 3 (PERIODE_PEMBAYARAN) - Teks
+    worksheet.getColumn(3).numFmt = '@';
+    // Kolom 4 (NRP_NIP_NIR) - Teks (Sangat Penting)
+    worksheet.getColumn(4).numFmt = '@';
+    // Kolom 5 (NAMA) - Teks
+    worksheet.getColumn(5).numFmt = '@';
+    
+    // Kolom 6 (Jumlah_Bruto) - Number (Format Rupiah/Decimal)
+    worksheet.getColumn(6).numFmt = '#,##0.00'; 
+    // Kolom 7 (Potongan) - Number (Format Rupiah/Decimal)
+    worksheet.getColumn(7).numFmt = '#,##0.00'; 
+    
+    // Tambahkan Contoh Data (agar format diterapkan pada cell)
     worksheet.addRow([
       '1',
-      '2025-01', 
+      `${targetYear}-01`, 
       'JASA BPJS JANUARI 2025',
-      '123456',
-      'Nama Contoh',
-      '5000000', 
-      '200000'
+      '960413202306166', // Contoh 15 digit
+      'Nama Contoh Pegawai',
+      5000000.00, 
+      200000.00
     ]);
     
     workbook.xlsx.writeBuffer().then((buffer) => {
@@ -225,7 +260,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
       
-      showToast("Template berhasil diunduh!", "success");
+      showToast("Template berhasil diunduh! Kolom NRP/NIP/NIR sudah diformat sebagai Teks.", "success");
     }).catch((error) => {
       console.error("Error downloading template:", error);
       showToast("Gagal mengunduh template", "error");
@@ -292,7 +327,6 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
         return;
       }
       
-      // Ambil periode pembayaran dari baris pertama data yang valid
       const firstValidItem = processedData.find(item => item.periode_pembayaran_excel);
       const periodePembayaranFromExcel = firstValidItem?.periode_pembayaran_excel || null;
       
@@ -317,7 +351,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
           showToast(
               `Data untuk Periode ${selectedPeriod} dengan uraian "${periodePembayaranFromExcel}" sudah pernah di-upload sebelumnya. Upload dibatalkan.`, 
               "warning",
-              6000 // Tampilkan lebih lama
+              6000 
           );
           setIsUploading(false);
           return;
@@ -328,6 +362,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
       const { data: pegawaiList, error: pegawaiError } = await supabase
         .from("pegawai")
         .select("nrp_nip_nir, nama, pekerjaan, golongan, bank, no_rekening, nama_rekening")
+        // Filter menggunakan IN (harus berupa string array)
         .in("nrp_nip_nir", nrpNipNirList);
 
       if (pegawaiError) {
@@ -345,15 +380,12 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
       
       const failedPeriodIndices = new Set<string>();
       const failedNrpNipNirIndices = new Set<string>();
-      // --- PERBAIKAN TS2552: TAMBAHKAN DEKLARASI INI ---
       const failedPeriodePembayaranIndices = new Set<string>();
-      // ----------------------------------------------------
       
       const totalDataInFile = processedData.length;
       let totalBruto = 0;
       let totalPotongan = 0;
       let totalPph21 = 0;
-      // Gunakan nilai yang sudah dipastikan dari pengecekan duplikasi
       const periodePembayaranFinal = periodePembayaranFromExcel; 
 
       processedData.forEach((item) => {
@@ -369,10 +401,9 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
         }
 
         // VALIDASI 2: Cek PERIODE_PEMBAYARAN (KONSISTENSI dengan nilai pertama)
-        // Cek hanya jika VALIDASI 1 LULUS
         if (isValid && item.periode_pembayaran_excel !== periodePembayaranFinal) {
             errorReason = `PERIODE PEMBAYARAN tidak konsisten. Ditemukan "${item.periode_pembayaran_excel}" sedangkan yang disetujui adalah "${periodePembayaranFinal}".`;
-            failedPeriodePembayaranIndices.add(item.nrp_nip_nir); // Tambahkan ke set
+            failedPeriodePembayaranIndices.add(item.nrp_nip_nir); 
             isValid = false;
         }
 
@@ -435,16 +466,12 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
       const failedCount = failedRecords.length;
       const uniqueFailedPeriodCount = failedPeriodIndices.size;
       const uniqueFailedNrpNipNirCount = failedNrpNipNirIndices.size;
-      // --- PERBAIKAN TS2552: TAMBAHKAN PERHITUNGAN INI ---
       const uniqueFailedPeriodePembayaranCount = failedPeriodePembayaranIndices.size;
-      // ----------------------------------------------------
-
+      
       // 4. KEPUTUSAN TRANSAKSI (ALL-OR-NOTHING)
       if (failedCount > 0) {
         
         const downloadLink = await createFailedReportLink(failedRecords); 
-        
-        // --- MODIFIKASI PESAN KEGAGALAN DIMULAI DI SINI (Format Baru) ---
         
         const failedHeadline = `${failedCount} total data bermasalah.`;
 
@@ -464,7 +491,6 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
                 </p>
             );
         }
-        // Gunakan variabel yang sudah diperbaiki
         if (uniqueFailedPeriodePembayaranCount > 0) { 
             detailPoints.push(
                 <p key="pembayaran" style={{ margin: '0 0 4px 0' }}>
@@ -486,12 +512,11 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
                 )}
             </div>
         );
-        // --- MODIFIKASI PESAN KEGAGALAN SELESAI DI SINI ---
         
         const isConfirmed = await showConfirm({
             title: 'Upload Dibatalkan',
             message: messageContent,
-            confirmText: downloadLink ? 'Unduh Laporan' : 'OK',
+            confirmText: downloadLink ? 'Unduh Laporan' : 'Tutup',
             cancelText: 'Tutup',
         });
         
@@ -513,6 +538,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
         jumlah_pegawai: finalSuccessCount,
         jumlah_bruto: totalBruto,
         jumlah_pph21: totalPph21,
+        jumlah_potongan: totalPotongan, // Pastikan Potongan ikut masuk di Rekapan
         jumlah_netto: totalNetto,
         status: "BARU" as const,
       };
@@ -545,8 +571,6 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
 
       // 6. Sukses Penuh
       onSuccess(totalDataInFile, 0); 
-      
-      showToast(`${finalSuccessCount} data berhasil diunggah!`, "success");
       
       onClose(); 
 
