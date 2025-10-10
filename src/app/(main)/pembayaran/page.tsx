@@ -100,8 +100,7 @@ const Pembayaran = () => {
   const [selectedPeriodId, setSelectedPeriodId] = useState<string>("");
   const [availablePeriods, setAvailablePeriods] = useState<PeriodOption[]>([]);
 
-  const [showEditDetailModal, setShowEditDetailModal] = useState(false);
-  const [detailToEdit, setDetailToEdit] = useState<PaymentDetailType | null>(null);
+  // States 'showEditDetailModal' dan 'detailToEdit' sengaja tidak dideklarasikan karena tidak digunakan
 
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
@@ -223,8 +222,8 @@ const Pembayaran = () => {
 
         const commonPeriod = singleRekapData.periode;
 
-        // PERUBAHAN: Tambahkan jumlah_potongan di query select
-        let query = supabase
+        // Variabel 'query' diubah menjadi const untuk mematuhi prefer-const
+        const query = supabase
             .from("rekapan_pembayaran")
             .select("id, periode, periode_pembayaran, jumlah_pegawai, jumlah_bruto, jumlah_pph21, jumlah_potongan, jumlah_netto, status, created_at")
             .eq("periode", commonPeriod)
@@ -393,13 +392,36 @@ const Pembayaran = () => {
     }
   };
 
+  // Handler yang menerima detail dari PaymentDetailTable
   const handleEditDetail = (detail: PaymentDetailType) => {
     const canEditDelete = selectedPayment && (selectedPayment.status === 'BARU');
-    if (!canEditDelete || selectedDetails.length !== 1) return;
-    setDetailToEdit(detail);
-    setShowEditDetailModal(true);
-    showToast(`Membuka edit data untuk NRP/NIP/NIR: ${detail.nrp_nip_nir}`, "info");
+    if (!canEditDelete) {
+        showToast("Hanya data dengan status BARU yang bisa diedit.", "error");
+        return;
+    }
+    // Logic untuk edit seharusnya di sini (misalnya, setShowEditDetailModal(true))
+    showToast(`Membuka edit data untuk NRP/NIP/NIR: ${detail.nrp_nip_nir} (Fitur Edit Belum Aktif)`, "info");
   };
+
+  // Handler untuk tombol "Edit Detail" yang berada di page.tsx
+  const handleEditDetailButton = () => {
+    const canEditDelete = selectedPayment && (selectedPayment.status === 'BARU');
+    if (!canEditDelete || selectedDetails.length !== 1) {
+        showToast("Pilih tepat satu baris detail dengan status BARU untuk mengedit.", "warning");
+        return;
+    }
+    
+    // Cari detail yang dipilih
+    const detailToEdit = paymentDetailList.find(d => d.id === selectedDetails[0]);
+
+    if(detailToEdit) {
+        // Panggil handler utama (yang akan membuka modal edit nantinya)
+        handleEditDetail(detailToEdit);
+    } else {
+        showToast("Detail yang dipilih tidak ditemukan.", "error");
+    }
+  }
+
 
   const handleDownload = (type: 'pdf' | 'excel') => {
     if (!selectedPayment) { 
@@ -571,7 +593,8 @@ const Pembayaran = () => {
             }}
           >
             <button
-                onClick={() => showToast("Fitur Edit belum diimplementasi.", "error")}
+                // PERBAIKAN TS2322: Panggil handler baru yang sesuai dengan tipe MouseEventHandler
+                onClick={handleEditDetailButton} 
                 className={styles.editButton}
                 disabled={!canEditDelete || selectedDetails.length !== 1}
             >
