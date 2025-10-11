@@ -32,14 +32,14 @@ interface PaymentType {
   created_at: string;
 }
 
-// PERBAIKAN: Asumsi kolom 'klasifikasi' sekarang ada langsung di tabel detail_pembayaran
-interface PaymentDetailType {
+// Tipe data untuk baris mentah dari Supabase (menghilangkan penggunaan 'any' saat fetch)
+interface DetailRow {
   id: string;
   rekapan_id: string;
   nrp_nip_nir: string;
   nama: string;
   pekerjaan: string;
-  klasifikasi: string; // Harus sudah ada di tabel detail_pembayaran jika tidak join
+  klasifikasi?: string; // Kolom klasifikasi dari detail_pembayaran
   jumlah_bruto: number;
   pph21_persen: number;
   jumlah_pph21: number;
@@ -49,6 +49,11 @@ interface PaymentDetailType {
   nama_rekening: string;
   potongan: number;
   uraian_pembayaran?: string;
+}
+
+// Interface yang digunakan untuk state di React (klasifikasi dipastikan ada)
+interface PaymentDetailType extends DetailRow {
+  klasifikasi: string; // Klasifikasi selalu ada (atau diisi default) setelah transformasi
 }
 
 interface PeriodOption {
@@ -106,7 +111,6 @@ const Pembayaran = () => {
   const fetchPaymentDetails = useCallback(async (paymentId: string) => {
     setIsDetailLoading(true);
     try {
-      // PERBAIKAN: Hanya select semua kolom (*) dari detail_pembayaran
       const { data, error } = await supabase
         .from("detail_pembayaran")
         .select(`*`) 
@@ -115,18 +119,19 @@ const Pembayaran = () => {
 
       if (error) throw error;
       
+      // Menggunakan tipe DetailRow untuk data yang ditarik
+      const fetchedData = data as DetailRow[];
+
       // Transformasi data agar sesuai dengan interface PaymentDetailType
-      const transformedData = data.map(d => ({
+      const transformedData = fetchedData.map(d => ({
         ...d,
-        // Jika klasifikasi sudah ada di detail_pembayaran, ambil langsung.
-        // Jika tidak ada, ini akan menggunakan 'PARAMEDIS' sebagai default.
-        klasifikasi: (d as any).klasifikasi || "PARAMEDIS", 
+        klasifikasi: d.klasifikasi || "PARAMEDIS", 
       })) as PaymentDetailType[];
 
       setPaymentDetailList(transformedData);
     } catch (e) {
-      // Penanganan error
-      const errorMessage = (e as any)?.message || JSON.stringify(e);
+      // Menghilangkan 'any' pada error handling
+      const errorMessage = e instanceof Error ? e.message : JSON.stringify(e);
       console.error("Gagal mengambil detail pembayaran:", errorMessage);
       setPaymentDetailList([]);
     } finally {
@@ -139,7 +144,6 @@ const Pembayaran = () => {
     if (approvedRekapIds.length === 0) return { details: [], error: "Tidak ada rekapan yang berstatus DISETUJUI di periode ini." };
 
     try {
-      // PERBAIKAN: Hanya select semua kolom (*) dari detail_pembayaran
       const { data, error } = await supabase
         .from("detail_pembayaran")
         .select(`*`)
@@ -148,15 +152,19 @@ const Pembayaran = () => {
 
       if (error) throw error;
       
+      // Menggunakan tipe DetailRow untuk data yang ditarik
+      const fetchedData = data as DetailRow[];
+
       // Transformasi data untuk menyertakan klasifikasi
-      const transformedData = data.map(d => ({
+      const transformedData = fetchedData.map(d => ({
         ...d,
-        klasifikasi: (d as any).klasifikasi || "PARAMEDIS",
+        klasifikasi: d.klasifikasi || "PARAMEDIS",
       })) as PaymentDetailType[];
 
       return { details: transformedData, error: null };
     } catch (e) {
-      const errorMessage = (e as any)?.message || JSON.stringify(e);
+      // Menghilangkan 'any' pada error handling
+      const errorMessage = e instanceof Error ? e.message : JSON.stringify(e);
       console.error("Failed to fetch all approved payment details:", errorMessage);
       return { details: [], error: "Kesalahan saat memproses data." };
     }
@@ -179,7 +187,9 @@ const Pembayaran = () => {
 
       return { periods: uniquePeriods, latestPeriodId };
     } catch (e) {
-      console.error("Failed to fetch available periods:", e);
+      // Menghilangkan 'any' pada error handling
+      const errorMessage = e instanceof Error ? e.message : JSON.stringify(e);
+      console.error("Failed to fetch available periods:", errorMessage);
       return { periods: [], latestPeriodId: "" };
     }
   }, []);
@@ -427,7 +437,7 @@ const Pembayaran = () => {
       uraian_pembayaran: detail.uraian_pembayaran || firstApprovedPayment.uraian_pembayaran
     }));
 
-    // Klasifikasi sudah di-join pada fungsi fetchAllApprovedPaymentDetails
+    // Klasifikasi sudah diambil di fetchAllApprovedPaymentDetails (sekarang tanpa join)
     await downloadTandaTangan(detailsWithUraian, firstApprovedPayment, showToast);
   };
 

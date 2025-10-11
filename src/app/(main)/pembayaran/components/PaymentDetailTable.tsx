@@ -76,13 +76,13 @@ const PaymentDetailTable: React.FC<PaymentDetailTableProps> = ({
               <th style={{ width: "10%" }}>NRP/NIP</th>
               <th style={{ width: "15%" }}>Nama</th>
               <th style={{ width: "10%" }}>Pekerjaan</th>
-              <th style={{ width: "10%" }}>Klasifikasi</th>
+              <th style={{ width: "5%" }}>Klasifikasi</th>
               <th style={{ width: "10%", textAlign: 'right' }}>Bruto (Rp)</th>
               <th style={{ width: "7%", textAlign: 'right' }}>PPH21 (%)</th>
               <th style={{ width: "10%", textAlign: 'right' }}>PPH21 (Rp)</th>
               <th style={{ width: "10%", textAlign: 'right' }}>Potongan (Rp)</th> 
               <th style={{ width: "10%", textAlign: 'right' }}>Netto (Rp)</th>
-              <th style={{ width: "10%" }}>Bank</th> 
+              <th style={{ width: "15%" }}>Bank</th> 
             </tr>
           </thead>
           <tbody className={pageStyles.tableBody}>
