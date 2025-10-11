@@ -6,11 +6,13 @@ import ExcelJS from 'exceljs';
 interface PaymentType {
     id: string;
     periode_pembayaran: string;
+    // ASUMSI: Menambahkan properti 'periode' yang formatnya YYYY-MM
+    periode: string; 
 }
 
 interface PaymentDetailType {
     nrp_nip_nir: string;
-    nama: string;
+    nama: string; // Akan digunakan sebagai Nama Pegawai
     pekerjaan: string;
     jumlah_bruto: number;
     jumlah_pph21: number;
@@ -18,8 +20,70 @@ interface PaymentDetailType {
     jumlah_netto: number;
     nomor_rekening: string;
     bank: string; // Kunci untuk filtering!
-    nama_rekening: string;
+    nama_rekening: string; // Akan digunakan sebagai Nama Pemilik Rekening
 }
+
+// Interface untuk menampung data yang sudah diagregasi (disesuaikan untuk Tunai)
+interface AggregatedPaymentDetail {
+    nama_pegawai: string; // Nama dari tabel pegawai (nama)
+    jumlah_netto: number;
+}
+
+
+/**
+ * Fungsi untuk mengagregasi data detail pembayaran (Gabungkan Netto berdasarkan Nama Pegawai).
+ * Khusus untuk TUNAI, agregasi didasarkan pada Nama Pegawai.
+ */
+const aggregatePaymentDetailsForTunai = (details: PaymentDetailType[]): AggregatedPaymentDetail[] => {
+    // Kunci agregasi: Nama Pegawai + NRP/NIP/NIR (untuk memastikan keunikan nama)
+    const aggregationMap = new Map<string, AggregatedPaymentDetail>();
+
+    details.forEach(d => {
+        const key = `${d.nama.trim().toUpperCase()}|${d.nrp_nip_nir.trim().toUpperCase()}`;
+        
+        // Pembulatan ke integer terdekat
+        const roundedNetto = Math.round(Number(d.jumlah_netto));
+
+        if (aggregationMap.has(key)) {
+            const existing = aggregationMap.get(key)!;
+            existing.jumlah_netto += roundedNetto;
+        } else {
+            aggregationMap.set(key, {
+                nama_pegawai: d.nama.trim(), 
+                jumlah_netto: roundedNetto,
+            });
+        }
+    });
+
+    return Array.from(aggregationMap.values());
+};
+
+/**
+ * Mengkonversi periode 'YYYY-MM' menjadi deskripsi Judul/Keterangan.
+ * Contoh: '2025-09' -> 'PEMBAYARAN JASA SEPTEMBER 2025'
+ */
+const getTitleText = (periode: string): string => {
+    const parts = periode.split('-');
+    if (parts.length !== 2) {
+        return "PEMBAYARAN JASA"; // Fallback jika format salah
+    }
+
+    const year = parts[0];
+    const monthIndex = parseInt(parts[1], 10) - 1; 
+
+    const monthNames = [
+        "JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI", 
+        "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"
+    ];
+
+    if (monthIndex >= 0 && monthIndex < 12) {
+        const month = monthNames[monthIndex];
+        return `PEMBAYARAN JASA ${month} ${year}`;
+    }
+
+    return "PEMBAYARAN JASA"; // Fallback jika bulan tidak valid
+};
+
 
 export const exportPaymentExcelTunai = async (
     details: PaymentDetailType[], 
@@ -31,106 +95,172 @@ export const exportPaymentExcelTunai = async (
         return;
     }
 
-    // 🚀 FILTERING: Ambil hanya data yang banknya kosong atau null
+    // 1. FILTERING & AGREGRASI
+    // Filter hanya untuk yang bank-nya bernilai '-'
     const filteredDetails = details.filter(d => 
-        !d.bank || d.bank.trim() === ''
+        d.bank && d.bank.trim() === '-'
     );
     
     if (filteredDetails.length === 0) {
-        showToast("Tidak ada detail pembayaran dengan status TUNAI yang ditemukan untuk diunduh.", "warning");
+        showToast("Tidak ada detail pembayaran dengan status TUNAI (-) yang ditemukan untuk diunduh.", "warning");
         return;
     }
+    
+    // Gabungkan data
+    const aggregatedDetails = aggregatePaymentDetailsForTunai(filteredDetails);
+    
+    // Dapatkan teks judul
+    const titleText = getTitleText(payment.periode);
+
 
     try {
         const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet("Lampiran Pembayaran Tunai");
-        const filename = `Pembayaran_TUNAI_${payment.periode_pembayaran.replace(/\s/g, '_')}.xlsx`;
+        const worksheet = workbook.addWorksheet("Lampiran Pembayaran TUNAI");
+        const filename = `${titleText.replace(/\s/g, ' ')} - TUNAI.xlsx`;
+        
+        // Atur View
+        worksheet.views = [{ 
+            state: 'frozen', 
+            ySplit: 3, // Bekukan baris header
+            showGridLines: true 
+        }];
         
         // --- 1. SET JUDUL ---
-        const titleRow = worksheet.addRow(["DAFTAR LAMPIRAN PEMBAYARAN TUNAI"]);
-        titleRow.font = { bold: true, size: 14 };
-        // Merge cell hingga Kolom G, meskipun Tunai mungkin hanya butuh sedikit
-        worksheet.mergeCells('A1:G1'); 
+        const titleRow = worksheet.addRow([`DAFTAR LAMPIRAN PEMBAYARAN TUNAI`]);
+        titleRow.font = { 
+            bold: true, 
+            size: 12,
+            name: 'Arial', 
+        };
+        titleRow.height = 20; 
+        // Merge cells untuk 3 kolom (A:C)
+        worksheet.mergeCells('A1:C1'); 
         titleRow.alignment = { vertical: 'middle', horizontal: 'center' }; 
         worksheet.addRow([]);
 
-        // --- 2. TENTUKAN HEADER KOLOM BARU ---
-        // Kolom disesuaikan untuk Tunai, namun mempertahankan 7 kolom untuk konsistensi file.
+
+        // --- 2. TENTUKAN HEADER KOLOM BARU (Hanya 3 kolom) ---
+        
         worksheet.columns = [
-            { key: 'NOMOR_URUT', width: 10 }, 
-            { key: 'NRP', width: 20 },
-            { key: 'NAMA', width: 40 },
+            { key: 'NOMOR', width: 8 },
+            { key: 'NAMA', width: 45 }, // Lebih lebar karena tidak ada kolom Bank/Rekening
             { key: 'JUMLAH_NETTO', width: 20 },
-            { key: 'KETERANGAN', width: 30 },
-            { key: 'EMPTY1', width: 5 },
-            { key: 'EMPTY2', width: 5 },
         ];
 
         const headerRow = worksheet.addRow([
-            "NO.",
-            "NRP/NIP/NIR",
-            "NAMA PEGAWAI",
+            "NOMOR",
+            "NAMA",
             "JUMLAH NETTO",
-            "KETERANGAN",
-            "",
-            ""
         ]);
 
+        headerRow.height = 16; 
+
+        // Aplikasikan styling ke header
         headerRow.eachCell(cell => {
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD54A' } };
-            cell.font = { bold: true };
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFD54A' }
+            };
+            cell.font = { 
+                bold: true,
+                name: 'Arial',
+            };
             cell.alignment = { vertical: 'middle', horizontal: 'center' };
-            cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+            cell.border = { 
+                top: {style:'thin'}, left: {style:'thin'}, 
+                bottom: {style:'thin'}, right: {style:'thin'}
+            };
         });
 
-        // --- 3. TAMBAHKAN DATA DENGAN NOMOR URUT ---
+        // --- 3. TAMBAHKAN DATA AGREGRASI ---
+        
         let totalNetto = 0;
         
-        filteredDetails.forEach((d, index) => { 
+        aggregatedDetails.forEach((d, index) => { 
             const rowNumber = index + 1;
-            const nettoValue = Number(d.jumlah_netto);
+            const nettoValue = d.jumlah_netto; 
             totalNetto += nettoValue;
 
-            const dataRow = worksheet.addRow({
-                NOMOR_URUT: rowNumber,
-                NRP: d.nrp_nip_nir,
-                NAMA: d.nama,
-                JUMLAH_NETTO: nettoValue,
-                KETERANGAN: payment.periode_pembayaran
-            });
+            const dataRow = worksheet.addRow([
+                rowNumber,
+                d.nama_pegawai,
+                nettoValue
+            ]);
             
-            // Format kolom JUMLAH NETTO (Kolom D)
-            dataRow.getCell(4).numFmt = '#,##0.00;[Red]-#,##0.00';
+            // Terapkan Arial dan Size 10 pada baris data
+            dataRow.font = { name: 'Arial', size: 10 };
             
-            // Alignment Center untuk Kolom No.
+            // Set tinggi baris data menjadi 13
+            dataRow.height = 13;
+            
+            // Format kolom JUMLAH NETTO (kolom C) sebagai mata uang (tanpa desimal)
+            dataRow.getCell(3).numFmt = '#,##0;[Red]-#,##0';
+            
+            // Alignment Center untuk kolom NOMOR
             dataRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' }; 
+            // Alignment Kanan untuk kolom JUMLAH NETTO
+            dataRow.getCell(3).alignment = { vertical: 'middle', horizontal: 'right' };
             
+            // Tambahkan border untuk semua cell data
             dataRow.eachCell(cell => {
-                cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+                cell.border = { 
+                    top: {style:'thin'}, left: {style:'thin'}, 
+                    bottom: {style:'thin'}, right: {style:'thin'}
+                };
             });
         });
         
         // --- 4. TAMBAHKAN BARIS TOTAL ---
-        const totalRow = worksheet.addRow(["TOTAL", "", "TOTAL NETTO", totalNetto, "", "", ""]);
+        
+        const totalRow = worksheet.addRow([
+             "", 
+            "TOTAL", 
+            totalNetto, 
+        ]);
+        
+        totalRow.height = 16; 
+        
+        // Gabungkan sel untuk label "TOTAL" (A:B)
         const lastRowIndex = worksheet.lastRow!.number;
-        
-        // Merge cell A-B-C untuk label TOTAL
-        worksheet.mergeCells(`A${lastRowIndex}:C${lastRowIndex}`); 
+        worksheet.mergeCells(`A${lastRowIndex}:B${lastRowIndex}`); 
 
-        // Format kolom total (Kolom D)
-        totalRow.getCell(4).numFmt = '#,##0.00;[Red]-#,##0.00';
+        // Format kolom total (kolom C)
+        totalRow.getCell(3).numFmt = '#,##0;[Red]-#,##0';
         
+        // Aplikasikan styling ke baris total
         totalRow.eachCell(cell => {
-             cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD54A' } };
-            cell.font = { bold: true };
+             cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFD54A' } 
+            };
+            cell.font = { 
+                bold: true,
+                name: 'Arial', 
+            };
             cell.alignment = { vertical: 'middle', horizontal: 'center' };
-            cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+            cell.border = { 
+                top: {style:'thin'}, left: {style:'thin'}, 
+                bottom: {style:'thin'}, right: {style:'thin'}
+            };
         });
-        totalRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'left' }; // Kolom A yang sudah di-merge
+        
+        // PERBAIKAN ALIGNMENT: 
+        // Kolom A (setelah merge A:B) harus align KANAN
+        totalRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'right' };
+        // Kolom C (Total Netto) harus align KANAN
+        totalRow.getCell(3).alignment = { vertical: 'middle', horizontal: 'right' };
+
 
         // --- 5. TULIS FILE DAN PICU DOWNLOAD ---
+        
         const buffer = await workbook.xlsx.writeBuffer();
-        const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+
+        const blob = new Blob([buffer], {
+            type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;

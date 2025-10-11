@@ -102,7 +102,7 @@ export const exportPaymentExcelBtn = async (
     );
     
     if (filteredDetails.length === 0) {
-        showToast("Tidak ada detail pembayaran dengan Bank BTN yang ditemukan untuk diunduh.", "warning");
+        showToast("Tidak ada detail pembayaran dengan Bank Tabungan Negara yang ditemukan untuk diunduh.", "warning");
         return;
     }
     
@@ -114,12 +114,29 @@ export const exportPaymentExcelBtn = async (
 
     try {
         const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet("Lampiran Bank BTN");
-        const filename = `Pembayaran_BTN_${payment.periode_pembayaran.replace(/\s/g, '_')}.xlsx`;
+        const worksheet = workbook.addWorksheet("Lampiran Bank Tabungan Negara");
+        const baseFilename = `${keteranganValue} - BTN`;
+
+        const filename = `${baseFilename.replace(/\s/g, ' ')}.xlsx`;
+        
+        // 🌟 PENYESUAIAN FONT & VIEW: Hapus defaultRowHeight: 16
+        // Karena kita akan set tinggi secara spesifik pada dataRow
+        worksheet.views = [{ 
+            state: 'frozen', 
+            ySplit: 3, // Bekukan baris header
+            showGridLines: true 
+        }];
         
         // --- 1. SET JUDUL ---
-        const titleRow = worksheet.addRow(["DAFTAR LAMPIRAN BANK TABUNGAN NEGARA"]);
-        titleRow.font = { bold: true, size: 14 };
+        // 🚀 PERUBAHAN: Judul Worksheet
+        const titleRow = worksheet.addRow([`DAFTAR LAMPIRAN BANK TABUNGAN NEGARA`]);
+        titleRow.font = { 
+            bold: true, 
+            size: 12,
+            name: 'Arial', // 🌟 Terapkan Arial
+        };
+        // 🌟 Terapkan tinggi baris untuk Judul
+        titleRow.height = 20; // Lebih tinggi sedikit agar terlihat jelas
         worksheet.mergeCells('A1:G1');
         titleRow.alignment = { vertical: 'middle', horizontal: 'center' }; 
         worksheet.addRow([]);
@@ -130,12 +147,12 @@ export const exportPaymentExcelBtn = async (
         // Define kolom (Hanya untuk mengatur lebar kolom)
         worksheet.columns = [
             { key: 'NOMOR_REKENING', width: 20 },
-            { key: 'PLUS', width: 5 },
-            { key: 'JUMLAH_NETTO', width: 15 },
+            { key: 'PLUS', width: 7 },
+            { key: 'JUMLAH_NETTO', width: 17 },
             { key: 'CD', width: 5 },
             { key: 'NOMOR', width: 10 },
             { key: 'NAMA_REKENING', width: 40 },
-            { key: 'KETERANGAN', width: 30 },
+            { key: 'KETERANGAN', width: 40 },
         ];
 
         // Tambahkan baris header dengan teks yang diminta
@@ -148,6 +165,9 @@ export const exportPaymentExcelBtn = async (
             "NAMA REKENING",
             "KETERANGAN"
         ]);
+        
+        // 🌟 Terapkan tinggi baris untuk Header
+        headerRow.height = 16; // Atur tinggi baris Header
 
         // Aplikasikan styling ke header
         headerRow.eachCell(cell => {
@@ -156,7 +176,10 @@ export const exportPaymentExcelBtn = async (
                 pattern: 'solid',
                 fgColor: { argb: 'FFD54A' } // Warna #FFD54A
             };
-            cell.font = { bold: true };
+            cell.font = { 
+                bold: true,
+                name: 'Arial', // 🌟 Terapkan Arial
+            };
             cell.alignment = { vertical: 'middle', horizontal: 'center' };
             cell.border = { 
                 top: {style:'thin'}, left: {style:'thin'}, 
@@ -181,14 +204,21 @@ export const exportPaymentExcelBtn = async (
                 CD: "C",
                 NOMOR: rowNumber,
                 NAMA_REKENING: d.nama_rekening, 
-                // PERUBAHAN UTAMA: Menggunakan nilai dari getKeteranganText
+                // Menggunakan nilai dari getKeteranganText
                 KETERANGAN: keteranganValue
             });
             
+            // 🌟 Terapkan Arial pada baris data
+            dataRow.font = { name: 'Arial', size: 10 };
+            
+            // 🌟 PERUBAHAN UTAMA: Set tinggi baris data menjadi 13
+            dataRow.height = 13; 
+
             // Format kolom JUMLAH NETTO sebagai mata uang (tanpa desimal)
             dataRow.getCell(3).numFmt = '#,##0;[Red]-#,##0';
             
             // Alignment Center untuk kolom PLUS, CD dan NOMOR
+            // Semua cell data secara default akan punya alignment vertical: 'middle' karena sudah diatur di eachCell di bawah
             dataRow.getCell(2).alignment = { vertical: 'middle', horizontal: 'center' }; // Kolom PLUS
             dataRow.getCell(4).alignment = { vertical: 'middle', horizontal: 'center' }; // Kolom CD
             dataRow.getCell(5).alignment = { vertical: 'middle', horizontal: 'center' }; // Kolom NOMOR
@@ -217,6 +247,9 @@ export const exportPaymentExcelBtn = async (
         // Gabungkan cell untuk label "TOTAL"
         const lastRowIndex = worksheet.lastRow!.number;
         worksheet.mergeCells(`A${lastRowIndex}:B${lastRowIndex}`);
+        
+        // 🌟 Terapkan tinggi baris untuk Total
+        totalRow.height = 16; 
 
         // Format kolom total (kolom C)
         totalRow.getCell(3).numFmt = '#,##0;[Red]-#,##0';
@@ -228,7 +261,10 @@ export const exportPaymentExcelBtn = async (
                 pattern: 'solid',
                 fgColor: { argb: 'FFD54A' } // Warna #FFD54A
             };
-            cell.font = { bold: true };
+            cell.font = { 
+                bold: true,
+                name: 'Arial', // 🌟 Terapkan Arial
+            };
             cell.alignment = { vertical: 'middle', horizontal: 'center' };
             cell.border = { 
                 top: {style:'thin'}, left: {style:'thin'}, 
@@ -236,11 +272,11 @@ export const exportPaymentExcelBtn = async (
             };
         });
         
-        // PERBAIKAN ALIGNMENT: Kolom C (Total Netto) harus align KANAN
-        totalRow.getCell(3).alignment = { vertical: 'middle', horizontal: 'right' };
-
-        // Pastikan cell A di-align kiri setelah merge
+        // PERBAIKAN ALIGNMENT: 
+        // Kolom A (setelah merge A:B) harus align KIRI
         totalRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'left' };
+        // Kolom C (Total Netto) harus align KANAN
+        totalRow.getCell(3).alignment = { vertical: 'middle', horizontal: 'right' };
 
         // --- 5. TULIS FILE DAN PICU DOWNLOAD ---
         

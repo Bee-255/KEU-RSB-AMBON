@@ -319,12 +319,18 @@ const Pembayaran = () => {
             if (!detailError && allDetails) {
                 const banks = new Set<string>();
                 allDetails.forEach(d => {
-                    const bankName = (d.bank || '').trim().toUpperCase();
+                    let bankName = (d.bank || '').trim().toUpperCase();
+                    
+                    // 🚩 PERBAIKAN 1: Logika baru untuk mengubah '-' atau '' menjadi 'TUNAI'
+                    if (bankName === '-' || bankName === '') {
+                        bankName = 'TUNAI';
+                    }
+                    
                     if (bankName) {
                         banks.add(bankName);
-                    } else {
-                        banks.add('TUNAI'); 
-                    }
+                    } 
+                    // Jika bankName kosong setelah trim (misalnya hanya spasi), 
+                    // ini sudah ditangani oleh kondisi di atas (diubah menjadi 'TUNAI' jika ''/null)
                 });
                 const sortedBanks = Array.from(banks).sort();
                 setUniqueBanks(sortedBanks);
@@ -639,10 +645,20 @@ const Pembayaran = () => {
             return;
         }
 
-        // 3. Filter Detail berdasarkan Bank yang dipilih
-        const filteredDetails = allApprovedDetails.filter(d => 
-            (d.bank || 'TUNAI').trim().toUpperCase() === bankToDownload.toUpperCase()
-        );
+        // 🚩 PERBAIKAN 2: Logika filter yang disesuaikan untuk TUNAI ('-' atau '')
+        const filteredDetails = allApprovedDetails.filter(d => {
+            const detailBank = (d.bank || '').trim().toUpperCase();
+            const targetBank = bankToDownload.toUpperCase();
+
+            // KASUS TUNAI: Filter yang banknya kosong/null ATAU strip (-)
+            if (targetBank === 'TUNAI') {
+                return detailBank === '-' || detailBank === '';
+            }
+            
+            // KASUS BANK LAIN: Filter sesuai nama bank
+            return detailBank === targetBank;
+        });
+
 
         if (filteredDetails.length === 0) {
             showToast(`Tidak ada data untuk Bank ${bankToDownload} di semua rekapan yang disetujui.`, "warning");
@@ -665,11 +681,13 @@ const Pembayaran = () => {
         }
     }
   };
-
+// ---------------------------------------------------------------------------------------------------
   /**
    * Handler untuk membuka dropdown Excel, dengan validasi status 'DISETUJUI' terlebih dahulu.
    */
   const handleExcelButtonClick = () => {
+    const isPeriodSelected = !!selectedPeriodId;
+    
     if (!isPeriodSelected) { 
         showToast("Pilih periode pembayaran terlebih dahulu.", "error");
         return;

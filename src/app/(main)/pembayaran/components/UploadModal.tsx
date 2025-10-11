@@ -234,9 +234,9 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
     worksheet.getColumn(5).numFmt = '@';
     
     // Kolom 6 (Jumlah_Bruto) - Number (Format Rupiah/Decimal)
-    worksheet.getColumn(6).numFmt = '#,##0.00'; 
+    worksheet.getColumn(6).numFmt = '###0'; 
     // Kolom 7 (Potongan) - Number (Format Rupiah/Decimal)
-    worksheet.getColumn(7).numFmt = '#,##0.00'; 
+    worksheet.getColumn(7).numFmt = '###0'; 
     
     // Tambahkan Contoh Data (agar format diterapkan pada cell)
     worksheet.addRow([
