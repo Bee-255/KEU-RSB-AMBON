@@ -1,6 +1,7 @@
 // src/app/(main)/pembayaran/utils/exportTandaTangan.ts
 
 import * as ExcelJS from 'exceljs';
+import { CiTextAlignCenter } from 'react-icons/ci';
 
 // --- Type Definitions ---
 export interface PaymentType {
@@ -28,13 +29,12 @@ export interface PaymentDetailType {
   potongan: number; 
   bank: string;
   nomor_rekening: string;
-  uraian_pembayaran: string; 
-  // Kolom kriteria yang diminta untuk klasifikasi
+  uraian_pembayaran?: string;
   kriteria?: "MEDIS" | "PARAMEDIS";
+  klasifikasi?: string;
 }
 
 // --- Helper Functions ---
-
 const getCellRef = (row: number, col: number): string => {
     let column = '';
     while (col > 0) {
@@ -45,120 +45,143 @@ const getCellRef = (row: number, col: number): string => {
     return `${column}${row}`;
 };
 
-// --- FUNGSI UTAMA PEMBUAT SHEET TTD (TANPA KOLOM TTD, 1-ROW HEADER) ---
+// --- FUNGSI KLASIFIKASI ---
+const classifyPegawai = (detail: PaymentDetailType): "MEDIS" | "PARAMEDIS" => {
+    if (detail.kriteria) {
+        const kriteriaUpper = detail.kriteria.toUpperCase();
+        if (kriteriaUpper === "MEDIS" || kriteriaUpper === "PARAMEDIS") {
+            return kriteriaUpper as "MEDIS" | "PARAMEDIS";
+        }
+    }
+    
+    if (detail.klasifikasi) {
+        const klasifikasiUpper = detail.klasifikasi.toUpperCase();
+        if (klasifikasiUpper === "MEDIS" || klasifikasiUpper === "PARAMEDIS") {
+            return klasifikasiUpper as "MEDIS" | "PARAMEDIS";
+        }
+    }
+    
+    const pekerjaanLower = detail.pekerjaan ? detail.pekerjaan.toLowerCase().trim() : '';
+    
+    const isMedis = pekerjaanLower.includes('dokter') || 
+                    pekerjaanLower.includes('dr.') ||
+                    pekerjaanLower.includes('dr ') ||
+                    pekerjaanLower.includes('spesialis');
+    
+    return isMedis ? "MEDIS" : "PARAMEDIS";
+};
+
+// --- FUNGSI UTAMA PEMBUAT SHEET TTD ---
 const createTandaTanganSheet = (
     workbook: ExcelJS.Workbook, 
     sheetName: string, 
     details: PaymentDetailType[],
-    rekapan: PaymentType
+    rekapan: PaymentType,
+    allPaymentsInPeriod: PaymentType[]
 ) => {
     if (details.length === 0) return;
 
     const worksheet = workbook.addWorksheet(sheetName, {
-        views: [{ state: 'frozen', ySplit: 5 }] // Membekukan baris judul
+        views: [{ state: 'frozen', ySplit: 4 }] // Freeze dikurangi 1 row
     });
     
     worksheet.properties.defaultRowHeight = 15;
     
-    // Dapatkan semua uraian pembayaran unik untuk dijadikan kolom
-    const uniqueUraians = Array.from(new Set(details.map(d => d.uraian_pembayaran))).sort();
+    // Dapatkan unique uraians dari SEMUA PAYMENTS
+    const uniqueUraians = Array.from(new Set(allPaymentsInPeriod.map(p => p.uraian_pembayaran))).sort();
     
-    // Grouping Data: Mengelompokkan detail berdasarkan pegawai (NRP/NIP/NIR)
-    const groupedByPegawai = details.reduce((acc, detail) => {
-        const key = detail.nrp_nip_nir; 
-        
-        if (!acc[key]) {
-            acc[key] = {
-                nrp_nip_nir: detail.nrp_nip_nir,
-                nama: detail.nama,
-                // Menggabungkan info bank/rekening atau menggunakan 'TUNAI'
-                bank_info: (detail.bank === '-' || detail.bank === '') ? 'TUNAI' : `${detail.bank} - ${detail.nomor_rekening}`,
-                total_pph21: 0,
-                total_potongan: 0,
-                total_netto: 0,
-                // Menyimpan total netto per uraian
-                uraian_netto: {} as { [uraian: string]: number }
-            };
-        }
+    // Buat mapping dari rekapan_id ke uraian_pembayaran
+    const rekapanToUraianMap = new Map();
+    allPaymentsInPeriod.forEach(payment => {
+        rekapanToUraianMap.set(payment.id, payment.uraian_pembayaran);
+    });
 
-        const uraian = detail.uraian_pembayaran || 'Lain-lain';
-        
-        // Inisialisasi dan Akumulasi nilai Netto per uraian
-        acc[key].uraian_netto[uraian] = (acc[key].uraian_netto[uraian] || 0) + detail.jumlah_netto;
-        
-        // Akumulasi Total keseluruhan
-        acc[key].total_pph21 += detail.jumlah_pph21;
-        acc[key].total_potongan += detail.potongan;
-        acc[key].total_netto += detail.jumlah_netto;
-
-        return acc;
-    }, {} as { [key: string]: {
-        nrp_nip_nir: string;
+    // --- KELOMPOKKAN DATA BERDASARKAN NAMA PEGAWAI ---
+    const groupedData = new Map<string, {
         nama: string;
-        bank_info: string;
-        total_pph21: number;
-        total_potongan: number;
-        total_netto: number;
-        uraian_netto: { [uraian: string]: number }; // Hanya simpan netto per uraian
-    }});
+        pekerjaan: string;
+        details: PaymentDetailType[];
+        totalPph21: number;
+        totalPotongan: number;
+        totalNetto: number;
+        bankInfo: string;
+    }>();
 
-    const finalData = Object.values(groupedByPegawai).sort((a, b) => a.nama.localeCompare(b.nama));
+    details.forEach(detail => {
+        const existing = groupedData.get(detail.nama);
+        
+        if (existing) {
+            existing.details.push(detail);
+            existing.totalPph21 += detail.jumlah_pph21;
+            existing.totalPotongan += detail.potongan;
+            existing.totalNetto += detail.jumlah_netto;
+        } else {
+            groupedData.set(detail.nama, {
+                nama: detail.nama,
+                pekerjaan: detail.pekerjaan,
+                details: [detail],
+                totalPph21: detail.jumlah_pph21,
+                totalPotongan: detail.potongan,
+                totalNetto: detail.jumlah_netto,
+                bankInfo: (detail.bank === '-' || detail.bank === '') ? 'TUNAI' : `${detail.bank} - ${detail.nomor_rekening}`
+            });
+        }
+    });
 
-    // --- 1. SET JUDUL (Baris 1 & 2) ---
+    const finalData = Array.from(groupedData.values()).sort((a, b) => a.nama.localeCompare(b.nama));
+
+    // --- SET JUDUL ---
     const [periodeTahun, periodeBulan] = rekapan.periode.split('-'); 
     const periodeDate = new Date(`${periodeTahun}-${periodeBulan}-01`);
     const periodeBulanNama = periodeDate.toLocaleString('id-ID', { month: 'long', year: 'numeric' }).toUpperCase();
     
     worksheet.getCell('A1').value = 'DAFTAR PEMBAYARAN JASA RUMAH SAKIT';
     worksheet.getCell('A1').font = { bold: true, size: 12, name: 'Arial' };
-    worksheet.mergeCells(`A1:${getCellRef(1, 3 + uniqueUraians.length + 4)}`); // Merge hingga kolom terakhir
+    worksheet.mergeCells(`A1:${getCellRef(1, 3 + uniqueUraians.length + 3)}`);
     
     worksheet.getCell('A2').value = `BULAN ${periodeBulanNama}`;
     worksheet.getCell('A2').font = { bold: true, size: 12, name: 'Arial' };
-    worksheet.mergeCells(`A2:${getCellRef(2, 3 + uniqueUraians.length + 4)}`); // Merge hingga kolom terakhir
+    worksheet.mergeCells(`A2:${getCellRef(2, 3 + uniqueUraians.length + 3)}`);
     
-    worksheet.addRow([]); // Baris kosong
+    worksheet.addRow([]);
     
-    // --- 2. TENTUKAN HEADER KOLOM BARU (1 BARIS HEADER) ---
+    // --- HEADER KOLOM ---
     const fixedHeaders = [
-        { name: 'NO', width: 5 },
-        { name: 'NAMA', width: 40 },
-        { name: 'PERIODE', width: 15 },
+        { name: 'NO', width: 8 },
+        { name: 'NAMA', width: 35 },
+        { name: 'PERIODE', width: 10,},
     ];
     
-    // Kolom dinamis berdasarkan uniqueUraians
     const uraianColumns = uniqueUraians.map(uraian => ({
-        name: uraian, // Nama uraian menjadi header
-        width: 15,
+        name: uraian,
+        width: Math.max(15, uraian.length * 1.5) // Width menyesuaikan panjang judul
     }));
     
     const totalHeaders = [
-        { name: 'JUMLAH PPH 21', width: 15 },
+        { name: 'JUMLAH PPH 21', width: 18 },
         { name: 'POTONGAN', width: 15 },
         { name: 'TOTAL PEMBAYARAN NETTO', width: 20 },
-        { name: 'PEMBAYARAN', width: 40 },
-        { name: 'TANDA TANGAN', width: 15 }, // Kolom TTD yang baru ditambahkan
+        { name: 'PEMBAYARAN', width: 25 },
     ];
     
-    // Gabungan semua header untuk 1 baris
     const headerRow4Data = [
         ...fixedHeaders.map(h => h.name),
-        ...uraianColumns.map(h => h.name), // Kolom-kolom uraian
+        ...uraianColumns.map(h => h.name),
         ...totalHeaders.map(h => h.name),
     ];
     
     const headerRow4 = worksheet.addRow(headerRow4Data);
 
-    // Set Lebar Kolom
+    // Set Lebar Kolom dengan width yang disesuaikan
     let currentColumn = 1;
     [...fixedHeaders, ...uraianColumns, ...totalHeaders].forEach(h => {
-        worksheet.getColumn(currentColumn++).width = h.width / 1.5;
+        worksheet.getColumn(currentColumn++).width = h.width;
     });
 
-    // Styling Header
+    // Styling Header dengan warna #FFD54A
     headerRow4.eachCell(cell => {
         cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
-        cell.font = { bold: true, name: 'Arial', size: 10 }; 
+        cell.font = { bold: true, name: 'Arial', size: 10 };
         cell.border = {
             top: { style: 'thin' },
             left: { style: 'thin' },
@@ -168,16 +191,22 @@ const createTandaTanganSheet = (
         cell.fill = {
             type: 'pattern',
             pattern: 'solid',
-            fgColor: { argb: 'FFE0E0E0' } 
+            fgColor: { argb: 'FFD54A' }
         };
     });
     headerRow4.height = 30;
 
+    // Variabel untuk menyimpan total per kolom
+    const columnTotals = {
+        uraian: new Array(uniqueUraians.length).fill(0),
+        pph21: 0,
+        potongan: 0,
+        netto: 0
+    };
 
-    // --- Isi Data Baris (TANPA MERGE, 1 BARIS DATA) ---
+    // --- ISI DATA BARIS ---
     for (let i = 0; i < finalData.length; i++) {
         const pegawai = finalData[i];
-        
         const dataRow = worksheet.addRow([]);
         
         let dataColIndex = 1;
@@ -185,33 +214,49 @@ const createTandaTanganSheet = (
         dataRow.getCell(dataColIndex++).value = pegawai.nama; // NAMA
         dataRow.getCell(dataColIndex++).value = rekapan.periode; // PERIODE
 
-        // Kolom Dinamis Uraian - TAMPILKAN NETTO PER URAIAN
-        uniqueUraians.forEach(uraian => {
-            const netto = pegawai.uraian_netto[uraian] || 0;
-            dataRow.getCell(dataColIndex++).value = netto; 
-            dataRow.getCell(dataColIndex - 1).numFmt = '#,##0'; 
-            dataRow.getCell(dataColIndex - 1).alignment = { horizontal: 'right' };
+        // Isi nilai untuk setiap uraian dan akumulasi total
+        uniqueUraians.forEach((uraian, uraianIndex) => {
+            let totalNettoForUraian = 0;
+            
+            pegawai.details.forEach(detail => {
+                const paymentForUraian = allPaymentsInPeriod.find(p => p.uraian_pembayaran === uraian);
+                if (paymentForUraian && detail.rekapan_id === paymentForUraian.id) {
+                    totalNettoForUraian += detail.jumlah_netto;
+                }
+            });
+            
+            dataRow.getCell(dataColIndex).value = totalNettoForUraian; 
+            dataRow.getCell(dataColIndex).numFmt = '#,##0'; 
+            dataRow.getCell(dataColIndex).alignment = { horizontal: 'right' };
+            
+            // Akumulasi total per uraian
+            columnTotals.uraian[uraianIndex] += totalNettoForUraian;
+            dataColIndex++;
         });
 
-        // Kolom Total Statis
-        dataRow.getCell(dataColIndex++).value = pegawai.total_pph21;
-        dataRow.getCell(dataColIndex - 1).numFmt = '#,##0';
-        dataRow.getCell(dataColIndex - 1).alignment = { horizontal: 'right' };
+        // Kolom Total
+        dataRow.getCell(dataColIndex).value = pegawai.totalPph21;
+        dataRow.getCell(dataColIndex).numFmt = '#,##0';
+        dataRow.getCell(dataColIndex).alignment = { horizontal: 'right' };
+        columnTotals.pph21 += pegawai.totalPph21;
+        dataColIndex++;
         
-        dataRow.getCell(dataColIndex++).value = pegawai.total_potongan;
-        dataRow.getCell(dataColIndex - 1).numFmt = '#,##0';
-        dataRow.getCell(dataColIndex - 1).alignment = { horizontal: 'right' };
+        dataRow.getCell(dataColIndex).value = pegawai.totalPotongan;
+        dataRow.getCell(dataColIndex).numFmt = '#,##0';
+        dataRow.getCell(dataColIndex).alignment = { horizontal: 'right' };
+        columnTotals.potongan += pegawai.totalPotongan;
+        dataColIndex++;
         
-        dataRow.getCell(dataColIndex++).value = pegawai.total_netto;
-        dataRow.getCell(dataColIndex - 1).numFmt = '#,##0';
-        dataRow.getCell(dataColIndex - 1).alignment = { horizontal: 'right' };
-        dataRow.getCell(dataColIndex - 1).font = { bold: true };
+        dataRow.getCell(dataColIndex).value = pegawai.totalNetto;
+        dataRow.getCell(dataColIndex).numFmt = '#,##0';
+        dataRow.getCell(dataColIndex).alignment = { horizontal: 'right' };
+        dataRow.getCell(dataColIndex).font = { bold: true };
+        columnTotals.netto += pegawai.totalNetto;
+        dataColIndex++;
         
-        dataRow.getCell(dataColIndex++).value = pegawai.bank_info; // PEMBAYARAN
+        dataRow.getCell(dataColIndex).value = pegawai.bankInfo;
         
-        // Kolom Tanda Tangan
-        dataRow.getCell(dataColIndex++).value = i % 2 === 0 ? `${i + 1}.` : ''; // Penomoran TTD
-        dataRow.height = 25; // Tinggikan sedikit untuk kolom TTD
+        dataRow.height = 25;
         
         // Border untuk baris data
         dataRow.eachCell({ includeEmpty: true }, cell => {
@@ -223,15 +268,67 @@ const createTandaTanganSheet = (
             };
         });
     }
+
+    // --- BARIS TOTAL ---
+    if (finalData.length > 0) {
+        const totalRow = worksheet.addRow([]);
+        let totalColIndex = 1;
+        
+        totalRow.getCell(totalColIndex++).value = 'TOTAL';
+        totalRow.getCell(totalColIndex++).value = ''; // NAMA kosong
+        totalRow.getCell(totalColIndex++).value = ''; // PERIODE kosong
+
+        // Total per uraian
+        columnTotals.uraian.forEach(total => {
+            totalRow.getCell(totalColIndex).value = total;
+            totalRow.getCell(totalColIndex).numFmt = '#,##0';
+            totalRow.getCell(totalColIndex).alignment = { horizontal: 'right' };
+            totalColIndex++;
+        });
+
+        // Total PPH21, Potongan, Netto
+        totalRow.getCell(totalColIndex++).value = columnTotals.pph21;
+        totalRow.getCell(totalColIndex - 1).numFmt = '#,##0';
+        totalRow.getCell(totalColIndex - 1).alignment = { horizontal: 'right' };
+        
+        totalRow.getCell(totalColIndex++).value = columnTotals.potongan;
+        totalRow.getCell(totalColIndex - 1).numFmt = '#,##0';
+        totalRow.getCell(totalColIndex - 1).alignment = { horizontal: 'right' };
+        
+        totalRow.getCell(totalColIndex++).value = columnTotals.netto;
+        totalRow.getCell(totalColIndex - 1).numFmt = '#,##0';
+        totalRow.getCell(totalColIndex - 1).alignment = { horizontal: 'right' };
+        totalRow.getCell(totalColIndex - 1).font = { bold: true };
+        
+        totalRow.getCell(totalColIndex++).value = ''; // PEMBAYARAN kosong
+
+        // Styling Baris Total dengan warna #FFD54A
+        totalRow.eachCell(cell => {
+            cell.border = {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                bottom: { style: 'thin' },
+                right: { style: 'thin' }
+            };
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFD54A' }
+            };
+            if (cell.value) {
+                cell.font = { bold: true, name: 'Arial', size: 10 };
+            }
+        });
+        totalRow.height = 25;
+    }
     
     // --- Bagian Pejabat Penanggung Jawab ---
     const startPejabatRow = worksheet.rowCount + 2;
-    const ttdColIndex = currentColumn - 1; // Kolom TTD
-    const pembayaranColIndex = ttdColIndex - 1; // Kolom Pembayaran
-    
-    worksheet.mergeCells(getCellRef(startPejabatRow, pembayaranColIndex), getCellRef(startPejabatRow, ttdColIndex));
-    worksheet.getCell(getCellRef(startPejabatRow, pembayaranColIndex)).value = 'Mengetahui,';
-    worksheet.getCell(getCellRef(startPejabatRow, pembayaranColIndex)).alignment = { horizontal: 'center' };
+    const pembayaranColIndex = currentColumn - 1;
+
+    worksheet.mergeCells(getCellRef(startPejabatRow, pembayaranColIndex - 1), getCellRef(startPejabatRow, pembayaranColIndex));
+    worksheet.getCell(getCellRef(startPejabatRow, pembayaranColIndex - 1)).value = 'Mengetahui,';
+    worksheet.getCell(getCellRef(startPejabatRow, pembayaranColIndex - 1)).alignment = { horizontal: 'center' };
 
     worksheet.addRow([]); 
     worksheet.addRow([]); 
@@ -239,47 +336,19 @@ const createTandaTanganSheet = (
     worksheet.addRow([]); 
 
     const namaPejabatRow = worksheet.rowCount;
-    worksheet.mergeCells(getCellRef(namaPejabatRow, pembayaranColIndex), getCellRef(namaPejabatRow, ttdColIndex));
-    worksheet.getCell(getCellRef(namaPejabatRow, pembayaranColIndex)).value = '_________________________';
-    worksheet.getCell(getCellRef(namaPejabatRow, pembayaranColIndex)).alignment = { horizontal: 'center' };
-    
+    worksheet.mergeCells(getCellRef(namaPejabatRow, pembayaranColIndex - 1), getCellRef(namaPejabatRow, pembayaranColIndex));
+    worksheet.getCell(getCellRef(namaPejabatRow, pembayaranColIndex - 1)).value = '_________________________';
+    worksheet.getCell(getCellRef(namaPejabatRow, pembayaranColIndex - 1)).alignment = { horizontal: 'center' };
 };
 
 // --- FUNGSI UTAMA DOWNLOAD DAFTAR TTD ---
-
-/**
- * Membuat file Excel dengan 2 sheet (Medis & Paramedis) untuk daftar tanda tangan.
- * Klasifikasi berdasarkan kolom kriteria, fallback ke pekerjaan jika kriteria tidak ada.
- */
 export const downloadTandaTangan = async (
     allApprovedDetails: PaymentDetailType[], 
     rekapan: PaymentType, 
-    showToast: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void
+    showToast: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void,
+    allPaymentsInPeriod: PaymentType[]
 ) => {
-    
-    // 1. Fungsi klasifikasi yang lebih robust
-    const classifyPegawai = (detail: PaymentDetailType): "MEDIS" | "PARAMEDIS" => {
-        // Prioritaskan kolom kriteria jika tersedia dan memiliki nilai yang valid
-        if (detail.kriteria === "MEDIS" || detail.kriteria === "PARAMEDIS") {
-            return detail.kriteria;
-        }
-        
-        // Fallback ke klasifikasi berdasarkan pekerjaan
-        const pekerjaanLower = detail.pekerjaan ? detail.pekerjaan.toLowerCase() : '';
-        
-        // Kriteria Medis
-        const medisKeywords = ['dokter', 'spesialis', 'dr.', 'sp.', 'dokter spesialis'];
-        const isMedis = medisKeywords.some(keyword => pekerjaanLower.includes(keyword));
-        
-        if (isMedis) {
-            return "MEDIS";
-        }
-        
-        // Default ke Paramedis jika tidak termasuk Medis
-        return "PARAMEDIS";
-    };
-
-    // 2. Pengelompokan Data dengan klasifikasi yang diperbaiki
+    // Pengelompokan Data
     const dataMedis = allApprovedDetails.filter(detail => 
         classifyPegawai(detail) === "MEDIS"
     );
@@ -295,16 +364,16 @@ export const downloadTandaTangan = async (
 
     const workbook = new ExcelJS.Workbook(); 
     
-    // 3. Pembuatan Sheet
+    // Pembuatan Sheet
     if (dataMedis.length > 0) {
-        createTandaTanganSheet(workbook, 'DAFTAR BAYAR MEDIS', dataMedis, rekapan);
+        createTandaTanganSheet(workbook, 'DAFTAR BAYAR MEDIS', dataMedis, rekapan, allPaymentsInPeriod);
     }
     
     if (dataParamedis.length > 0) {
-        createTandaTanganSheet(workbook, 'DAFTAR BAYAR PARAMEDIS', dataParamedis, rekapan);
+        createTandaTanganSheet(workbook, 'DAFTAR BAYAR PARAMEDIS', dataParamedis, rekapan, allPaymentsInPeriod);
     }
 
-    // 4. Proses Download
+    // Proses Download
     try {
         const buffer = await workbook.xlsx.writeBuffer();
         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -313,16 +382,15 @@ export const downloadTandaTangan = async (
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `DAFTAR_BAYAR_TTD_${periodeDownload}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        a.download = `DAFTAR_BAYAR_${periodeDownload}_${new Date().toISOString().slice(0, 10)}.xlsx`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
         
-        showToast("Daftar Pembayaran/Tanda Tangan berhasil diunduh!", "success"); 
+        showToast("Daftar Pembayaran berhasil diunduh!", "success"); 
 
     } catch (e) {
-        console.error("Gagal saat memproses atau mengunduh file Excel:", e);
         showToast("Gagal mengunduh file Excel.", "error");
     }
 };

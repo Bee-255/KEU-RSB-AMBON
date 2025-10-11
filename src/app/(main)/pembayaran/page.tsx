@@ -18,7 +18,6 @@ import { exportPaymentExcelMandiri } from './utils/exportPaymentExcelMandiri';
 import { exportPaymentExcelTunai } from './utils/exportPaymentExcelTunai';
 import { downloadTandaTangan } from './utils/exportTandaTangan';
 
-// CENTRALIZED INTERFACES - Ekspor agar bisa diimport oleh file lain
 export interface PaymentType {
   id: string;
   periode: string;
@@ -73,14 +72,12 @@ interface DatabasePaymentType {
   created_at: string;
 }
 
-// Type untuk fungsi export
 type ExportFunctionType = (
   details: PaymentDetailType[], 
   payment: PaymentType, 
   showToast: (message: string, type: "success" | "error" | "warning" | "info") => void
 ) => Promise<void>;
 
-// Constants
 const exportFunctions: Record<string, ExportFunctionType> = {
   'BTN': exportPaymentExcelBtn,
   'BNI': exportPaymentExcelBni,
@@ -99,7 +96,6 @@ const formatAngka = (angka: number | string | null | undefined, shouldRound: boo
   }).format(displayedAngka);
 };
 
-// Helper function untuk transform data dari database
 const transformPaymentData = (data: DatabasePaymentType): PaymentType => {
   return {
     ...data,
@@ -111,7 +107,6 @@ const Pembayaran = () => {
   const { showToast, showConfirm } = useKeuNotification();
   const downloadButtonRef = useRef<HTMLDivElement>(null);
 
-  // State
   const [paymentList, setPaymentList] = useState<PaymentType[]>([]);
   const [paymentDetailList, setPaymentDetailList] = useState<PaymentDetailType[]>([]); 
   const [selectedPayment, setSelectedPayment] = useState<PaymentType | null>(null);
@@ -131,7 +126,6 @@ const Pembayaran = () => {
   const [showPdfDropdown, setShowPdfDropdown] = useState(false);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
-  // Data Fetching Functions
   const fetchPaymentDetails = useCallback(async (paymentId: string) => {
     setIsDetailLoading(true);
     try {
@@ -143,7 +137,6 @@ const Pembayaran = () => {
 
       if (error) throw error;
       
-      // Transformasi data untuk memastikan klasifikasi ada
       const transformedData = (data || []).map(d => ({
         ...d,
         klasifikasi: d.klasifikasi || "PARAMEDIS",
@@ -152,39 +145,38 @@ const Pembayaran = () => {
       setPaymentDetailList(transformedData);
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : JSON.stringify(e);
-      console.error("Gagal mengambil detail pembayaran:", errorMessage);
+      showToast("Gagal mengambil detail pembayaran", "error");
       setPaymentDetailList([]);
     } finally {
       setIsDetailLoading(false);
     }
-  }, []);
+  }, [showToast]);
 
   const fetchAllApprovedPaymentDetails = useCallback(async () => {
     const approvedRekapIds = paymentList.filter(p => p.status === 'DISETUJUI').map(p => p.id);
+    
     if (approvedRekapIds.length === 0) return { details: [], error: "Tidak ada rekapan yang berstatus DISETUJUI di periode ini." };
 
     try {
-      const { data, error } = await supabase
-        .from("detail_pembayaran")
-        .select(`*`)
-        .in("rekapan_id", approvedRekapIds)
-        .order("nama", { ascending: true });
+        const { data, error } = await supabase
+            .from("detail_pembayaran")
+            .select(`*`)
+            .in("rekapan_id", approvedRekapIds)
+            .order("nama", { ascending: true });
 
-      if (error) throw error;
+        if (error) throw error;
 
-      // Transformasi data untuk menyertakan klasifikasi
-      const transformedData = (data || []).map(d => ({
-        ...d,
-        klasifikasi: d.klasifikasi || "PARAMEDIS",
-      })) as PaymentDetailType[];
+        const transformedData = (data || []).map(d => ({
+            ...d,
+            klasifikasi: d.klasifikasi || "PARAMEDIS",
+        })) as PaymentDetailType[];
 
-      return { details: transformedData, error: null };
+        return { details: transformedData, error: null };
     } catch (e) {
-      const errorMessage = e instanceof Error ? e.message : JSON.stringify(e);
-      console.error("Failed to fetch all approved payment details:", errorMessage);
-      return { details: [], error: "Kesalahan saat memproses data." };
+        const errorMessage = e instanceof Error ? e.message : JSON.stringify(e);
+        return { details: [], error: "Kesalahan saat memproses data." };
     }
-  }, [paymentList]);
+}, [paymentList]);
 
   const fetchAvailablePeriodsData = useCallback(async () => {
     try {
@@ -204,10 +196,10 @@ const Pembayaran = () => {
       return { periods: uniquePeriods, latestPeriodId };
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : JSON.stringify(e);
-      console.error("Failed to fetch available periods:", errorMessage);
+      showToast("Gagal mengambil periode tersedia", "error");
       return { periods: [], latestPeriodId: "" };
     }
-  }, []);
+  }, [showToast]);
 
   const fetchPayments = useCallback(async (periodId: string) => {
     if (!periodId) {
@@ -235,7 +227,6 @@ const Pembayaran = () => {
 
       if (error) throw error;
 
-      // Transform data untuk memastikan periode_pembayaran ada
       const fetchedPayments = (data || []).map(transformPaymentData);
       setPaymentList(fetchedPayments);
 
@@ -259,7 +250,6 @@ const Pembayaran = () => {
 
       resetDetailState();
     } catch (e) {
-      console.error("Failed to fetch payment data:", e);
       showToast("Terjadi kesalahan saat mengambil data pembayaran.", "error");
       setPaymentList([]);
     } finally {
@@ -267,7 +257,6 @@ const Pembayaran = () => {
     }
   }, [showToast]);
 
-  // Helper Functions
   const resetDetailState = () => {
     setSelectedPayment(null);
     setExpandedIds(new Set());
@@ -378,7 +367,7 @@ const Pembayaran = () => {
       .eq("id", rekapToDelete.id);
 
     if (rekapError) {
-      showToast("Gagal menghapus data pembayaran. Periksa RLS.", "error");
+      showToast("Gagal menghapus data pembayaran.", "error");
       return;
     }
 
@@ -407,7 +396,7 @@ const Pembayaran = () => {
       showToast("Hanya data dengan status BARU yang bisa diedit.", "error");
       return;
     }
-    showToast(`Membuka edit data untuk NRP/NIP/NIR: ${detail.nrp_nip_nir} (Fitur Edit Belum Aktif)`, "info");
+    showToast(`Membuka edit data untuk NRP/NIP/NIR: ${detail.nrp_nip_nir}`, "info");
   };
 
   const handleEditDetailButton = () => {
@@ -421,38 +410,28 @@ const Pembayaran = () => {
     detailToEdit ? handleEditDetail(detailToEdit) : showToast("Detail yang dipilih tidak ditemukan.", "error");
   };
 
-  // Fungsi untuk download daftar tanda tangan
   const handleDownloadDaftar = async () => {
     if (!selectedPeriodId) {
-      showToast("Pilih periode pembayaran terlebih dahulu.", "error");
-      return;
+        showToast("Pilih periode pembayaran terlebih dahulu.", "error");
+        return;
     }
 
-    const hasUnapproved = paymentList.some(p => p.status !== 'DISETUJUI');
-    if (hasUnapproved) {
-      showToast("Ada rekapan yang belum disetujui. Download hanya untuk rekapan yang sudah DISETUJUI.", "info");
-      return;
+    const allPaymentsApproved = paymentList.every(p => p.status === 'DISETUJUI');
+    if (!allPaymentsApproved) {
+        const unapprovedCount = paymentList.filter(p => p.status !== 'DISETUJUI').length;
+        showToast(`Ada ${unapprovedCount} rekapan yang belum disetujui. Semua rekapan harus disetujui terlebih dahulu.`, "error");
+        return;
     }
 
     const { details: allApprovedDetails, error: fetchError } = await fetchAllApprovedPaymentDetails();
 
     if (fetchError || allApprovedDetails.length === 0) {
-      showToast(fetchError || "Tidak ada data detail yang disetujui untuk periode ini.", "error");
-      return;
+        showToast(fetchError || "Tidak ada data detail yang disetujui untuk periode ini.", "error");
+        return;
     }
 
-    const firstApprovedPayment = paymentList.find(p => p.status === 'DISETUJUI');
-    if (!firstApprovedPayment) {
-      showToast("Tidak ada rekapan yang disetujui untuk diunduh.", "error");
-      return;
-    }
-
-    const detailsWithUraian = allApprovedDetails.map(detail => ({
-      ...detail,
-      uraian_pembayaran: detail.uraian_pembayaran || firstApprovedPayment.uraian_pembayaran
-    }));
-
-    await downloadTandaTangan(detailsWithUraian, firstApprovedPayment, showToast);
+    const firstApprovedPayment = paymentList[0];
+    await downloadTandaTangan(allApprovedDetails, firstApprovedPayment, showToast, paymentList);
   };
 
   const handleDownload = async (type: 'pdf' | 'excel', bank?: string) => {
@@ -534,7 +513,6 @@ const Pembayaran = () => {
     setShowPdfDropdown(false);
   };
 
-  // Effects
   useEffect(() => {
     const initializePeriods = async () => {
       const { periods } = await fetchAvailablePeriodsData();
@@ -577,7 +555,6 @@ const Pembayaran = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Memoized Calculations
   const paymentTotals: PaymentTotals = useMemo(() => paymentList.reduce((acc, current) => ({
     totalBruto: acc.totalBruto + current.jumlah_bruto,
     totalPph21: acc.totalPph21 + current.jumlah_pph21,
@@ -598,7 +575,6 @@ const Pembayaran = () => {
   const detailStartIndex = (detailCurrentPage - 1) * detailRowsPerPage;
   const paginatedDetails = useMemo(() => paymentDetailList.slice(detailStartIndex, detailStartIndex + detailRowsPerPage), [paymentDetailList, detailStartIndex, detailRowsPerPage]);
 
-  // Derived State
   const canEditDelete = selectedPayment && (selectedPayment.status === 'BARU');
   const isDetailActive = !!selectedPayment;
   const isPeriodSelected = !!selectedPeriodId;
@@ -614,7 +590,7 @@ const Pembayaran = () => {
 
         <button 
           onClick={handleDownloadDaftar} 
-          disabled={!isPeriodSelected || paymentList.some(p => p.status !== 'DISETUJUI')}
+          disabled={!isPeriodSelected || !paymentList.every(p => p.status === 'DISETUJUI')}
           className={styles.downloadButton}
           style={{ marginLeft: '5px' }}
         >
