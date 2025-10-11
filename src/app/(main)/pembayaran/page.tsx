@@ -59,6 +59,20 @@ interface PeriodOption {
   status: "BARU" | "DISETUJUI";
 }
 
+interface DatabasePaymentType {
+  id: string;
+  periode: string;
+  periode_pembayaran?: string;
+  uraian_pembayaran: string;
+  jumlah_pegawai: number;
+  jumlah_bruto: number;
+  jumlah_pph21: number;
+  jumlah_potongan: number;
+  jumlah_netto: number;
+  status: "BARU" | "DISETUJUI";
+  created_at: string;
+}
+
 // Type untuk fungsi export
 type ExportFunctionType = (
   details: PaymentDetailType[], 
@@ -86,7 +100,7 @@ const formatAngka = (angka: number | string | null | undefined, shouldRound: boo
 };
 
 // Helper function untuk transform data dari database
-const transformPaymentData = (data: any): PaymentType => {
+const transformPaymentData = (data: DatabasePaymentType): PaymentType => {
   return {
     ...data,
     periode_pembayaran: data.periode_pembayaran || data.periode || data.uraian_pembayaran || ''
