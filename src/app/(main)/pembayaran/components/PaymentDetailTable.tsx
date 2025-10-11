@@ -78,9 +78,9 @@ const PaymentDetailTable: React.FC<PaymentDetailTableProps> = ({
               <th style={{ width: "15%" }}>Nama</th>
               <th style={{ width: "10%" }}>Pekerjaan</th>
               <th style={{ width: "10%", textAlign: 'right' }}>Bruto (Rp)</th>
-              <th style={{ width: "10%", textAlign: 'right' }}>Potongan (Rp)</th>
               <th style={{ width: "7%", textAlign: 'right' }}>PPH21 (%)</th>
               <th style={{ width: "10%", textAlign: 'right' }}>PPH21 (Rp)</th>
+              <th style={{ width: "10%", textAlign: 'right' }}>Potongan (Rp)</th> 
               <th style={{ width: "10%", textAlign: 'right' }}>Netto (Rp)</th>
               <th style={{ width: "13%" }}>Bank</th> 
             </tr>
@@ -101,11 +101,15 @@ const PaymentDetailTable: React.FC<PaymentDetailTableProps> = ({
                   
                   {/* DITERAPKAN: Pembulatan (argumen kedua = true) */}
                   <td style={{ textAlign: 'right' }}>{formatAngka(detail.jumlah_bruto, true)}</td>
-                  <td style={{ textAlign: 'right' }}>{formatAngka(detail.potongan, true)}</td>
+                  
                   {/* PPH21 (%) TIDAK DIBULATKAN, HANYA DIBATASI 2 DESIMAL */}
                   <td style={{ textAlign: 'right' }}>{(detail.pph21_persen * 100).toFixed(2)}%</td> 
                   {/* DITERAPKAN: Pembulatan (argumen kedua = true) */}
                   <td style={{ textAlign: 'right' }}>{formatAngka(detail.jumlah_pph21, true)}</td>
+                  
+                  {/* KOLOM POTONGAN DIPINDAHKAN DI SINI */}
+                  <td style={{ textAlign: 'right' }}>{formatAngka(detail.potongan, true)}</td>
+                  
                   {/* DITERAPKAN: Pembulatan (argumen kedua = true) */}
                   <td style={{ textAlign: 'right' }}>{formatAngka(detail.jumlah_netto, true)}</td>
                   

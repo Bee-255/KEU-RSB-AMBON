@@ -1,4 +1,3 @@
-// src/app/(main)/pembayaran/components/UploadModal.tsx
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
@@ -24,7 +23,7 @@ interface PegawaiData {
   potongan: number;
   periode_excel: string; 
   nama_excel: string;
-  periode_pembayaran_excel: string; 
+  uraian_pembayaran_excel: string; 
 }
 
 interface PegawaiFromDB {
@@ -107,7 +106,14 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
     }
   };
 
-  const calculatePph21Persen = (pegawai: PegawaiFromDB): number => {
+  const calculatePph21Persen = (pegawai: PegawaiFromDB, periodePembayaranFinal: string): number => {
+    
+    // 1. KONDISI PENGECUALIAN BARU: Jika mengandung kata TRANSPORT
+    if (periodePembayaranFinal && periodePembayaranFinal.toLowerCase().includes('transport')) {
+        return 0; // Tarif 0% PPh 21
+    }
+    
+    // 2. KONDISI GOLONGAN TINGGI/DOKTER MITRA (Logika Lama)
     if (pegawai.golongan && (pegawai.golongan.startsWith('III') || pegawai.golongan.startsWith('IV'))) {
       return 0.025;
     }
@@ -116,6 +122,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
       return 0.025;
     }
     
+    // 3. KONDISI DEFAULT
     return 0;
   };
 
@@ -138,7 +145,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
             potongan: potongan,
             periode_excel: String(row.periode || row.PERIODE || "").trim(),
             nama_excel: String(row.nama || row.NAMA || "").trim(),
-            periode_pembayaran_excel: String(row.periode_pembayaran || row.PERIODE_PEMBAYARAN || "").trim(),
+            uraian_pembayaran_excel: String(row.uraian_pembayaran || row.URAIAN_PEMBAYARAN || "").trim(),
         }
       })
       .filter(item => item.nrp_nip_nir && item.jumlah_bruto > 0);
@@ -206,7 +213,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
     const worksheet = workbook.addWorksheet('Template Pembayaran');
     
     // Tambahkan header
-    worksheet.addRow(['No','PERIODE','PERIODE_PEMBAYARAN','NRP_NIP_NIR','NAMA','Jumlah_Bruto', 'Potongan']);
+    worksheet.addRow(['No','PERIODE','URAIAN_PEMBAYARAN','NRP_NIP_NIR','NAMA','Jumlah_Bruto', 'Potongan']);
     
     // Format Header
     worksheet.getRow(1).font = { bold: true };
@@ -214,7 +221,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
     // Atur Lebar Kolom
     worksheet.getColumn(1).width = 5; // No
     worksheet.getColumn(2).width = 15; // PERIODE
-    worksheet.getColumn(3).width = 25; // PERIODE_PEMBAYARAN
+    worksheet.getColumn(3).width = 25; // URAIAN_PEMBAYARAN
     worksheet.getColumn(4).width = 20; // NRP_NIP_NIR
     worksheet.getColumn(5).width = 30; // NAMA
     worksheet.getColumn(6).width = 15; // Jumlah_Bruto
@@ -226,7 +233,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
     worksheet.getColumn(1).numFmt = '@'; 
     // Kolom 2 (PERIODE) - Teks
     worksheet.getColumn(2).numFmt = '@'; 
-    // Kolom 3 (PERIODE_PEMBAYARAN) - Teks
+    // Kolom 3 (URAIAN_PEMBAYARAN) - Teks
     worksheet.getColumn(3).numFmt = '@';
     // Kolom 4 (NRP_NIP_NIR) - Teks (Sangat Penting)
     worksheet.getColumn(4).numFmt = '@';
@@ -327,21 +334,24 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
         return;
       }
       
-      const firstValidItem = processedData.find(item => item.periode_pembayaran_excel);
-      const periodePembayaranFromExcel = firstValidItem?.periode_pembayaran_excel || null;
+      const firstValidItem = processedData.find(item => item.uraian_pembayaran_excel);
+      const periodePembayaranFromExcel = firstValidItem?.uraian_pembayaran_excel || null;
       
       if (!periodePembayaranFromExcel) {
-          showToast("Kolom 'PERIODE_PEMBAYARAN' pada file Excel kosong. Upload dibatalkan.", "error");
+          showToast("Kolom 'URAIAN_PEMBAYARAN' pada file Excel kosong. Upload dibatalkan.", "error");
           setIsUploading(false);
           return;
       }
       
+      // Definisikan periodePembayaranFinal di sini
+      const periodePembayaranFinal = periodePembayaranFromExcel; 
+
       // --- PENGECEKAN DUPLIKASI DATA ---
       const { data: existingRekapan, error: checkError } = await supabase
           .from('rekapan_pembayaran')
           .select('id')
           .eq('periode', selectedPeriod)
-          .eq('periode_pembayaran', periodePembayaranFromExcel);
+          .eq('uraian_pembayaran', periodePembayaranFinal);
 
       if (checkError) {
           throw new Error(checkError.message || "Gagal memeriksa data duplikat.");
@@ -349,7 +359,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
 
       if (existingRekapan && existingRekapan.length > 0) {
           showToast(
-              `Data untuk Periode ${selectedPeriod} dengan uraian "${periodePembayaranFromExcel}" sudah pernah di-upload sebelumnya. Upload dibatalkan.`, 
+              `Data untuk Periode ${selectedPeriod} dengan uraian "${periodePembayaranFinal}" sudah pernah di-upload sebelumnya. Upload dibatalkan.`, 
               "warning",
               6000 
           );
@@ -386,7 +396,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
       let totalBruto = 0;
       let totalPotongan = 0;
       let totalPph21 = 0;
-      const periodePembayaranFinal = periodePembayaranFromExcel; 
+      // periodePembayaranFinal sudah didefinisikan di atas
 
       processedData.forEach((item) => {
         
@@ -400,9 +410,9 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
             isValid = false; 
         }
 
-        // VALIDASI 2: Cek PERIODE_PEMBAYARAN (KONSISTENSI dengan nilai pertama)
-        if (isValid && item.periode_pembayaran_excel !== periodePembayaranFinal) {
-            errorReason = `PERIODE PEMBAYARAN tidak konsisten. Ditemukan "${item.periode_pembayaran_excel}" sedangkan yang disetujui adalah "${periodePembayaranFinal}".`;
+        // VALIDASI 2: Cek URAIAN_PEMBAYARAN (KONSISTENSI dengan nilai pertama)
+        if (isValid && item.uraian_pembayaran_excel !== periodePembayaranFinal) {
+            errorReason = `PERIODE PEMBAYARAN tidak konsisten. Ditemukan "${item.uraian_pembayaran_excel}" sedangkan yang disetujui adalah "${periodePembayaranFinal}".`;
             failedPeriodePembayaranIndices.add(item.nrp_nip_nir); 
             isValid = false;
         }
@@ -433,13 +443,15 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
             'NRP/NIP/NIR': item.nrp_nip_nir,
             'NAMA (Excel)': item.nama_excel,
             'PERIODE (Excel)': item.periode_excel,
-            'PERIODE PEMBAYARAN (Excel)': item.periode_pembayaran_excel,
+            'PERIODE PEMBAYARAN (Excel)': item.uraian_pembayaran_excel,
             'Alasan Kegagalan': errorReason
           });
         }
 
         if (isValid && pegawai && pegawai.bank && pegawai.no_rekening) {
-            const pph21Persen = calculatePph21Persen(pegawai);
+            // PERUBAHAN: Meneruskan periodePembayaranFinal untuk penentuan PPh 21
+            const pph21Persen = calculatePph21Persen(pegawai, periodePembayaranFinal);
+            
             const jumlahPph21 = item.jumlah_bruto * pph21Persen;
             const jumlahNetto = item.jumlah_bruto - item.potongan - jumlahPph21;
 
@@ -534,7 +546,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
 
       const rekapanPayload = {
         periode: selectedPeriod,
-        periode_pembayaran: periodePembayaranFinal, 
+        uraian_pembayaran: periodePembayaranFinal, 
         jumlah_pegawai: finalSuccessCount,
         jumlah_bruto: totalBruto,
         jumlah_pph21: totalPph21,

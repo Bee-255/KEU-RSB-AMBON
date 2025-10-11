@@ -10,7 +10,7 @@ import { FaChevronDown, FaChevronRight } from 'react-icons/fa';
 interface PaymentType {
   id: string;
   periode: string;
-  periode_pembayaran: string;
+  uraian_pembayaran: string;
   jumlah_pegawai: number;
   jumlah_bruto: number;
   jumlah_pph21: number;
@@ -69,7 +69,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
   // Total kolom data numerik adalah 5 (Pegawai, Bruto, PPh21, Potongan, Netto)
   // Total kolom keseluruhan adalah 10 (Icon + No + 3 Label + 5 Data)
   const COL_SPAN_FOR_EMPTY_ROW = 10; 
-  const COL_SPAN_FOR_TOTAL_LABEL = 5; // Icon (1) + No (1) + Periode (1) + Periode Pembayaran (1) + Jml Pegawai (1)
+  const COL_SPAN_FOR_TOTAL_LABEL = 5; // Icon (1) + No (1) + Periode (1) + Uraian Pembayaran (1) + Jml Pegawai (1)
 
   return (
     <div className={pageStyles.tableContainer}>
@@ -90,11 +90,10 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
               <th style={{ width: "2%" }}></th> 
               <th style={{ width: "4%" }}>No.</th>
               <th style={{ width: "9%" }}>Periode</th>
-              <th style={{ width: "17%" }}>Periode Pembayaran</th>
+              <th style={{ width: "17%" }}>Uraian Pembayaran</th>
               <th style={{ width: "7%" }}>Jml Pegawai</th>
               <th style={{ width: "11%", textAlign: "right" }}>Jumlah Bruto</th>
               <th style={{ width: "11%", textAlign: "right" }}>Jumlah PPh21</th>
-              {/* Kolom Jumlah Potongan */}
               <th style={{ width: "11%", textAlign: "right" }}>Jumlah Potongan</th>
               <th style={{ width: "11%", textAlign: "right" }}>Jumlah Netto</th>
               <th style={{ width: "17%" }}>Status</th>
@@ -118,12 +117,10 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
                     
                     <td>{startIndex + index + 1}</td>
                     <td>{payment.periode}</td>
-                    <td>{payment.periode_pembayaran}</td>
-                    <td>{payment.jumlah_pegawai}</td>
-                    {/* Pembulatan diaktifkan (argumen kedua = true) */}
+                    <td>{payment.uraian_pembayaran}</td>
+                    <td style={{ textAlign: "right" }}>{payment.jumlah_pegawai}</td>
                     <td style={{ textAlign: "right" }}>{formatAngka(payment.jumlah_bruto, true)}</td>
                     <td style={{ textAlign: "right" }}>{formatAngka(payment.jumlah_pph21, true)}</td>
-                    {/* Tampilkan Jumlah Potongan dengan pembulatan */}
                     <td style={{ textAlign: "right" }}>{formatAngka(payment.jumlah_potongan, true)}</td>
                     <td style={{ textAlign: "right" }}>{formatAngka(payment.jumlah_netto, true)}</td>
                     <td>{getStatusBadge(payment.status)}</td>

@@ -2,9 +2,10 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/utils/supabaseClient";
-import Swal from "sweetalert2";
 import Paginasi from '@/components/paginasi';
 import pageStyles from "@/styles/komponen.module.css";
+// 👈 Import hook notifikasi kustom
+import { useKeuNotification } from "@/lib/useKeuNotification"; 
 
 // Import types, constants, dan components
 import { FormPegawaiData, PegawaiData } from './types';
@@ -17,6 +18,8 @@ import SearchAndFilter from './components/SearchAndFilter';
 import ActionButtons from './components/ActionButtons';
 
 export default function Pegawai() {
+  const { showToast, showConfirm } = useKeuNotification(); // 👈 Inisialisasi hook
+
   const [editId, setEditId] = useState<string | null>(null);
   const [selectedPegawai, setSelectedPegawai] = useState<PegawaiData | null>(null);
   const [showModal, setShowModal] = useState<boolean>(false);
@@ -51,7 +54,7 @@ export default function Pegawai() {
 
   const totalPages = Math.ceil(totalItems / itemsPerPage);
 
-  // Helper function untuk safe access ke golonganByPangkatAsn - TANPA ANY
+  // Helper function untuk safe access ke golonganByPangkatAsn
   const getGolonganAsn = (pangkat: string): string[] => {
     if (pangkat in golonganByPangkatAsn) {
       return golonganByPangkatAsn[pangkat as keyof typeof golonganByPangkatAsn];
@@ -59,7 +62,7 @@ export default function Pegawai() {
     return [];
   };
 
-  // Helper function untuk safe access ke golonganByPangkatPolri - TANPA ANY
+  // Helper function untuk safe access ke golonganByPangkatPolri
   const getGolonganPolri = (pangkat: string): string[] => {
     if (pangkat in golonganByPangkatPolri) {
       return golonganByPangkatPolri[pangkat as keyof typeof golonganByPangkatPolri];
@@ -143,22 +146,22 @@ export default function Pegawai() {
       if (editId) {
         const { error } = await supabase.from("pegawai").update(pegawai).eq("id", editId);
         if (error) throw error;
-        Swal.fire("Berhasil!", "Data pegawai berhasil diperbarui.", "success");
+        showToast("Data pegawai berhasil diperbarui.", "success");
       } else {
         const { error } = await supabase.from("pegawai").insert([pegawai]);
         if (error) throw error;
-        Swal.fire("Berhasil!", "Pegawai baru berhasil ditambahkan.", "success");
+        showToast("Pegawai baru berhasil ditambahkan.", "success");
       }
       resetForm();
       fetchPegawai();
     } catch (error) {
+      let errorMessage = "Terjadi kesalahan yang tidak diketahui.";
       if (error instanceof Error) {
-        Swal.fire("Error!", error.message, "error");
-      } else {
-        Swal.fire("Error!", "Terjadi kesalahan yang tidak diketahui.", "error");
+        errorMessage = error.message;
       }
+      showToast(`Gagal menyimpan data: ${errorMessage}`, "error");
     }
-  }, [editId, pegawai, fetchPegawai]);
+  }, [editId, pegawai, fetchPegawai, showToast]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -201,14 +204,13 @@ export default function Pegawai() {
 
     if (checkError) {
         console.error("Supabase error:", checkError);
-        Swal.fire("Error!", "Terjadi kesalahan saat memeriksa data. Silakan coba lagi.", "error");
+        showToast("Terjadi kesalahan saat memeriksa data. Silakan coba lagi.", "error");
         return;
     }
 
     if (existingPegawai && existingPegawai.length > 0) {
         const tipeIdentitas = pegawai.pekerjaan === "Anggota Polri" ? "NRP" : pegawai.pekerjaan === "ASN" ? "NIP" : pegawai.pekerjaan === "PPPK" ? "NIP" : "NIR";
-        Swal.fire("Gagal!", `Data ${tipeIdentitas} sudah ada dengan nama ${existingPegawai[0].nama}.`, "error");
-        
+        showToast(`Data ${tipeIdentitas} sudah ada dengan nama ${existingPegawai[0].nama}.`, "warning");
         return;
     }
     
@@ -217,30 +219,29 @@ export default function Pegawai() {
 
   const handleDelete = useCallback(async () => {
     if (!selectedPegawai) return;
-    const result = await Swal.fire({
-      title: "Apakah Anda yakin?",
-      text: `Anda akan menghapus data ${selectedPegawai.nama}`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#dc2626",
-      cancelButtonColor: "#6b7280",
-      confirmButtonText: "Ya, hapus!",
-      cancelButtonText: "Batal",
+
+    // 👈 Pemanggilan showConfirm yang diperbaiki
+    const isConfirmed = await showConfirm({
+      title: "Hapus Data Pegawai",
+      message: `Apakah Anda yakin ingin menghapus data ${selectedPegawai.nama}?`,
+      confirmText: "Ya, Hapus",
+      cancelText: "Batal",
+      // Properti 'isDanger' dihapus untuk menghindari Error 2353
     });
     
-    if (result.isConfirmed) {
+    if (isConfirmed) {
       try {
         const { error } = await supabase.from("pegawai").delete().eq("id", selectedPegawai.id);
         if (error) throw error;
-        Swal.fire("Terhapus!", "Data pegawai telah dihapus.", "success");
+        showToast("Data pegawai telah dihapus.", "success");
         setSelectedPegawai(null);
         fetchPegawai();
       } catch (error) {
         console.error("Error:", error);
-        Swal.fire("Error!", "Terjadi kesalahan saat menghapus data.", "error");
+        showToast("Terjadi kesalahan saat menghapus data.", "error");
       }
     }
-  }, [selectedPegawai, fetchPegawai]);
+  }, [selectedPegawai, fetchPegawai, showConfirm, showToast]);
 
   const handleEdit = () => {
     if (!selectedPegawai) return;
