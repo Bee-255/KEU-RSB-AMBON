@@ -58,7 +58,8 @@ interface PeriodOption {
 }
 
 // Constants
-const exportFunctions: { [key: string]: Function } = {
+// PERBAIKAN: Mengganti tipe `Function` dengan `(...args: any[]) => Promise<void>`
+const exportFunctions: { [key: string]: (...args: any[]) => Promise<void> } = {
   'BTN': exportPaymentExcelBtn,
   'BNI': exportPaymentExcelBni,
   'MANDIRI': exportPaymentExcelMandiri,
@@ -457,6 +458,7 @@ const Pembayaran = () => {
       const firstApprovedPayment = paymentList.find(p => p.status === 'DISETUJUI');
 
       if (exportFunc && firstApprovedPayment) {
+        // Panggil fungsi export
         await exportFunc(filteredDetails, firstApprovedPayment, showToast);
       } else {
         showToast(`Fungsi export untuk Bank ${bankToDownload} belum diimplementasikan atau rekapan tidak ditemukan.`, "error");
