@@ -32,12 +32,14 @@ interface PaymentType {
   created_at: string;
 }
 
+// PERBAIKAN: Asumsi kolom 'klasifikasi' sekarang ada langsung di tabel detail_pembayaran
 interface PaymentDetailType {
   id: string;
   rekapan_id: string;
   nrp_nip_nir: string;
   nama: string;
   pekerjaan: string;
+  klasifikasi: string; // Harus sudah ada di tabel detail_pembayaran jika tidak join
   jumlah_bruto: number;
   pph21_persen: number;
   jumlah_pph21: number;
@@ -58,7 +60,6 @@ interface PeriodOption {
 }
 
 // Constants
-// PERBAIKAN: Mengganti tipe `Function` dengan `(...args: any[]) => Promise<void>`
 const exportFunctions: { [key: string]: (...args: any[]) => Promise<void> } = {
   'BTN': exportPaymentExcelBtn,
   'BNI': exportPaymentExcelBni,
@@ -83,7 +84,7 @@ const Pembayaran = () => {
 
   // State
   const [paymentList, setPaymentList] = useState<PaymentType[]>([]);
-  const [paymentDetailList, setPaymentDetailList] = useState<PaymentDetailType[]>([]);
+  const [paymentDetailList, setPaymentDetailList] = useState<PaymentDetailType[]>([]); 
   const [selectedPayment, setSelectedPayment] = useState<PaymentType | null>(null);
   const [selectedDetails, setSelectedDetails] = useState<string[]>([]);
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -105,16 +106,28 @@ const Pembayaran = () => {
   const fetchPaymentDetails = useCallback(async (paymentId: string) => {
     setIsDetailLoading(true);
     try {
+      // PERBAIKAN: Hanya select semua kolom (*) dari detail_pembayaran
       const { data, error } = await supabase
         .from("detail_pembayaran")
-        .select("*")
+        .select(`*`) 
         .eq("rekapan_id", paymentId)
         .order("nama", { ascending: true });
 
       if (error) throw error;
-      setPaymentDetailList(data as PaymentDetailType[]);
+      
+      // Transformasi data agar sesuai dengan interface PaymentDetailType
+      const transformedData = data.map(d => ({
+        ...d,
+        // Jika klasifikasi sudah ada di detail_pembayaran, ambil langsung.
+        // Jika tidak ada, ini akan menggunakan 'PARAMEDIS' sebagai default.
+        klasifikasi: (d as any).klasifikasi || "PARAMEDIS", 
+      })) as PaymentDetailType[];
+
+      setPaymentDetailList(transformedData);
     } catch (e) {
-      console.error("Gagal mengambil detail pembayaran:", e);
+      // Penanganan error
+      const errorMessage = (e as any)?.message || JSON.stringify(e);
+      console.error("Gagal mengambil detail pembayaran:", errorMessage);
       setPaymentDetailList([]);
     } finally {
       setIsDetailLoading(false);
@@ -126,16 +139,25 @@ const Pembayaran = () => {
     if (approvedRekapIds.length === 0) return { details: [], error: "Tidak ada rekapan yang berstatus DISETUJUI di periode ini." };
 
     try {
+      // PERBAIKAN: Hanya select semua kolom (*) dari detail_pembayaran
       const { data, error } = await supabase
         .from("detail_pembayaran")
-        .select("*")
+        .select(`*`)
         .in("rekapan_id", approvedRekapIds)
         .order("nama", { ascending: true });
 
       if (error) throw error;
-      return { details: data as PaymentDetailType[], error: null };
+      
+      // Transformasi data untuk menyertakan klasifikasi
+      const transformedData = data.map(d => ({
+        ...d,
+        klasifikasi: (d as any).klasifikasi || "PARAMEDIS",
+      })) as PaymentDetailType[];
+
+      return { details: transformedData, error: null };
     } catch (e) {
-      console.error("Failed to fetch all approved payment details:", e);
+      const errorMessage = (e as any)?.message || JSON.stringify(e);
+      console.error("Failed to fetch all approved payment details:", errorMessage);
       return { details: [], error: "Kesalahan saat memproses data." };
     }
   }, [paymentList]);
@@ -405,6 +427,7 @@ const Pembayaran = () => {
       uraian_pembayaran: detail.uraian_pembayaran || firstApprovedPayment.uraian_pembayaran
     }));
 
+    // Klasifikasi sudah di-join pada fungsi fetchAllApprovedPaymentDetails
     await downloadTandaTangan(detailsWithUraian, firstApprovedPayment, showToast);
   };
 

@@ -1,3 +1,4 @@
+// src/app/(main)/pembayaran/components/UploadModal.tsx
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
@@ -26,21 +27,25 @@ interface PegawaiData {
   uraian_pembayaran_excel: string; 
 }
 
+// PERBAIKAN 1: Menambahkan kolom klasifikasi ke interface PegawaiFromDB
 interface PegawaiFromDB {
   nrp_nip_nir: string;
   nama: string;
   pekerjaan: string;
+  klasifikasi: string; // DITAMBAHKAN
   golongan: string | null;
   bank: string | null;
   no_rekening: string | null; 
   nama_rekening: string | null;
 }
 
+// PERBAIKAN 2: Menambahkan kolom klasifikasi ke interface PaymentDetailData
 interface PaymentDetailData {
   rekapan_id: string;
   nrp_nip_nir: string;
   nama: string;
   pekerjaan: string;
+  klasifikasi: string; // DITAMBAHKAN
   jumlah_bruto: number;
   potongan: number;
   pph21_persen: number;
@@ -369,9 +374,10 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
       // ------------------------------------
 
       const nrpNipNirList = processedData.map(item => item.nrp_nip_nir);
+      // PERBAIKAN 3: Menambahkan kolom 'klasifikasi' pada query select dari tabel 'pegawai'
       const { data: pegawaiList, error: pegawaiError } = await supabase
         .from("pegawai")
-        .select("nrp_nip_nir, nama, pekerjaan, golongan, bank, no_rekening, nama_rekening")
+        .select("nrp_nip_nir, nama, pekerjaan, klasifikasi, golongan, bank, no_rekening, nama_rekening")
         // Filter menggunakan IN (harus berupa string array)
         .in("nrp_nip_nir", nrpNipNirList);
 
@@ -381,7 +387,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
 
       const pegawaiMap = new Map<string, PegawaiFromDB>();
       pegawaiList?.forEach(p => {
-        pegawaiMap.set(p.nrp_nip_nir, p);
+        pegawaiMap.set(p.nrp_nip_nir, p as PegawaiFromDB); // Casting untuk memastikan tipe data
       });
 
       // 3. Validasi Penuh (Dry Run)
@@ -463,6 +469,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
               nrp_nip_nir: item.nrp_nip_nir,
               nama: pegawai.nama,
               pekerjaan: pegawai.pekerjaan || '',
+              klasifikasi: pegawai.klasifikasi || 'PARAMEDIS', // PERBAIKAN 4: Menyertakan kolom klasifikasi
               jumlah_bruto: item.jumlah_bruto,
               potongan: item.potongan,
               pph21_persen: pph21Persen,

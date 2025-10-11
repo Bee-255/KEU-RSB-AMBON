@@ -10,8 +10,9 @@ interface PaymentDetailType {
     nrp_nip_nir: string;
     nama: string;
     pekerjaan: string;
+    klasifikasi: string;
     jumlah_bruto: number;
-    potongan: number; // Dipastikan ada
+    potongan: number; //
     pph21_persen: number;
     jumlah_pph21: number;
     jumlah_netto: number;
@@ -28,7 +29,6 @@ interface PaymentDetailTableProps {
   isLoading: boolean;
   canEdit: boolean; 
   startIndex: number;
-  // PERBAIKAN: formatAngka sekarang menerima argumen opsional untuk pembulatan
   formatAngka: (angka: number | string | null | undefined, shouldRound?: boolean) => string; 
 }
 
@@ -41,13 +41,12 @@ const PaymentDetailTable: React.FC<PaymentDetailTableProps> = ({
   formatAngka 
 }) => {
 
-  // Mengubah selectedDetails saat baris diklik (Single Selection Toggle)
+  
   const handleRowClick = (id: string) => {
-    // Implementasi yang mengizinkan toggle atau single selection
     if (selectedDetails.includes(id)) {
-      onSelectionChange(selectedDetails.filter(sId => sId !== id)); // Deselect
+      onSelectionChange(selectedDetails.filter(sId => sId !== id));
     } else {
-      // Menggunakan Single Selection:
+      
       onSelectionChange([id]); 
     }
   };
@@ -77,12 +76,13 @@ const PaymentDetailTable: React.FC<PaymentDetailTableProps> = ({
               <th style={{ width: "10%" }}>NRP/NIP</th>
               <th style={{ width: "15%" }}>Nama</th>
               <th style={{ width: "10%" }}>Pekerjaan</th>
+              <th style={{ width: "10%" }}>Klasifikasi</th>
               <th style={{ width: "10%", textAlign: 'right' }}>Bruto (Rp)</th>
               <th style={{ width: "7%", textAlign: 'right' }}>PPH21 (%)</th>
               <th style={{ width: "10%", textAlign: 'right' }}>PPH21 (Rp)</th>
               <th style={{ width: "10%", textAlign: 'right' }}>Potongan (Rp)</th> 
               <th style={{ width: "10%", textAlign: 'right' }}>Netto (Rp)</th>
-              <th style={{ width: "13%" }}>Bank</th> 
+              <th style={{ width: "10%" }}>Bank</th> 
             </tr>
           </thead>
           <tbody className={pageStyles.tableBody}>
@@ -98,21 +98,12 @@ const PaymentDetailTable: React.FC<PaymentDetailTableProps> = ({
                   <td>{detail.nrp_nip_nir}</td>
                   <td>{detail.nama}</td>
                   <td>{detail.pekerjaan}</td>
-                  
-                  {/* DITERAPKAN: Pembulatan (argumen kedua = true) */}
+                  <td>{detail.klasifikasi}</td>
                   <td style={{ textAlign: 'right' }}>{formatAngka(detail.jumlah_bruto, true)}</td>
-                  
-                  {/* PPH21 (%) TIDAK DIBULATKAN, HANYA DIBATASI 2 DESIMAL */}
                   <td style={{ textAlign: 'right' }}>{(detail.pph21_persen * 100).toFixed(2)}%</td> 
-                  {/* DITERAPKAN: Pembulatan (argumen kedua = true) */}
                   <td style={{ textAlign: 'right' }}>{formatAngka(detail.jumlah_pph21, true)}</td>
-                  
-                  {/* KOLOM POTONGAN DIPINDAHKAN DI SINI */}
                   <td style={{ textAlign: 'right' }}>{formatAngka(detail.potongan, true)}</td>
-                  
-                  {/* DITERAPKAN: Pembulatan (argumen kedua = true) */}
                   <td style={{ textAlign: 'right' }}>{formatAngka(detail.jumlah_netto, true)}</td>
-                  
                   <td>{detail.bank}</td>
                   
                 </tr>
