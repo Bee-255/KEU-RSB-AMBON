@@ -6,23 +6,10 @@ import pageStyles from "@/styles/komponen.module.css";
 import loadingStyles from "@/styles/loading.module.css";
 import { FaChevronDown, FaChevronRight } from 'react-icons/fa';
 
-// Interface untuk tipe data PaymentType (Baris Rekap)
-interface PaymentType {
-  id: string;
-  periode: string;
-  uraian_pembayaran: string;
-  jumlah_pegawai: number;
-  jumlah_bruto: number;
-  jumlah_pph21: number;
-  // BARU: Tambahkan jumlah_potongan
-  jumlah_potongan: number; 
-  // jumlah_netto tetap ada, nilainya dihitung Bruto - PPh21 - Potongan
-  jumlah_netto: number; 
-  status: "BARU" | "DISETUJUI";
-  created_at: string;
-}
+// Import interface dari file utama
+import { PaymentType } from '../page';
 
-// BARU: Interface untuk menampung nilai Total
+// Interface untuk menampung nilai Total
 export interface PaymentTotals {
   totalBruto: number;
   totalPph21: number;
@@ -37,11 +24,9 @@ export interface PaymentTableProps {
   onPaymentSelect: (payment: PaymentType) => void; 
   isLoading: boolean;
   startIndex: number;
-  // PERUBAHAN: formatAngka sekarang menerima argumen opsional untuk pembulatan
   formatAngka: (angka: number | string | null | undefined, shouldRound?: boolean) => string; 
   expandedIds: Set<string>;
   toggleExpand: (id: string) => void;
-  // BARU: Tambahkan props untuk total
   paymentTotals: PaymentTotals; 
 }
 
@@ -54,7 +39,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
   formatAngka,
   expandedIds,
   toggleExpand,
-  paymentTotals, // Ambil props total
+  paymentTotals,
 }) => {
   const getStatusBadge = (status: PaymentType["status"]) => {
     const statusClass = status === 'DISETUJUI' ? pageStyles.statusApproved :
@@ -130,7 +115,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
             ) : (
               <tr>
                 <td 
-                  colSpan={COL_SPAN_FOR_EMPTY_ROW} // Colspan disesuaikan menjadi 10
+                  colSpan={COL_SPAN_FOR_EMPTY_ROW}
                   className={pageStyles.tableEmpty}
                   style={{ padding: '1rem 0' }}
                 >

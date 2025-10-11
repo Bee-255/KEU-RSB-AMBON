@@ -18,10 +18,11 @@ import { exportPaymentExcelMandiri } from './utils/exportPaymentExcelMandiri';
 import { exportPaymentExcelTunai } from './utils/exportPaymentExcelTunai';
 import { downloadTandaTangan } from './utils/exportTandaTangan';
 
-// Interfaces
-interface PaymentType {
+// CENTRALIZED INTERFACES - Ekspor agar bisa diimport oleh file lain
+export interface PaymentType {
   id: string;
   periode: string;
+  periode_pembayaran: string;
   uraian_pembayaran: string;
   jumlah_pegawai: number;
   jumlah_bruto: number;
@@ -32,14 +33,13 @@ interface PaymentType {
   created_at: string;
 }
 
-// Tipe data untuk baris mentah dari Supabase (menghilangkan penggunaan 'any' saat fetch)
-interface DetailRow {
+export interface PaymentDetailType {
   id: string;
   rekapan_id: string;
   nrp_nip_nir: string;
   nama: string;
   pekerjaan: string;
-  klasifikasi?: string; // Kolom klasifikasi dari detail_pembayaran
+  klasifikasi: string;
   jumlah_bruto: number;
   pph21_persen: number;
   jumlah_pph21: number;
@@ -51,11 +51,6 @@ interface DetailRow {
   uraian_pembayaran?: string;
 }
 
-// Interface yang digunakan untuk state di React (klasifikasi dipastikan ada)
-interface PaymentDetailType extends DetailRow {
-  klasifikasi: string; // Klasifikasi selalu ada (atau diisi default) setelah transformasi
-}
-
 interface PeriodOption {
   id: string;
   uraian_pembayaran: string;
@@ -64,8 +59,15 @@ interface PeriodOption {
   status: "BARU" | "DISETUJUI";
 }
 
+// Type untuk fungsi export
+type ExportFunctionType = (
+  details: PaymentDetailType[], 
+  payment: PaymentType, 
+  showToast: (message: string, type: "success" | "error" | "warning" | "info") => void
+) => Promise<void>;
+
 // Constants
-const exportFunctions: { [key: string]: (...args: any[]) => Promise<void> } = {
+const exportFunctions: Record<string, ExportFunctionType> = {
   'BTN': exportPaymentExcelBtn,
   'BNI': exportPaymentExcelBni,
   'MANDIRI': exportPaymentExcelMandiri,
@@ -81,6 +83,14 @@ const formatAngka = (angka: number | string | null | undefined, shouldRound: boo
     minimumFractionDigits: shouldRound ? 0 : 0,
     maximumFractionDigits: shouldRound ? 0 : 2,
   }).format(displayedAngka);
+};
+
+// Helper function untuk transform data dari database
+const transformPaymentData = (data: any): PaymentType => {
+  return {
+    ...data,
+    periode_pembayaran: data.periode_pembayaran || data.periode || data.uraian_pembayaran || ''
+  };
 };
 
 const Pembayaran = () => {
@@ -119,18 +129,14 @@ const Pembayaran = () => {
 
       if (error) throw error;
       
-      // Menggunakan tipe DetailRow untuk data yang ditarik
-      const fetchedData = data as DetailRow[];
-
-      // Transformasi data agar sesuai dengan interface PaymentDetailType
-      const transformedData = fetchedData.map(d => ({
+      // Transformasi data untuk memastikan klasifikasi ada
+      const transformedData = (data || []).map(d => ({
         ...d,
-        klasifikasi: d.klasifikasi || "PARAMEDIS", 
+        klasifikasi: d.klasifikasi || "PARAMEDIS",
       })) as PaymentDetailType[];
 
       setPaymentDetailList(transformedData);
     } catch (e) {
-      // Menghilangkan 'any' pada error handling
       const errorMessage = e instanceof Error ? e.message : JSON.stringify(e);
       console.error("Gagal mengambil detail pembayaran:", errorMessage);
       setPaymentDetailList([]);
@@ -151,19 +157,15 @@ const Pembayaran = () => {
         .order("nama", { ascending: true });
 
       if (error) throw error;
-      
-      // Menggunakan tipe DetailRow untuk data yang ditarik
-      const fetchedData = data as DetailRow[];
 
       // Transformasi data untuk menyertakan klasifikasi
-      const transformedData = fetchedData.map(d => ({
+      const transformedData = (data || []).map(d => ({
         ...d,
         klasifikasi: d.klasifikasi || "PARAMEDIS",
       })) as PaymentDetailType[];
 
       return { details: transformedData, error: null };
     } catch (e) {
-      // Menghilangkan 'any' pada error handling
       const errorMessage = e instanceof Error ? e.message : JSON.stringify(e);
       console.error("Failed to fetch all approved payment details:", errorMessage);
       return { details: [], error: "Kesalahan saat memproses data." };
@@ -187,7 +189,6 @@ const Pembayaran = () => {
 
       return { periods: uniquePeriods, latestPeriodId };
     } catch (e) {
-      // Menghilangkan 'any' pada error handling
       const errorMessage = e instanceof Error ? e.message : JSON.stringify(e);
       console.error("Failed to fetch available periods:", errorMessage);
       return { periods: [], latestPeriodId: "" };
@@ -220,7 +221,8 @@ const Pembayaran = () => {
 
       if (error) throw error;
 
-      const fetchedPayments = data as PaymentType[];
+      // Transform data untuk memastikan periode_pembayaran ada
+      const fetchedPayments = (data || []).map(transformPaymentData);
       setPaymentList(fetchedPayments);
 
       if (fetchedPayments.length > 0) {
@@ -277,7 +279,7 @@ const Pembayaran = () => {
     });
   }, [paymentList]);
 
-  const handlePaymentSelect = useCallback(async (payment: PaymentType) => {
+  const handlePaymentSelect = useCallback((payment: PaymentType) => {
     toggleExpand(payment.id);
   }, [toggleExpand]);
 
@@ -431,13 +433,11 @@ const Pembayaran = () => {
       return;
     }
 
-    // Tambahkan uraian_pembayaran ke setiap detail jika belum ada
     const detailsWithUraian = allApprovedDetails.map(detail => ({
       ...detail,
       uraian_pembayaran: detail.uraian_pembayaran || firstApprovedPayment.uraian_pembayaran
     }));
 
-    // Klasifikasi sudah diambil di fetchAllApprovedPaymentDetails (sekarang tanpa join)
     await downloadTandaTangan(detailsWithUraian, firstApprovedPayment, showToast);
   };
 
@@ -491,7 +491,6 @@ const Pembayaran = () => {
       const firstApprovedPayment = paymentList.find(p => p.status === 'DISETUJUI');
 
       if (exportFunc && firstApprovedPayment) {
-        // Panggil fungsi export
         await exportFunc(filteredDetails, firstApprovedPayment, showToast);
       } else {
         showToast(`Fungsi export untuk Bank ${bankToDownload} belum diimplementasikan atau rekapan tidak ditemukan.`, "error");
@@ -599,7 +598,6 @@ const Pembayaran = () => {
         <button onClick={handleApprove} disabled={!selectedPayment || selectedPayment.status !== 'BARU'} className={styles.rekamButton}><FaCheck /> Setujui</button>
         <button onClick={handleDeleteRekap} disabled={!isPeriodSelected || selectedPayment?.status !== 'BARU'} className={styles.hapusButton}><FaRegTrashAlt /> Hapus Rekap</button>
 
-        {/* Tombol Unduh Daftar */}
         <button 
           onClick={handleDownloadDaftar} 
           disabled={!isPeriodSelected || paymentList.some(p => p.status !== 'DISETUJUI')}
@@ -632,7 +630,17 @@ const Pembayaran = () => {
 
       {showUploadModal && <UploadModal onClose={() => setShowUploadModal(false)} onSuccess={handleUploadSuccess} />}
 
-      <PaymentTable payments={paginatedPayments} selectedPayment={selectedPayment} onPaymentSelect={handlePaymentSelect} isLoading={isTableLoading && isPeriodSelected} startIndex={startIndex} formatAngka={formatAngka} expandedIds={expandedIds} toggleExpand={toggleExpand} paymentTotals={paymentTotals} />
+      <PaymentTable 
+        payments={paginatedPayments} 
+        selectedPayment={selectedPayment} 
+        onPaymentSelect={handlePaymentSelect} 
+        isLoading={isTableLoading && isPeriodSelected} 
+        startIndex={startIndex} 
+        formatAngka={formatAngka} 
+        expandedIds={expandedIds} 
+        toggleExpand={toggleExpand} 
+        paymentTotals={paymentTotals} 
+      />
 
       {paymentList.length > 0 && <Paginasi currentPage={currentPage} totalPages={totalPages} totalItems={paymentList.length} itemsPerPage={rowsPerPage} onPageChange={setCurrentPage} onItemsPerPageChange={setRowsPerPage} />}
 
@@ -644,7 +652,16 @@ const Pembayaran = () => {
           <button onClick={handleDeleteDetails} disabled={!canEditDelete || selectedDetails.length === 0} className={styles.hapusButton}><FaRegTrashAlt /> Hapus Detail</button>
         </div>
 
-        <PaymentDetailTable details={paginatedDetails} selectedDetails={selectedDetails} onSelectionChange={setSelectedDetails} onEdit={handleEditDetail} isLoading={isDetailLoading && isDetailActive} canEdit={!!canEditDelete} startIndex={detailStartIndex} formatAngka={formatAngka} />
+        <PaymentDetailTable 
+          details={paginatedDetails} 
+          selectedDetails={selectedDetails} 
+          onSelectionChange={setSelectedDetails} 
+          onEdit={handleEditDetail} 
+          isLoading={isDetailLoading && isDetailActive} 
+          canEdit={!!canEditDelete} 
+          startIndex={detailStartIndex} 
+          formatAngka={formatAngka} 
+        />
 
         {paymentDetailList.length > 0 && <Paginasi currentPage={detailCurrentPage} totalPages={detailTotalPages} totalItems={paymentDetailList.length} itemsPerPage={detailRowsPerPage} onPageChange={setDetailCurrentPage} onItemsPerPageChange={setDetailRowsPerPage} />}
       </div>

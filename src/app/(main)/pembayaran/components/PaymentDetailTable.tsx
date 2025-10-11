@@ -3,23 +3,8 @@ import React from 'react';
 import pageStyles from "@/styles/komponen.module.css";
 import loadingStyles from "@/styles/loading.module.css";
 
-// Interface Detail
-interface PaymentDetailType {
-    id: string;
-    rekapan_id: string; // Foreign Key ke rekapan_pembayaran
-    nrp_nip_nir: string;
-    nama: string;
-    pekerjaan: string;
-    klasifikasi: string;
-    jumlah_bruto: number;
-    potongan: number; //
-    pph21_persen: number;
-    jumlah_pph21: number;
-    jumlah_netto: number;
-    nomor_rekening: string;
-    bank: string;
-    nama_rekening: string;
-  }
+// Import interface dari file utama
+import { PaymentDetailType } from '../page';
 
 interface PaymentDetailTableProps {
   details: PaymentDetailType[];
@@ -36,22 +21,21 @@ const PaymentDetailTable: React.FC<PaymentDetailTableProps> = ({
   details = [], 
   selectedDetails, 
   onSelectionChange, 
+  onEdit,
   isLoading, 
   startIndex,
   formatAngka 
 }) => {
 
-  
   const handleRowClick = (id: string) => {
     if (selectedDetails.includes(id)) {
       onSelectionChange(selectedDetails.filter(sId => sId !== id));
     } else {
-      
       onSelectionChange([id]); 
     }
   };
 
-  const colCount = 10; 
+  const colCount = 11; 
 
   return (
     <div className={pageStyles.detailtableContainer}>
@@ -59,7 +43,6 @@ const PaymentDetailTable: React.FC<PaymentDetailTableProps> = ({
         
         {/* Loading Overlay */}
         {isLoading && (
-            
           <div className={pageStyles.tableOverlay}>
             <div className={loadingStyles.dotContainer}>
               <div className={`${loadingStyles.dot} ${loadingStyles['dot-1']}`} />

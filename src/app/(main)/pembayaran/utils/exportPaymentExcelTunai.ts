@@ -1,34 +1,14 @@
 // src/app/(main)/pembayaran/utils/exportPaymentExcelTunai.ts
-
 import ExcelJS from 'exceljs';
 
-// Definisikan ulang interface agar file ini independen
-interface PaymentType {
-    id: string;
-    periode_pembayaran: string;
-    // ASUMSI: Menambahkan properti 'periode' yang formatnya YYYY-MM
-    periode: string; 
-}
+// Import interface dari file utama
+import { PaymentType, PaymentDetailType } from '../page';
 
-interface PaymentDetailType {
-    nrp_nip_nir: string;
-    nama: string; // Akan digunakan sebagai Nama Pegawai
-    pekerjaan: string;
-    jumlah_bruto: number;
-    jumlah_pph21: number;
-    potongan: number;
-    jumlah_netto: number;
-    nomor_rekening: string;
-    bank: string; // Kunci untuk filtering!
-    nama_rekening: string; // Akan digunakan sebagai Nama Pemilik Rekening
-}
-
-// Interface untuk menampung data yang sudah diagregasi (disesuaikan untuk Tunai)
+// Interface untuk data yang sudah diagregasi (disesuaikan untuk Tunai)
 interface AggregatedPaymentDetail {
-    nama_pegawai: string; // Nama dari tabel pegawai (nama)
+    nama_pegawai: string;
     jumlah_netto: number;
 }
-
 
 /**
  * Fungsi untuk mengagregasi data detail pembayaran (Gabungkan Netto berdasarkan Nama Pegawai).
@@ -65,7 +45,7 @@ const aggregatePaymentDetailsForTunai = (details: PaymentDetailType[]): Aggregat
 const getTitleText = (periode: string): string => {
     const parts = periode.split('-');
     if (parts.length !== 2) {
-        return "PEMBAYARAN JASA"; // Fallback jika format salah
+        return "PEMBAYARAN JASA";
     }
 
     const year = parts[0];
@@ -81,20 +61,14 @@ const getTitleText = (periode: string): string => {
         return `PEMBAYARAN JASA ${month} ${year}`;
     }
 
-    return "PEMBAYARAN JASA"; // Fallback jika bulan tidak valid
+    return "PEMBAYARAN JASA";
 };
-
 
 export const exportPaymentExcelTunai = async (
     details: PaymentDetailType[], 
-    payment: PaymentType | null, 
+    payment: PaymentType, 
     showToast: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void
 ) => {
-    if (!payment) {
-        showToast("Rekapan pembayaran belum dipilih.", "error");
-        return;
-    }
-
     // 1. FILTERING & AGREGRASI
     // Filter hanya untuk yang bank-nya bernilai '-'
     const filteredDetails = details.filter(d => 
@@ -109,9 +83,7 @@ export const exportPaymentExcelTunai = async (
     // Gabungkan data
     const aggregatedDetails = aggregatePaymentDetailsForTunai(filteredDetails);
     
-    // Dapatkan teks judul
     const titleText = getTitleText(payment.periode);
-
 
     try {
         const workbook = new ExcelJS.Workbook();
@@ -121,7 +93,7 @@ export const exportPaymentExcelTunai = async (
         // Atur View
         worksheet.views = [{ 
             state: 'frozen', 
-            ySplit: 3, // Bekukan baris header
+            ySplit: 3,
             showGridLines: true 
         }];
         
@@ -132,18 +104,16 @@ export const exportPaymentExcelTunai = async (
             size: 12,
             name: 'Arial', 
         };
-        titleRow.height = 20; 
+        titleRow.height = 20;
         // Merge cells untuk 3 kolom (A:C)
         worksheet.mergeCells('A1:C1'); 
         titleRow.alignment = { vertical: 'middle', horizontal: 'center' }; 
         worksheet.addRow([]);
 
-
         // --- 2. TENTUKAN HEADER KOLOM BARU (Hanya 3 kolom) ---
-        
         worksheet.columns = [
             { key: 'NOMOR', width: 8 },
-            { key: 'NAMA', width: 45 }, // Lebih lebar karena tidak ada kolom Bank/Rekening
+            { key: 'NAMA', width: 45 },
             { key: 'JUMLAH_NETTO', width: 20 },
         ];
 
@@ -153,7 +123,7 @@ export const exportPaymentExcelTunai = async (
             "JUMLAH NETTO",
         ]);
 
-        headerRow.height = 16; 
+        headerRow.height = 16;
 
         // Aplikasikan styling ke header
         headerRow.eachCell(cell => {
@@ -174,7 +144,6 @@ export const exportPaymentExcelTunai = async (
         });
 
         // --- 3. TAMBAHKAN DATA AGREGRASI ---
-        
         let totalNetto = 0;
         
         aggregatedDetails.forEach((d, index) => { 
@@ -188,10 +157,7 @@ export const exportPaymentExcelTunai = async (
                 nettoValue
             ]);
             
-            // Terapkan Arial dan Size 10 pada baris data
             dataRow.font = { name: 'Arial', size: 10 };
-            
-            // Set tinggi baris data menjadi 13
             dataRow.height = 13;
             
             // Format kolom JUMLAH NETTO (kolom C) sebagai mata uang (tanpa desimal)
@@ -212,14 +178,13 @@ export const exportPaymentExcelTunai = async (
         });
         
         // --- 4. TAMBAHKAN BARIS TOTAL ---
-        
         const totalRow = worksheet.addRow([
-             "", 
+            "", 
             "TOTAL", 
             totalNetto, 
         ]);
         
-        totalRow.height = 16; 
+        totalRow.height = 16;
         
         // Gabungkan sel untuk label "TOTAL" (A:B)
         const lastRowIndex = worksheet.lastRow!.number;
@@ -247,14 +212,10 @@ export const exportPaymentExcelTunai = async (
         });
         
         // PERBAIKAN ALIGNMENT: 
-        // Kolom A (setelah merge A:B) harus align KANAN
         totalRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'right' };
-        // Kolom C (Total Netto) harus align KANAN
         totalRow.getCell(3).alignment = { vertical: 'middle', horizontal: 'right' };
 
-
         // --- 5. TULIS FILE DAN PICU DOWNLOAD ---
-        
         const buffer = await workbook.xlsx.writeBuffer();
 
         const blob = new Blob([buffer], {

@@ -1,34 +1,15 @@
 // src/app/(main)/pembayaran/utils/exportPaymentExcelBtn.ts
-
 import ExcelJS from 'exceljs';
 
-// Definisikan ulang interface agar file ini independen
-interface PaymentType {
-    id: string;
-    periode_pembayaran: string; // Contoh: "September 2025 (Rekap 1)"
-    periode: string; // Contoh: "2025-09"
-}
+// Import interface dari file utama
+import { PaymentType, PaymentDetailType } from '../page';
 
-interface PaymentDetailType {
-    nrp_nip_nir: string;
-    nama: string;
-    pekerjaan: string;
-    jumlah_bruto: number;
-    jumlah_pph21: number;
-    potongan: number;
-    jumlah_netto: number;
-    nomor_rekening: string;
-    bank: string; // Kunci untuk filtering!
-    nama_rekening: string;
-}
-
-// BARU: Interface untuk menampung data yang sudah diagregasi
+// Interface untuk data yang sudah diagregasi
 interface AggregatedPaymentDetail {
     nomor_rekening: string;
     nama_rekening: string;
     jumlah_netto: number;
 }
-
 
 /**
  * Fungsi untuk mengagregasi data detail pembayaran.
@@ -85,17 +66,11 @@ const getKeteranganText = (periode: string): string => {
     return "PEMBAYARAN JASA"; // Fallback jika bulan tidak valid
 };
 
-
 export const exportPaymentExcelBtn = async (
     details: PaymentDetailType[], 
-    payment: PaymentType | null, 
+    payment: PaymentType, 
     showToast: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void
 ) => {
-    if (!payment) {
-        showToast("Rekapan pembayaran belum dipilih.", "error");
-        return;
-    }
-
     // 1. FILTERING & AGREGRASI
     const filteredDetails = details.filter(d => 
         d.bank && d.bank.toUpperCase().trim() === 'BTN'
@@ -111,7 +86,6 @@ export const exportPaymentExcelBtn = async (
     // MENGAMBIL KETERANGAN BARU DARI payment.periode
     const keteranganValue = getKeteranganText(payment.periode);
 
-
     try {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet("Lampiran Bank Tabungan Negara");
@@ -120,7 +94,6 @@ export const exportPaymentExcelBtn = async (
         const filename = `${baseFilename.replace(/\s/g, ' ')}.xlsx`;
         
         // 🌟 PENYESUAIAN FONT & VIEW: Hapus defaultRowHeight: 16
-        // Karena kita akan set tinggi secara spesifik pada dataRow
         worksheet.views = [{ 
             state: 'frozen', 
             ySplit: 3, // Bekukan baris header
@@ -128,23 +101,18 @@ export const exportPaymentExcelBtn = async (
         }];
         
         // --- 1. SET JUDUL ---
-        // 🚀 PERUBAHAN: Judul Worksheet
         const titleRow = worksheet.addRow([`DAFTAR LAMPIRAN BANK TABUNGAN NEGARA`]);
         titleRow.font = { 
             bold: true, 
             size: 12,
-            name: 'Arial', // 🌟 Terapkan Arial
+            name: 'Arial',
         };
-        // 🌟 Terapkan tinggi baris untuk Judul
-        titleRow.height = 20; // Lebih tinggi sedikit agar terlihat jelas
+        titleRow.height = 20;
         worksheet.mergeCells('A1:G1');
         titleRow.alignment = { vertical: 'middle', horizontal: 'center' }; 
         worksheet.addRow([]);
 
-
         // --- 2. TENTUKAN HEADER KOLOM BARU ---
-        
-        // Define kolom (Hanya untuk mengatur lebar kolom)
         worksheet.columns = [
             { key: 'NOMOR_REKENING', width: 20 },
             { key: 'PLUS', width: 7 },
@@ -166,19 +134,18 @@ export const exportPaymentExcelBtn = async (
             "KETERANGAN"
         ]);
         
-        // 🌟 Terapkan tinggi baris untuk Header
-        headerRow.height = 16; // Atur tinggi baris Header
+        headerRow.height = 16;
 
         // Aplikasikan styling ke header
         headerRow.eachCell(cell => {
             cell.fill = {
                 type: 'pattern',
                 pattern: 'solid',
-                fgColor: { argb: 'FFD54A' } // Warna #FFD54A
+                fgColor: { argb: 'FFD54A' }
             };
             cell.font = { 
                 bold: true,
-                name: 'Arial', // 🌟 Terapkan Arial
+                name: 'Arial',
             };
             cell.alignment = { vertical: 'middle', horizontal: 'center' };
             cell.border = { 
@@ -188,7 +155,6 @@ export const exportPaymentExcelBtn = async (
         });
 
         // --- 3. TAMBAHKAN DATA DENGAN NOMOR (MENGGUNAKAN DATA AGREGRASI) ---
-        
         let totalNetto = 0;
         
         // Menggunakan aggregatedDetails
@@ -204,24 +170,19 @@ export const exportPaymentExcelBtn = async (
                 CD: "C",
                 NOMOR: rowNumber,
                 NAMA_REKENING: d.nama_rekening, 
-                // Menggunakan nilai dari getKeteranganText
                 KETERANGAN: keteranganValue
             });
             
-            // 🌟 Terapkan Arial pada baris data
             dataRow.font = { name: 'Arial', size: 10 };
-            
-            // 🌟 PERUBAHAN UTAMA: Set tinggi baris data menjadi 13
-            dataRow.height = 13; 
+            dataRow.height = 13;
 
             // Format kolom JUMLAH NETTO sebagai mata uang (tanpa desimal)
             dataRow.getCell(3).numFmt = '#,##0;[Red]-#,##0';
             
             // Alignment Center untuk kolom PLUS, CD dan NOMOR
-            // Semua cell data secara default akan punya alignment vertical: 'middle' karena sudah diatur di eachCell di bawah
-            dataRow.getCell(2).alignment = { vertical: 'middle', horizontal: 'center' }; // Kolom PLUS
-            dataRow.getCell(4).alignment = { vertical: 'middle', horizontal: 'center' }; // Kolom CD
-            dataRow.getCell(5).alignment = { vertical: 'middle', horizontal: 'center' }; // Kolom NOMOR
+            dataRow.getCell(2).alignment = { vertical: 'middle', horizontal: 'center' };
+            dataRow.getCell(4).alignment = { vertical: 'middle', horizontal: 'center' };
+            dataRow.getCell(5).alignment = { vertical: 'middle', horizontal: 'center' };
             
             // Tambahkan border untuk semua cell data
             dataRow.eachCell(cell => {
@@ -233,11 +194,10 @@ export const exportPaymentExcelBtn = async (
         });
         
         // --- 4. TAMBAHKAN BARIS TOTAL ---
-        
         const totalRow = worksheet.addRow([
-            "TOTAL", // Di kolom A
+            "TOTAL",
             "",
-            totalNetto, // Di kolom C
+            totalNetto,
             "",
             "",
             "",
@@ -248,8 +208,7 @@ export const exportPaymentExcelBtn = async (
         const lastRowIndex = worksheet.lastRow!.number;
         worksheet.mergeCells(`A${lastRowIndex}:B${lastRowIndex}`);
         
-        // 🌟 Terapkan tinggi baris untuk Total
-        totalRow.height = 16; 
+        totalRow.height = 16;
 
         // Format kolom total (kolom C)
         totalRow.getCell(3).numFmt = '#,##0;[Red]-#,##0';
@@ -259,11 +218,11 @@ export const exportPaymentExcelBtn = async (
              cell.fill = {
                 type: 'pattern',
                 pattern: 'solid',
-                fgColor: { argb: 'FFD54A' } // Warna #FFD54A
+                fgColor: { argb: 'FFD54A' }
             };
             cell.font = { 
                 bold: true,
-                name: 'Arial', // 🌟 Terapkan Arial
+                name: 'Arial',
             };
             cell.alignment = { vertical: 'middle', horizontal: 'center' };
             cell.border = { 
@@ -273,13 +232,10 @@ export const exportPaymentExcelBtn = async (
         });
         
         // PERBAIKAN ALIGNMENT: 
-        // Kolom A (setelah merge A:B) harus align KIRI
         totalRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'left' };
-        // Kolom C (Total Netto) harus align KANAN
         totalRow.getCell(3).alignment = { vertical: 'middle', horizontal: 'right' };
 
         // --- 5. TULIS FILE DAN PICU DOWNLOAD ---
-        
         const buffer = await workbook.xlsx.writeBuffer();
 
         const blob = new Blob([buffer], {
