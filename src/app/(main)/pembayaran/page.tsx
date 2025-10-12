@@ -4,7 +4,6 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { supabase } from "@/utils/supabaseClient";
 import { FaUpload, FaEdit, FaRegTrashAlt, FaCheck, FaFilePdf, FaFileExcel, FaChevronDown, FaList } from "react-icons/fa";
-import Paginasi from '@/components/paginasi';
 import styles from "@/styles/button.module.css";
 import pageStyles from "@/styles/komponen.module.css";
 import UploadModal from "./components/UploadModal";
@@ -166,7 +165,6 @@ const Pembayaran = () => {
   const [showBankDropdown, setShowBankDropdown] = useState(false);
   const [showPdfDropdown, setShowPdfDropdown] = useState(false);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
-  // TAMBAH: State untuk data pegawai
   const [pegawaiMap, setPegawaiMap] = useState<Map<string, PegawaiType>>(new Map());
 
   const fetchPaymentDetails = useCallback(async (paymentId: string) => {
