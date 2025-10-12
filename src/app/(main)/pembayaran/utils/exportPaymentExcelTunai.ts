@@ -7,6 +7,17 @@ import { PaymentType, PaymentDetailType } from '../page';
 // Import utility functions untuk sorting
 import { sortPegawai } from './sortingUtils';
 
+// Interface untuk data pegawai dari database
+interface PegawaiData {
+  nrp_nip_nir: string;
+  pekerjaan?: string;
+  pangkat?: string;
+  golongan?: string;
+  status: string;
+  nama?: string;
+  // tambahkan properti lain yang diperlukan dari tabel pegawai
+}
+
 // Interface untuk data yang sudah diagregasi (disesuaikan untuk Tunai)
 interface AggregatedPaymentDetail {
     nama_pegawai: string;
@@ -20,7 +31,7 @@ interface AggregatedPaymentDetail {
 /**
  * Fungsi untuk mengambil data pegawai dari Supabase untuk sorting
  */
-const fetchDataPegawaiForSorting = async (details: PaymentDetailType[]): Promise<Map<string, any>> => {
+const fetchDataPegawaiForSorting = async (details: PaymentDetailType[]): Promise<Map<string, PegawaiData>> => {
     try {
         const nrpNipNirList = details.map(d => d.nrp_nip_nir).filter(Boolean);
         
@@ -39,7 +50,7 @@ const fetchDataPegawaiForSorting = async (details: PaymentDetailType[]): Promise
             return new Map();
         }
 
-        const pegawaiMap = new Map();
+        const pegawaiMap = new Map<string, PegawaiData>();
         data?.forEach(p => pegawaiMap.set(p.nrp_nip_nir, p));
         return pegawaiMap;
     } catch (error) {

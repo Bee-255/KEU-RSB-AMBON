@@ -8,6 +8,14 @@ export interface SortablePegawai {
   golongan: string;
 }
 
+// --- Interface untuk data yang dinormalisasi ---
+interface NormalizedPegawaiData {
+  nama: string;
+  pekerjaan: string;
+  pangkat: string;
+  golongan: string;
+}
+
 // --- Mapping urutan pekerjaan ---
 const PEKERJAAN_ORDER: Record<string, number> = {
   'Anggota Polri': 1,
@@ -187,12 +195,24 @@ export const groupByKlasifikasi = <T extends SortablePegawai>(
 };
 
 // --- Fungsi untuk validasi dan normalisasi data ---
-export const normalizePegawaiData = (data: any): SortablePegawai => {
+export const normalizePegawaiData = (data: unknown): SortablePegawai => {
+  // Type guard untuk memastikan data adalah object
+  if (typeof data !== 'object' || data === null) {
+    return {
+      nama: '',
+      pekerjaan: '',
+      pangkat: '',
+      golongan: ''
+    };
+  }
+
+  const dataObj = data as Record<string, unknown>;
+  
   return {
-    nama: data.nama || '',
-    pekerjaan: data.pekerjaan || '',
-    pangkat: data.pangkat || '',
-    golongan: data.golongan || ''
+    nama: typeof dataObj.nama === 'string' ? dataObj.nama : '',
+    pekerjaan: typeof dataObj.pekerjaan === 'string' ? dataObj.pekerjaan : '',
+    pangkat: typeof dataObj.pangkat === 'string' ? dataObj.pangkat : '',
+    golongan: typeof dataObj.golongan === 'string' ? dataObj.golongan : ''
   };
 };
 
