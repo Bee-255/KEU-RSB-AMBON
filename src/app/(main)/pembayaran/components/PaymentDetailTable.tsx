@@ -2,9 +2,20 @@
 import React from 'react';
 import pageStyles from "@/styles/komponen.module.css";
 import loadingStyles from "@/styles/loading.module.css";
+import Paginasi from '@/components/paginasi'; // IMPORT PAGINASI
 
 // Import interface dari file utama
 import { PaymentDetailType } from '../page';
+
+// Interface untuk props pagination
+export interface PaginationProps {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  itemsPerPage: number;
+  onPageChange: (page: number) => void;
+  onItemsPerPageChange: (itemsPerPage: number) => void;
+}
 
 interface PaymentDetailTableProps {
   details: PaymentDetailType[];
@@ -14,7 +25,10 @@ interface PaymentDetailTableProps {
   isLoading: boolean;
   canEdit: boolean; 
   startIndex: number;
-  formatAngka: (angka: number | string | null | undefined, shouldRound?: boolean) => string; 
+  formatAngka: (angka: number | string | null | undefined, shouldRound?: boolean) => string;
+  // Tambahkan props pagination
+  paginationProps?: PaginationProps;
+  showPagination?: boolean;
 }
 
 const PaymentDetailTable: React.FC<PaymentDetailTableProps> = ({ 
@@ -24,7 +38,10 @@ const PaymentDetailTable: React.FC<PaymentDetailTableProps> = ({
   onEdit,
   isLoading, 
   startIndex,
-  formatAngka 
+  formatAngka,
+  // Tambahkan props baru
+  paginationProps,
+  showPagination = false,
 }) => {
 
   const handleRowClick = (id: string) => {
@@ -100,6 +117,24 @@ const PaymentDetailTable: React.FC<PaymentDetailTableProps> = ({
             )}
           </tbody>
         </table>
+
+        {/* Tambahkan Pagination di dalam wrapper yang sama */}
+        {showPagination && paginationProps && (
+          <div style={{ 
+            paddingBottom: '1rem',
+            position: 'relative',
+            zIndex: 1 
+          }}>
+            <Paginasi 
+              currentPage={paginationProps.currentPage}
+              totalPages={paginationProps.totalPages}
+              totalItems={paginationProps.totalItems}
+              itemsPerPage={paginationProps.itemsPerPage}
+              onPageChange={paginationProps.onPageChange}
+              onItemsPerPageChange={paginationProps.onItemsPerPageChange}
+            />
+          </div>
+        )}
         
       </div> 
     </div>

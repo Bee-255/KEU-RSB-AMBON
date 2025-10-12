@@ -1,8 +1,11 @@
 // src/app/(main)/pembayaran/utils/exportPaymentExcelBni.ts
 import ExcelJS from 'exceljs';
+import { supabase } from '@/utils/supabaseClient';
 
 // Import interface dari file utama
 import { PaymentType, PaymentDetailType } from '../page';
+// Import utility functions untuk sorting
+import { sortPegawai } from './sortingUtils';
 
 // Interface untuk data yang sudah diagregasi
 interface AggregatedPaymentDetail {
@@ -11,17 +14,56 @@ interface AggregatedPaymentDetail {
     nomor_rekening: string;
     nama_rekening: string;
     jumlah_netto: number;
+    nama: string;
+    pekerjaan: string;
+    pangkat: string;
+    golongan: string;
 }
+
+/**
+ * Fungsi untuk mengambil data pegawai dari Supabase untuk sorting
+ */
+const fetchDataPegawaiForSorting = async (details: PaymentDetailType[]): Promise<Map<string, any>> => {
+    try {
+        const nrpNipNirList = details.map(d => d.nrp_nip_nir).filter(Boolean);
+        
+        if (nrpNipNirList.length === 0) {
+            return new Map();
+        }
+
+        const { data, error } = await supabase
+            .from('pegawai')
+            .select('*')
+            .in('nrp_nip_nir', nrpNipNirList)
+            .eq('status', 'Aktif');
+
+        if (error) {
+            console.error('Error fetching pegawai data:', error);
+            return new Map();
+        }
+
+        const pegawaiMap = new Map();
+        data?.forEach(p => pegawaiMap.set(p.nrp_nip_nir, p));
+        return pegawaiMap;
+    } catch (error) {
+        console.error('Error in fetchDataPegawaiForSorting:', error);
+        return new Map();
+    }
+};
 
 /**
  * Fungsi untuk mengagregasi data detail pembayaran (Gabungkan Netto berdasarkan Rekening).
  */
-const aggregatePaymentDetails = (details: PaymentDetailType[]): AggregatedPaymentDetail[] => {
+const aggregatePaymentDetails = async (details: PaymentDetailType[]): Promise<AggregatedPaymentDetail[]> => {
+    // AMBIL DATA PEGAWAI UNTUK SORTING
+    const pegawaiMap = await fetchDataPegawaiForSorting(details);
+    
     const aggregationMap = new Map<string, AggregatedPaymentDetail>();
 
     details.forEach(d => {
         // Kunci agregasi: Nomor Rekening + Nama Pemilik Rekening
         const key = `${d.nomor_rekening.trim().toUpperCase()}|${d.nama_rekening.trim().toUpperCase()}`;
+        const pegawaiData = pegawaiMap.get(d.nrp_nip_nir);
         
         // Pembulatan ke integer terdekat
         const roundedNetto = Math.round(Number(d.jumlah_netto));
@@ -36,25 +78,33 @@ const aggregatePaymentDetails = (details: PaymentDetailType[]): AggregatedPaymen
                 nomor_rekening: d.nomor_rekening.trim(),
                 nama_rekening: d.nama_rekening.trim(), 
                 jumlah_netto: roundedNetto,
+                nama: d.nama,
+                pekerjaan: pegawaiData?.pekerjaan || d.pekerjaan || '',
+                pangkat: pegawaiData?.pangkat || '',
+                golongan: pegawaiData?.golongan || ''
             });
         }
     });
 
-    return Array.from(aggregationMap.values());
+    const aggregatedData = Array.from(aggregationMap.values());
+    
+    // URUTKAN DATA berdasarkan business rules
+    return aggregatedData.sort(sortPegawai);
 };
 
 /**
- * Mengkonversi periode 'YYYY-MM' menjadi deskripsi Judul/Keterangan.
- * Contoh: '2025-09' -> 'PEMBAYARAN JASA SEPTEMBER 2025'
+ * Mengkonversi periode 'YYYY-MM' menjadi deskripsi Keterangan.
+ * Contoh: '2025-09' -> 'PEMBAYARAN JASA BULAN SEPTEMBER 2025'
  */
-const getTitleText = (periode: string): string => {
+const getKeteranganText = (periode: string): string => {
+    // Memastikan format YYYY-MM
     const parts = periode.split('-');
     if (parts.length !== 2) {
-        return "PEMBAYARAN JASA";
+        return "PEMBAYARAN JASA"; // Fallback jika format salah
     }
 
     const year = parts[0];
-    const monthIndex = parseInt(parts[1], 10) - 1; 
+    const monthIndex = parseInt(parts[1], 10) - 1; // 0-indexed month
 
     const monthNames = [
         "JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI", 
@@ -63,10 +113,21 @@ const getTitleText = (periode: string): string => {
 
     if (monthIndex >= 0 && monthIndex < 12) {
         const month = monthNames[monthIndex];
-        return `PEMBAYARAN JASA ${month} ${year}`;
+        return `PEMBAYARAN JASA BULAN ${month} ${year}`;
     }
 
-    return "PEMBAYARAN JASA";
+    return "PEMBAYARAN JASA"; // Fallback jika bulan tidak valid
+};
+
+// --- Helper Function untuk Cell Reference ---
+const getCellRef = (row: number, col: number): string => {
+    let column = '';
+    while (col > 0) {
+        const remainder = (col - 1) % 26;
+        column = String.fromCharCode(65 + remainder) + column;
+        col = Math.floor((col - 1) / 26);
+    }
+    return `${column}${row}`;
 };
 
 export const exportPaymentExcelBni = async (
@@ -84,16 +145,19 @@ export const exportPaymentExcelBni = async (
         return;
     }
     
-    // Gabungkan data
-    const aggregatedDetails = aggregatePaymentDetails(filteredDetails);
+    // 🔥 UBAH: Tambahkan await karena sekarang functionnya async
+    const aggregatedDetails = await aggregatePaymentDetails(filteredDetails);
     
-    const titleText = getTitleText(payment.periode);
+    // MENGAMBIL KETERANGAN BARU DARI payment.periode
+    const keteranganValue = getKeteranganText(payment.periode);
 
     try {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet("Lampiran Bank Negara Indonesia");
-        const filename = `${titleText.replace(/\s/g, ' ')} - BNI.xlsx`;
+        const filename = `${keteranganValue.replace(/\s/g, ' ')} - BNI.xlsx`;
         
+        // 🌟 PENYESUAIAN FONT & VIEW: Sama seperti exportTandaTangan.ts
+        worksheet.properties.defaultRowHeight = 15;
         worksheet.views = [{ 
             state: 'frozen', 
             ySplit: 3,
@@ -101,24 +165,28 @@ export const exportPaymentExcelBni = async (
         }];
         
         // --- 1. SET JUDUL ---
-        const titleRow = worksheet.addRow([`DAFTAR LAMPIRAN BANK NEGARA INDONESIA`]);
-        titleRow.font = { 
+        worksheet.getCell('A1').value = 'DAFTAR LAMPIRAN BANK NEGARA INDONESIA';
+        worksheet.getCell('A1').font = { 
             bold: true, 
             size: 12,
             name: 'Arial',
         };
-        titleRow.height = 20;
-        worksheet.mergeCells('A1:E1'); 
-        titleRow.alignment = { vertical: 'middle', horizontal: 'center' }; 
+        // 🌟 UBAH: Merge cells untuk 6 kolom (A sampai F)
+        worksheet.mergeCells('A1:F1');
+        worksheet.getCell('A1').alignment = { vertical: 'middle', horizontal: 'center' };
+        worksheet.getRow(1).height = 20;
+        
         worksheet.addRow([]);
 
         // --- 2. TENTUKAN HEADER KOLOM BARU ---
+        // 🌟 UBAH: Tambah kolom KETERANGAN
         worksheet.columns = [
             { key: 'NOMOR', width: 8 },
             { key: 'NAMA', width: 40 },
             { key: 'BANK', width: 10 },
             { key: 'NOMOR_REKENING', width: 20 },
             { key: 'JUMLAH_NETTO', width: 15 },
+            { key: 'KETERANGAN', width: 45 }, // 🌟 KOLOM BARU
         ];
 
         const headerRow = worksheet.addRow([
@@ -127,11 +195,13 @@ export const exportPaymentExcelBni = async (
             "BANK",
             "NOMOR REKENING",
             "JUMLAH NETTO",
+            "KETERANGAN", // 🌟 HEADER BARU
         ]);
 
-        headerRow.height = 16;
+        // 🌟 ROW HEIGHT SAMA DENGAN exportTandaTangan.ts
+        headerRow.height = 30;
 
-        // Aplikasikan styling ke header
+        // Aplikasikan styling ke header - SAMA PERSIS dengan exportTandaTangan.ts
         headerRow.eachCell(cell => {
             cell.fill = {
                 type: 'pattern',
@@ -140,9 +210,10 @@ export const exportPaymentExcelBni = async (
             };
             cell.font = { 
                 bold: true,
-                name: 'Arial'
-            }; 
-            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+                name: 'Arial',
+                size: 11
+            };
+            cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
             cell.border = { 
                 top: {style:'thin'}, left: {style:'thin'}, 
                 bottom: {style:'thin'}, right: {style:'thin'}
@@ -152,6 +223,10 @@ export const exportPaymentExcelBni = async (
         // --- 3. TAMBAHKAN DATA AGREGRASI ---
         let totalNetto = 0;
         
+        // 🌟 FORMAT ACCOUNTING SAMA dengan exportTandaTangan.ts
+        const accountingFormat = '_(* #,##0_);_(* (#,##0);_(* "-"_);_(@_)';
+        
+        // Menggunakan aggregatedDetails yang SUDAH TERURUT dengan benar
         aggregatedDetails.forEach((d, index) => { 
             const rowNumber = index + 1;
             const nettoValue = d.jumlah_netto;
@@ -163,21 +238,30 @@ export const exportPaymentExcelBni = async (
                 BANK: d.bank_name,
                 NOMOR_REKENING: d.nomor_rekening,
                 JUMLAH_NETTO: nettoValue,
+                KETERANGAN: keteranganValue, // 🌟 ISI KETERANGAN
             });
             
-            dataRow.font = { name: 'Arial', size: 10 };
-            dataRow.height = 13;
-            
-            // Format kolom JUMLAH NETTO sebagai mata uang (tanpa desimal)
-            dataRow.getCell(5).numFmt = '#,##0;[Red]-#,##0';
+            // 🌟 ROW HEIGHT & FONT SAMA dengan exportTandaTangan.ts
+            dataRow.height = 25;
+            dataRow.font = { name: 'Arial', size: 11 };
+
+            // 🌟 FORMAT NOMOR REKENING SEBAGAI TEXT
+            dataRow.getCell('NOMOR_REKENING').numFmt = '@'; // Format sebagai text
+            dataRow.getCell('NOMOR_REKENING').alignment = { vertical: 'middle' };
+
+            // 🌟 FORMAT ACCOUNTING SAMA dengan exportTandaTangan.ts
+            dataRow.getCell('JUMLAH_NETTO').numFmt = accountingFormat;
+            dataRow.getCell('JUMLAH_NETTO').alignment = { vertical: 'middle', horizontal: 'right' };
             
             // Alignment Center untuk kolom NOMOR dan BANK
-            dataRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' }; 
-            dataRow.getCell(3).alignment = { vertical: 'middle', horizontal: 'center' }; 
-            // Alignment Kanan untuk kolom JUMLAH NETTO
-            dataRow.getCell(5).alignment = { vertical: 'middle', horizontal: 'right' };
+            dataRow.getCell('NOMOR').alignment = { vertical: 'middle', horizontal: 'center' };
+            dataRow.getCell('BANK').alignment = { vertical: 'middle', horizontal: 'center' };
             
-            // Tambahkan border untuk semua cell data
+            // Alignment untuk kolom teks
+            dataRow.getCell('NAMA').alignment = { vertical: 'middle' };
+            dataRow.getCell('KETERANGAN').alignment = { vertical: 'middle' }; // 🌟 ALIGNMENT KETERANGAN
+            
+            // 🌟 BORDER SAMA dengan exportTandaTangan.ts
             dataRow.eachCell(cell => {
                 cell.border = { 
                     top: {style:'thin'}, left: {style:'thin'}, 
@@ -188,23 +272,26 @@ export const exportPaymentExcelBni = async (
         
         // --- 4. TAMBAHKAN BARIS TOTAL ---
         const totalRow = worksheet.addRow([
-            "", 
+            "TOTAL", // 🌟 "TOTAL" di kolom A (NOMOR)
+            "",      // 🌟 Kolom B (NAMA) kosong karena akan di-merge
             "",
             "",
-            "TOTAL",
             totalNetto,
+            "", // 🌟 KOLOM KETERANGAN KOSONG
         ]);
-
-        totalRow.height = 16;
         
-        // Gabungkan sel untuk label "TOTAL" dari A sampai C
+        // 🌟 ROW HEIGHT SAMA dengan exportTandaTangan.ts
+        totalRow.height = 25;
+        
+        // 🌟 UBAH: Hanya merge kolom A dan B saja (NOMOR dan NAMA)
         const lastRowIndex = worksheet.lastRow!.number;
-        worksheet.mergeCells(`A${lastRowIndex}:C${lastRowIndex}`); 
+        worksheet.mergeCells(`A${lastRowIndex}:B${lastRowIndex}`); 
 
-        // Format kolom total (kolom E)
-        totalRow.getCell(5).numFmt = '#,##0;[Red]-#,##0';
+        // 🌟 FORMAT ACCOUNTING SAMA dengan exportTandaTangan.ts
+        totalRow.getCell('JUMLAH_NETTO').numFmt = accountingFormat;
+        totalRow.getCell('JUMLAH_NETTO').alignment = { vertical: 'middle', horizontal: 'right' };
         
-        // Aplikasikan styling ke baris total
+        // 🌟 STYLING BARIS TOTAL SAMA dengan exportTandaTangan.ts
         totalRow.eachCell(cell => {
              cell.fill = {
                 type: 'pattern',
@@ -213,19 +300,18 @@ export const exportPaymentExcelBni = async (
             };
             cell.font = { 
                 bold: true,
-                name: 'Arial'
+                name: 'Arial',
+                size: 11
             };
-            cell.alignment = { vertical: 'middle', horizontal: 'center' };
             cell.border = { 
                 top: {style:'thin'}, left: {style:'thin'}, 
                 bottom: {style:'thin'}, right: {style:'thin'}
             };
         });
-        
-        // PERBAIKAN ALIGNMENT: 
-        totalRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'left' };
-        totalRow.getCell(4).alignment = { vertical: 'middle', horizontal: 'right' }; 
-        totalRow.getCell(5).alignment = { vertical: 'middle', horizontal: 'right' };
+
+        // 🌟 PERBAIKAN ALIGNMENT: 
+        totalRow.getCell('A').alignment = { vertical: 'middle', horizontal: 'center' }; // TOTAL (merged A-B)
+        totalRow.getCell('JUMLAH_NETTO').alignment = { vertical: 'middle', horizontal: 'right' };
 
         // --- 5. TULIS FILE DAN PICU DOWNLOAD ---
         const buffer = await workbook.xlsx.writeBuffer();

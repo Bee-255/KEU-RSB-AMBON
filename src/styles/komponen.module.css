@@ -9,7 +9,7 @@
 }
 
 .header {
-  font-size: 1rem;
+  font-size: 1.2rem;
   font-weight: 700;
   color: #1e293b;
   margin-bottom: 1rem;
@@ -90,7 +90,7 @@
 }
 
 .tableBody td {
-  padding: 8px 14px;
+  padding: 6px 14px;
   border-bottom: 1px solid #e2e8f0;
   white-space: nowrap;
   overflow: hidden;
@@ -153,8 +153,8 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
-  padding: 1.5rem;
-  font-size: 0.875rem;
+  padding: 1rem;
+  font-size: 0.8rem;
 }
 
 .detailItem {
@@ -219,7 +219,7 @@
   font-weight: 500;
   color: #334155;
   margin-bottom: 0.2rem;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
 }
 
 .formInput,
@@ -231,7 +231,7 @@
   border-radius: 8px;
   background-color: white;
   transition: border-color 0.2s, box-shadow 0.2s;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   font-family: 'Inter', sans-serif;
   box-sizing: border-box;
 }
@@ -268,7 +268,7 @@
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   background-color: #f8fafc;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   color: #64748b;
   font-family: 'Inter', sans-serif;
   text-align: justify;
@@ -356,7 +356,7 @@
   grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
   padding: 1.5rem;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
 }
 
 .detailItemSPPR {

@@ -4,7 +4,7 @@
 import React from "react";
 import pageStyles from "@/styles/komponen.module.css";
 import loadingStyles from "@/styles/loading.module.css";
-import { FaChevronDown, FaChevronRight } from 'react-icons/fa';
+import Paginasi from '@/components/paginasi';
 
 // Import interface dari file utama
 import { PaymentType } from '../page';
@@ -15,6 +15,16 @@ export interface PaymentTotals {
   totalPph21: number;
   totalPotongan: number; 
   totalNetto: number;
+}
+
+// Interface untuk pagination
+export interface PaginationProps {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  itemsPerPage: number;
+  onPageChange: (page: number) => void;
+  onItemsPerPageChange: (itemsPerPage: number) => void;
 }
 
 // Interface untuk props komponen PaymentTable
@@ -28,6 +38,9 @@ export interface PaymentTableProps {
   expandedIds: Set<string>;
   toggleExpand: (id: string) => void;
   paymentTotals: PaymentTotals; 
+  // Tambahkan props pagination
+  paginationProps?: PaginationProps;
+  showPagination?: boolean;
 }
 
 const PaymentTable: React.FC<PaymentTableProps> = ({
@@ -40,6 +53,8 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
   expandedIds,
   toggleExpand,
   paymentTotals,
+  paginationProps,
+  showPagination = false,
 }) => {
   const getStatusBadge = (status: PaymentType["status"]) => {
     const statusClass = status === 'DISETUJUI' ? pageStyles.statusApproved :
@@ -51,10 +66,10 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
     onPaymentSelect(payment);
   };
   
-  // Total kolom data numerik adalah 5 (Pegawai, Bruto, PPh21, Potongan, Netto)
-  // Total kolom keseluruhan adalah 10 (Icon + No + 3 Label + 5 Data)
-  const COL_SPAN_FOR_EMPTY_ROW = 10; 
-  const COL_SPAN_FOR_TOTAL_LABEL = 5; // Icon (1) + No (1) + Periode (1) + Uraian Pembayaran (1) + Jml Pegawai (1)
+  // PERBAIKAN: Sesuaikan dengan struktur tabel yang baru (tanpa kolom icon)
+  // Total kolom sekarang: 9 kolom (No, Periode, Uraian, Jml Pegawai, Bruto, PPh21, Potongan, Netto, Status)
+  const COL_SPAN_FOR_EMPTY_ROW = 9; // Diperbaiki dari 10 menjadi 9
+  const COL_SPAN_FOR_TOTAL_LABEL = 4; // Diperbaiki dari 5 menjadi 4 (No + Periode + Uraian + Jml Pegawai)
 
   return (
     <div className={pageStyles.tableContainer}>
@@ -72,7 +87,6 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
         <table className={pageStyles.table}>
           <thead className={pageStyles.tableHead}>
             <tr>
-              <th style={{ width: "2%" }}></th> 
               <th style={{ width: "4%" }}>No.</th>
               <th style={{ width: "9%" }}>Periode</th>
               <th style={{ width: "17%" }}>Uraian Pembayaran</th>
@@ -96,10 +110,6 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
                     onClick={() => handleRowClick(payment)} 
                     className={`${pageStyles.tableRow} ${isRowSelected ? pageStyles.selected : ""}`}
                   >
-                    <td>
-                      {isExpanded ? <FaChevronDown size={10} /> : <FaChevronRight size={10} />}
-                    </td> 
-                    
                     <td>{startIndex + index + 1}</td>
                     <td>{payment.periode}</td>
                     <td>{payment.uraian_pembayaran}</td>
@@ -125,11 +135,11 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
             )}
           </tbody>
           
-          {/* Table Footer untuk Total */}
+          {/* Table Footer untuk Total - DIPERBAIKI */}
           {payments.length > 0 && (
             <tfoot className={pageStyles.tableHead}>
               <tr>
-                {/* Gabungkan sel untuk label "TOTAL KESELURUHAN" */}
+                {/* PERBAIKAN: colSpan sekarang 4 (sesuai COL_SPAN_FOR_TOTAL_LABEL baru) */}
                 <th colSpan={COL_SPAN_FOR_TOTAL_LABEL} style={{ textAlign: 'right', fontWeight: 'bold', paddingRight: '1rem' }}>
                     TOTAL KESELURUHAN
                 </th>
@@ -154,12 +164,30 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
                     {formatAngka(paymentTotals.totalNetto, true)}
                 </th>
                 
-                {/* Kolom Status (Kosong) */}
-                <th></th> 
+                
+                <th></th>
               </tr>
             </tfoot>
           )}
         </table>
+
+        {/* Tambahkan Pagination di dalam wrapper yang sama */}
+        {showPagination && paginationProps && (
+          <div style={{ 
+            paddingBottom: '1rem',
+            position: 'relative',
+            zIndex: 1 
+          }}>
+            <Paginasi
+              currentPage={paginationProps.currentPage}
+              totalPages={paginationProps.totalPages}
+              totalItems={paginationProps.totalItems}
+              itemsPerPage={paginationProps.itemsPerPage}
+              onPageChange={paginationProps.onPageChange}
+              onItemsPerPageChange={paginationProps.onItemsPerPageChange}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

@@ -50,6 +50,22 @@ export interface PaymentDetailType {
   uraian_pembayaran?: string;
 }
 
+// TAMBAH: Interface untuk data pegawai
+interface PegawaiType {
+  id: string;
+  nrp_nip_nir: string;
+  nama: string;
+  pekerjaan: string;
+  jabatan_struktural: string;
+  klasifikasi: string;
+  status: string;
+  bank: string;
+  nomor_rekening: string;
+  nama_rekening: string;
+  golongan: string;
+  pangkat: string;
+}
+
 interface PeriodOption {
   id: string;
   uraian_pembayaran: string;
@@ -103,10 +119,35 @@ const transformPaymentData = (data: DatabasePaymentType): PaymentType => {
   };
 };
 
+// TAMBAH: Fungsi untuk ambil data pegawai dari Supabase
+const fetchPegawaiData = async (nrpNipNirList: string[]): Promise<Map<string, PegawaiType>> => {
+  try {
+    const { data, error } = await supabase
+      .from('pegawai')
+      .select('*')
+      .in('nrp_nip_nir', nrpNipNirList)
+      .eq('status', 'Aktif');
+
+    if (error) {
+      console.error('Error fetching pegawai data:', error);
+      return new Map();
+    }
+
+    const pegawaiMap = new Map<string, PegawaiType>();
+    data?.forEach(pegawai => {
+      pegawaiMap.set(pegawai.nrp_nip_nir, pegawai);
+    });
+
+    return pegawaiMap;
+  } catch (error) {
+    console.error('Error in fetchPegawaiData:', error);
+    return new Map();
+  }
+};
+
 const Pembayaran = () => {
   const { showToast, showConfirm } = useKeuNotification();
   const downloadButtonRef = useRef<HTMLDivElement>(null);
-
   const [paymentList, setPaymentList] = useState<PaymentType[]>([]);
   const [paymentDetailList, setPaymentDetailList] = useState<PaymentDetailType[]>([]); 
   const [selectedPayment, setSelectedPayment] = useState<PaymentType | null>(null);
@@ -125,6 +166,8 @@ const Pembayaran = () => {
   const [showBankDropdown, setShowBankDropdown] = useState(false);
   const [showPdfDropdown, setShowPdfDropdown] = useState(false);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  // TAMBAH: State untuk data pegawai
+  const [pegawaiMap, setPegawaiMap] = useState<Map<string, PegawaiType>>(new Map());
 
   const fetchPaymentDetails = useCallback(async (paymentId: string) => {
     setIsDetailLoading(true);
@@ -139,10 +182,18 @@ const Pembayaran = () => {
       
       const transformedData = (data || []).map(d => ({
         ...d,
-        klasifikasi: d.klasifikasi || "PARAMEDIS",
+        klasifikasi: d.klasifikasi || "Paramedis", // UBAH: "PARAMEDIS" -> "Paramedis"
       })) as PaymentDetailType[];
 
       setPaymentDetailList(transformedData);
+
+      // TAMBAH: Ambil data pegawai setelah dapat detail pembayaran
+      const nrpNipNirList = transformedData.map(d => d.nrp_nip_nir).filter(Boolean);
+      if (nrpNipNirList.length > 0) {
+        const pegawaiData = await fetchPegawaiData(nrpNipNirList);
+        setPegawaiMap(pegawaiData);
+      }
+
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : JSON.stringify(e);
       showToast("Gagal mengambil detail pembayaran", "error");
@@ -168,13 +219,17 @@ const Pembayaran = () => {
 
         const transformedData = (data || []).map(d => ({
             ...d,
-            klasifikasi: d.klasifikasi || "PARAMEDIS",
+            klasifikasi: d.klasifikasi || "Paramedis", // UBAH: "PARAMEDIS" -> "Paramedis"
         })) as PaymentDetailType[];
 
-        return { details: transformedData, error: null };
+        // TAMBAH: Ambil data pegawai untuk semua data yang disetujui
+        const nrpNipNirList = transformedData.map(d => d.nrp_nip_nir).filter(Boolean);
+        const pegawaiData = await fetchPegawaiData(nrpNipNirList);
+
+        return { details: transformedData, error: null, pegawaiMap: pegawaiData };
     } catch (e) {
         const errorMessage = e instanceof Error ? e.message : JSON.stringify(e);
-        return { details: [], error: "Kesalahan saat memproses data." };
+        return { details: [], error: "Kesalahan saat memproses data.", pegawaiMap: new Map() };
     }
 }, [paymentList]);
 
@@ -205,7 +260,16 @@ const Pembayaran = () => {
     if (!periodId) {
       setPaymentList([]);
       setIsTableLoading(false);
-      resetDetailState();
+      const resetTableState = () => {
+            setSelectedPayment(null);
+            setPaymentDetailList([]);
+            setSelectedDetails([]);
+            setExpandedIds(new Set());
+            setShowBankDropdown(false);
+            setShowPdfDropdown(false);
+            setPegawaiMap(new Map()); // TAMBAH: Reset pegawai map
+          };
+      resetTableState();
       return;
     }
 
@@ -262,25 +326,30 @@ const Pembayaran = () => {
     setExpandedIds(new Set());
     setShowBankDropdown(false);
     setShowPdfDropdown(false);
+    setPegawaiMap(new Map()); // TAMBAH: Reset pegawai map
   };
 
   const toggleExpand = useCallback((id: string) => {
-    setExpandedIds(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
-        resetDetailState();
-        setPaymentDetailList([]);
-        setSelectedDetails([]);
-      } else {
-        newSet.clear();
-        newSet.add(id);
-        const selected = paymentList.find(p => p.id === id);
-        if (selected) setSelectedPayment(selected);
-      }
-      return newSet;
-    });
-  }, [paymentList]);
+  setExpandedIds(prev => {
+    const isCurrentlyExpanded = prev.has(id);
+    
+    if (isCurrentlyExpanded) {
+      // Collapse: reset semua state terkait detail
+      setSelectedPayment(null);
+      setPaymentDetailList([]);
+      setSelectedDetails([]);
+      setShowBankDropdown(false);
+      setShowPdfDropdown(false);
+      setPegawaiMap(new Map()); // TAMBAH: Reset pegawai map
+      return new Set();
+    } else {
+      // Expand: set selected payment
+      const selected = paymentList.find(p => p.id === id);
+      if (selected) setSelectedPayment(selected);
+      return new Set([id]);
+    }
+  });
+}, [paymentList]);
 
   const handlePaymentSelect = useCallback((payment: PaymentType) => {
     toggleExpand(payment.id);
@@ -423,7 +492,7 @@ const Pembayaran = () => {
         return;
     }
 
-    const { details: allApprovedDetails, error: fetchError } = await fetchAllApprovedPaymentDetails();
+    const { details: allApprovedDetails, error: fetchError, pegawaiMap: fetchedPegawaiMap } = await fetchAllApprovedPaymentDetails();
 
     if (fetchError || allApprovedDetails.length === 0) {
         showToast(fetchError || "Tidak ada data detail yang disetujui untuk periode ini.", "error");
@@ -531,6 +600,7 @@ const Pembayaran = () => {
       fetchPaymentDetails(selectedPayment.id);
     } else {
       setPaymentDetailList([]);
+      setPegawaiMap(new Map()); // TAMBAH: Reset pegawai map ketika tidak ada selected payment
     }
     setDetailCurrentPage(1);
   }, [selectedPayment, fetchPaymentDetails]);
@@ -592,16 +662,15 @@ const Pembayaran = () => {
           onClick={handleDownloadDaftar} 
           disabled={!isPeriodSelected || !paymentList.every(p => p.status === 'DISETUJUI')}
           className={styles.downloadButton}
-          style={{ marginLeft: '5px' }}
         >
           <FaList /> Unduh Daftar
         </button>
 
-        <div style={{ position: 'relative', display: 'inline-block', marginLeft: '5px' }}>
+        <div style={{ position: 'relative', display: 'inline-block'}}>
           <button onClick={() => handleDownload('pdf')} disabled={!isPeriodSelected} className={styles.downloadButton}><FaFilePdf /> <FaChevronDown style={{ marginLeft: '5px', fontSize: '0.8em' }}/></button>
         </div>
 
-        <div style={{ position: 'relative', display: 'inline-block', marginLeft: '5px' }}>
+        <div style={{ position: 'relative', display: 'inline-block' }}>
           <button onClick={handleExcelButtonClick} disabled={!isPeriodSelected || uniqueBanks.length === 0} className={styles.downloadButton}><FaFileExcel /> <FaChevronDown style={{ marginLeft: '5px', fontSize: '0.8em' }}/></button>
           
           {showBankDropdown && (
@@ -630,9 +699,16 @@ const Pembayaran = () => {
         expandedIds={expandedIds} 
         toggleExpand={toggleExpand} 
         paymentTotals={paymentTotals} 
+        paginationProps={{
+          currentPage,
+          totalPages, 
+          totalItems: paymentList.length,
+          itemsPerPage: rowsPerPage,
+          onPageChange: setCurrentPage,
+          onItemsPerPageChange: setRowsPerPage
+        }}
+        showPagination={true}
       />
-
-      {paymentList.length > 0 && <Paginasi currentPage={currentPage} totalPages={totalPages} totalItems={paymentList.length} itemsPerPage={rowsPerPage} onPageChange={setCurrentPage} onItemsPerPageChange={setRowsPerPage} />}
 
       <div className={pageStyles.detailContainer} style={{ paddingBottom: '20px' }}>
         <div className={pageStyles.detailHeader}>Detail Pembayaran{selectedPayment && <span>: {selectedPayment.uraian_pembayaran}</span>}</div>
@@ -651,9 +727,16 @@ const Pembayaran = () => {
           canEdit={!!canEditDelete} 
           startIndex={detailStartIndex} 
           formatAngka={formatAngka} 
+          paginationProps={{
+            currentPage: detailCurrentPage,
+            totalPages: detailTotalPages, 
+            totalItems: paymentDetailList.length,
+            itemsPerPage: detailRowsPerPage,
+            onPageChange: setDetailCurrentPage,
+            onItemsPerPageChange: setDetailRowsPerPage
+          }}
+          showPagination={true}
         />
-
-        {paymentDetailList.length > 0 && <Paginasi currentPage={detailCurrentPage} totalPages={detailTotalPages} totalItems={paymentDetailList.length} itemsPerPage={detailRowsPerPage} onPageChange={setDetailCurrentPage} onItemsPerPageChange={setDetailRowsPerPage} />}
       </div>
     </div>
   );

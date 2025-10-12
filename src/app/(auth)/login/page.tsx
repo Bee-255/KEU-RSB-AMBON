@@ -41,7 +41,7 @@ const iconGroupStyle: React.CSSProperties = {
 };
 
 const headingStyle: React.CSSProperties = {
-  fontSize: "1.5rem",
+  fontSize: "1rem",
   fontWeight: "600",
   color: "#1f2937",
   marginTop: "0",
@@ -49,7 +49,7 @@ const headingStyle: React.CSSProperties = {
 };
 
 const descriptionStyle: React.CSSProperties = {
-  fontSize: "0.9rem",
+  fontSize: "1rem",
   color: "#6b7280",
   marginBottom: "1.5rem",
   textAlign: "center",
@@ -62,7 +62,7 @@ const formStyle: React.CSSProperties = {
 
 const labelStyle: React.CSSProperties = {
   display: "block",
-  fontSize: "0.875rem",
+  fontSize: "1rem",
   fontWeight: "500",
   color: "#4b5563",
   marginBottom: "0.5rem",

@@ -309,7 +309,7 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
         >
           <h1 style={{ 
             margin: 0, 
-            fontSize: "1.5rem", 
+            fontSize: "2rem", 
             fontWeight: "600", 
             color: "#fff",
             cursor: "pointer"
