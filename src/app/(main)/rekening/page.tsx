@@ -398,7 +398,7 @@ const DaftarRekening: React.FC = () => {
                     disabled={isEditOrRekamDisabled}
                     className={styles.rekamButton}
                 >
-                    <FaPlus /> Tambah Rekening
+                    <FaPlus /> Rekam
                 </button>
             
                 <button

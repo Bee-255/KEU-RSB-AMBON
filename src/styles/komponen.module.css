@@ -10,7 +10,6 @@
 
 .header {
   font-size: 1.2rem;
-  font-weight: 700;
   color: #1e293b;
   margin-bottom: 1rem;
   border-bottom: 2px solid #e2e8f0;
@@ -61,7 +60,7 @@
   cursor: pointer;
   background-color: white;
   font-size: 0.8rem;
-  color: #475569;
+  color: #69474e;
 }
 
 /* TABEL DATA */
@@ -84,18 +83,18 @@
   color: #475569;
   font-weight: 600;
   text-align: left;
-  padding: 8px 14px;
+  padding: 4px 4px;
   border-bottom: 2px solid #e2e8f0;
-  font-size: 0.8rem;
+  font-size: 10px;
 }
 
 .tableBody td {
-  padding: 6px 14px;
+  padding: 4px 4px;
   border-bottom: 1px solid #e2e8f0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 0.8rem;
+  font-size: 11px;
 }
 
 .tableRow {
@@ -107,7 +106,8 @@
 }
 
 .tableRow.selected {
-  background-color: #e0f2fe;
+  background-color: #027BFF;
+  color: #C9E3FF;
 }
 
 .tableEmpty {
@@ -134,7 +134,7 @@
   margin-top: 1rem;
   background-color: white;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  border-radius: 8px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
   overflow: hidden;
   padding-bottom: 1rem;
@@ -154,7 +154,7 @@
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
   padding: 1rem;
-  font-size: 0.8rem;
+  font-size: 11px;
 }
 
 .detailItem {
@@ -204,7 +204,7 @@
 .modalForm {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  column-gap: 2rem;
+  column-gap: 1rem;
   row-gap: 1rem;
   margin-bottom: 0rem;
 }
@@ -219,19 +219,19 @@
   font-weight: 500;
   color: #334155;
   margin-bottom: 0.2rem;
-  font-size: 0.8rem;
+  font-size: 11px;
 }
 
 .formInput,
 .formSelect,
 .formTextarea {
   width: 100%;
-  padding: 0.75rem 1rem;
+  padding: 4px 1rem;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   background-color: white;
   transition: border-color 0.2s, box-shadow 0.2s;
-  font-size: 0.8rem;
+  font-size: 11px;
   font-family: 'Inter', sans-serif;
   box-sizing: border-box;
 }
@@ -264,11 +264,11 @@
 
 /* Gaya untuk div terbilang yang tidak dapat diubah */
 .formReadOnly {
-  padding: 0.75rem 1rem;
+  padding: 4px 1rem;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   background-color: #f8fafc;
-  font-size: 0.8rem;
+  font-size: 11px;
   color: #64748b;
   font-family: 'Inter', sans-serif;
   text-align: justify;
@@ -356,7 +356,7 @@
   grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
   padding: 1.5rem;
-  font-size: 0.8rem;
+  font-size: 11px;
 }
 
 .detailItemSPPR {

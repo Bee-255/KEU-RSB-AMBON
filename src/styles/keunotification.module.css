@@ -77,26 +77,26 @@
 }
 
 .success {
-  background-color: #4CAF50;
-  color: white;
+  background-color: #D9F3E4;
+  color: #38765A;
 }
 
 .error {
-  background-color: #F44336;
-  color: white;
+  background-color: #F1DEDF;
+  color: #AB4847;
 }
 
 .warning {
-  background-color: #FFC107;
-  color: #333;
+  background-color: #FFF1D8;
+  color: #8A6B3D;
 }
 .warning .toastDivider {
     background-color: rgba(0, 0, 0, 0.1);
 }
 
 .info {
-  background-color: #2196F3;
-  color: white;
+  background-color: #D8E9F7;
+  color: #4A6B97;
 }
 
 /* --- Confirm Modal Styles --- */

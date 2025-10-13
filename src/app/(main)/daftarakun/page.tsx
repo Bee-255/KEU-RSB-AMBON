@@ -298,7 +298,7 @@ const DaftarAkun: React.FC = () => {
                     disabled={!isOwner}
                     className={styles.rekamButton}
                 >
-                    <FaPlus /> Tambah Akun
+                    <FaPlus /> Rekam
                 </button>
             
                 <button

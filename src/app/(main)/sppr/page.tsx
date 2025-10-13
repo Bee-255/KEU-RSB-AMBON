@@ -578,8 +578,8 @@ const Sppr = () => {
       {showModal && (
         <Modal onClose={resetForm}>
           <form onSubmit={handleSave}>
-            <h3 style={{ marginTop: 0 }}>{isEditing ? "Edit Data SPPR" : "Rekam Data SPPR"}</h3>
-            <hr style={{ border: "0", height: "1px", backgroundColor: "#e5e7eb", margin: "20px 0" }} />
+            <h3 style={{ margin: "-5px 0px" }}>{isEditing ? "Edit Data SPPR" : "Rekam Data SPPR"}</h3>
+            <hr style={{ border: "0", height: "1px", backgroundColor: "#e5e7eb", margin: "1rem 0" }} />
             
             {/* Baris 1: Tanggal dan Nomor Surat */}
             <div className={pageStyles.modalForm}>
@@ -704,7 +704,7 @@ const Sppr = () => {
           <table className={pageStyles.table}>
             <thead className={pageStyles.tableHead}>
               <tr>
-                <th style={{ width: "5%" }}>No.</th>
+                <th style={{ width: "3%", textAlign: "center" }}>No.</th>
                 <th style={{ width: "10%" }}>Tanggal</th>
                 <th style={{ width: "20%" }}>Nomor Surat</th>
                 <th style={{ width: "25%" }}>Operator</th>
@@ -716,7 +716,7 @@ const Sppr = () => {
               {paginatedSppr.length > 0 ? (
                 paginatedSppr.map((sppr, index) => (
                   <tr key={sppr.id} onClick={() => handleRowClick(sppr)} className={`${pageStyles.tableRow} ${selectedSppr?.id === sppr.id ? pageStyles.selected : ""}`}>
-                    <td>{startIndex + index + 1}</td>
+                    <td style={{textAlign: "center" }}>{startIndex + index + 1}</td>
                     <td>{formatTanggal(sppr.tanggal)}</td>
                     <td>{sppr.nomor_surat}</td>
                     <td>{sppr.operator}</td>

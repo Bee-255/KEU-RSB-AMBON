@@ -87,7 +87,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
         <table className={pageStyles.table}>
           <thead className={pageStyles.tableHead}>
             <tr>
-              <th style={{ width: "4%" }}>No.</th>
+              <th style={{ width: "3%", textAlign: "center" }}>No.</th>
               <th style={{ width: "9%" }}>Periode</th>
               <th style={{ width: "17%" }}>Uraian Pembayaran</th>
               <th style={{ width: "7%" }}>Jml Pegawai</th>
@@ -110,7 +110,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
                     onClick={() => handleRowClick(payment)} 
                     className={`${pageStyles.tableRow} ${isRowSelected ? pageStyles.selected : ""}`}
                   >
-                    <td>{startIndex + index + 1}</td>
+                    <td style={{textAlign: "center" }}>{startIndex + index + 1}</td>
                     <td>{payment.periode}</td>
                     <td>{payment.uraian_pembayaran}</td>
                     <td style={{ textAlign: "right" }}>{payment.jumlah_pegawai}</td>

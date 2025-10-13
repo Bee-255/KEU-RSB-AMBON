@@ -198,7 +198,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     message: string, 
     type: NotificationType, 
     duration: number = 4000, 
-    position: NotificationPosition = 'bottom-right'
+    position: NotificationPosition = 'top-right'
   ) => {
     const id = Date.now().toString() + Math.random().toString(36).substring(2, 9);
     const newToast: ToastProps = { id, message, type, duration, position };

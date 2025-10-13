@@ -72,7 +72,7 @@ const PaymentDetailTable: React.FC<PaymentDetailTableProps> = ({
         <table className={pageStyles.table}>
           <thead className={pageStyles.tableHead}>
             <tr>
-              <th style={{ width: "5%", textAlign: 'center' }}>No.</th>
+              <th style={{ width: "3%", textAlign: 'center' }}>No.</th>
               <th style={{ width: "10%" }}>NRP/NIP</th>
               <th style={{ width: "15%" }}>Nama</th>
               <th style={{ width: "10%" }}>Pekerjaan</th>

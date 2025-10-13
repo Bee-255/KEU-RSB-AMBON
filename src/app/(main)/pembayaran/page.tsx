@@ -261,7 +261,7 @@ const Pembayaran = () => {
       const resetTableState = () => {
             setSelectedPayment(null);
             setPaymentDetailList([]);
-            setSelectedDetails([]);
+            setSelectedDetails([]); // DIPERBAIKI: Reset seleksi detail
             setExpandedIds(new Set());
             setShowBankDropdown(false);
             setShowPdfDropdown(false);
@@ -321,6 +321,7 @@ const Pembayaran = () => {
 
   const resetDetailState = () => {
     setSelectedPayment(null);
+    setSelectedDetails([]); // DIPERBAIKI: Reset seleksi detail
     setExpandedIds(new Set());
     setShowBankDropdown(false);
     setShowPdfDropdown(false);
@@ -335,7 +336,7 @@ const Pembayaran = () => {
       // Collapse: reset semua state terkait detail
       setSelectedPayment(null);
       setPaymentDetailList([]);
-      setSelectedDetails([]);
+      setSelectedDetails([]); // DIPERBAIKI: Reset seleksi detail saat collapse
       setShowBankDropdown(false);
       setShowPdfDropdown(false);
       setPegawaiMap(new Map()); // TAMBAH: Reset pegawai map
@@ -344,6 +345,7 @@ const Pembayaran = () => {
       // Expand: set selected payment
       const selected = paymentList.find(p => p.id === id);
       if (selected) setSelectedPayment(selected);
+      setSelectedDetails([]); // DIPERBAIKI: Reset seleksi detail saat expand ke baris baru
       return new Set([id]);
     }
   });

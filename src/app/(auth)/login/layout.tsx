@@ -125,7 +125,7 @@ const customStyles = `
   .login-button {
     flex-grow: 1;
     padding: 12px;
-    background-color: ${ACCENT_BLUE}; 
+    background-color: #027BFF; 
     color: #fff;
     border: none;
     border-radius: 8px;
@@ -135,12 +135,12 @@ const customStyles = `
     outline: none;
   }
   .login-button:hover {
-    background-color: ${HOVER_BLUE};
+    background-color: #006AD9;
   }
   .login-button:disabled {
     cursor: not-allowed;
     opacity: 0.6;
-    background-color: ${ACCENT_BLUE}; 
+    background-color: #006AD9; 
   }
   
   /* --- LOGIKA RESPONSIV (Mobile/Layar Kecil) --- */
