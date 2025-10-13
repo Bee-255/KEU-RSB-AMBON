@@ -232,7 +232,8 @@ const Sppr = () => {
       const { data: pengambilData } = await supabase
         .from("pegawai")
         .select("nama, pangkat, nrp_nip_nir, tipe_identitas, jabatan_struktural")
-        .in("jabatan_struktural", ["BANUM KEU", "STAF KEU"]).eq("status", "Aktif");
+        .in("jabatan_struktural", ["BANUM KEU", "STAF KEU"]).eq("status", "Aktif")
+        .order("golongan", { ascending: false })
 
       // 💡 PERBAIKAN BARIS 214: Tipe eksplisit PegawaiMinimal[]
       const formattedPengambil = (pengambilData as PegawaiMinimal[])?.map(item => ({
