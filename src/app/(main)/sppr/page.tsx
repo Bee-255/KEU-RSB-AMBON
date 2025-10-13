@@ -706,10 +706,10 @@ const Sppr = () => {
               <tr>
                 <th style={{ width: "3%", textAlign: "center" }}>No.</th>
                 <th style={{ width: "10%" }}>Tanggal</th>
-                <th style={{ width: "20%" }}>Nomor Surat</th>
-                <th style={{ width: "25%" }}>Operator</th>
+                <th style={{ width: "10%" }}>Nomor Surat</th>
+                <th style={{ width: "10%" }}>Operator</th>
                 <th style={{ width: "10%", textAlign: "right"}}>Jumlah Penarikan</th>
-                <th style={{ width: "10%" }}>Status</th>
+                <th style={{ width: "20%" }}>Status</th>
               </tr>
             </thead>
             <tbody className={pageStyles.tableBody}>

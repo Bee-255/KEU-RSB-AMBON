@@ -35,7 +35,7 @@ const PegawaiTable: React.FC<PegawaiTableProps> = ({
         <table className={pageStyles.table}>
           <thead className={pageStyles.tableHead}>
             <tr>
-              <th>No.</th>
+              <th style={{ width: "3%", textAlign: "center" }}>No.</th>
               <th>Nama</th>
               <th>Pekerjaan</th>
               <th>Pangkat</th>
@@ -52,7 +52,7 @@ const PegawaiTable: React.FC<PegawaiTableProps> = ({
                   onClick={() => onRowClick(p)}
                   className={`${pageStyles.tableRow} ${selectedPegawai?.id === p.id ? pageStyles.selected : ""}`}
                 >
-                  <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                  <td style={{textAlign: "center" }}>{(currentPage - 1) * itemsPerPage + index + 1}</td>
                   <td>{p.nama}</td>
                   <td>{p.pekerjaan}</td>
                   <td>{p.pangkat}</td>

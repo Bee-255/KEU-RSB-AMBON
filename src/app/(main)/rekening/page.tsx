@@ -617,7 +617,7 @@ const DaftarRekening: React.FC = () => {
                     <table className={pageStyles.table}>
                         <thead className={pageStyles.tableHead}>
                             <tr>
-                                <th style={{ width: "5%" }}>No.</th>
+                                <th style={{ width: "3%", textAlign: "center" }}>No.</th>
                                 <th style={{ width: "15%" }}>Kode Satker</th>
                                 <th style={{ width: "20%" }}>Nama Satker</th>
                                  <th style={{ width: "15%" }}>Bank</th>
@@ -629,7 +629,7 @@ const DaftarRekening: React.FC = () => {
                             {paginatedRekening.length > 0 ? (
                                 paginatedRekening.map((rekening, index) => (
                                     <tr key={rekening.id} onClick={() => handleRowClick(rekening)} className={`${pageStyles.tableRow} ${selectedRekening?.id === rekening.id ? pageStyles.selected : ""}`}>
-                                        <td>{startIndex + index + 1}</td>
+                                        <td style={{ textAlign: "center" }}>{startIndex + index + 1}</td>
                                         <td>{rekening.kode_satker}</td>
                                         <td>{rekening.nama_satker}</td>
                                          <td>{rekening.bank}</td>

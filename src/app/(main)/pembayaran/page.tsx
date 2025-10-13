@@ -650,6 +650,7 @@ const Pembayaran = () => {
   const isPeriodSelected = !!selectedPeriodId;
 
   return (
+    
     <div className={pageStyles.container}>
       <h2 className={pageStyles.header}>Pembayaran Jasa</h2>
 
@@ -676,7 +677,7 @@ const Pembayaran = () => {
           {showBankDropdown && (
             <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 10, backgroundColor: 'white', border: '1px solid #ccc', boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)', minWidth: '150px', borderRadius: '4px', marginTop: '5px' }}>
               {uniqueBanks.map(bank => (
-                <div key={bank} onClick={() => handleDownload('excel', bank)} style={{ padding: '10px', cursor: 'pointer', borderBottom: '1px solid #eee', whiteSpace: 'nowrap' }} onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#f1f1f1')} onMouseOut={(e) => (e.currentTarget.style.backgroundColor = 'white')}>{bank}</div>
+                <div key={bank} onClick={() => handleDownload('excel', bank)} style={{ padding: '6px', fontSize: '11px', cursor: 'pointer', borderBottom: '1px solid #eee', whiteSpace: 'nowrap' }} onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#f1f1f1')} onMouseOut={(e) => (e.currentTarget.style.backgroundColor = 'white')}>{bank}</div>
               ))}
             </div>
           )}

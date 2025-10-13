@@ -427,7 +427,7 @@ const PejabatKeuangan = () => {
           <table className={pageStyles.table}>
             <thead className={pageStyles.tableHead}>
               <tr>
-                <th>No.</th>
+                <th style={{ width: "3%", textAlign: "center" }}>No.</th>
                 <th>Nama</th>
                 <th>Pangkat</th>
                 <th>NRP/NIP</th>
@@ -443,7 +443,7 @@ const PejabatKeuangan = () => {
                     onClick={() => handleRowClick(pejabat)}
                     className={`${pageStyles.tableRow} ${selectedPejabat?.id === pejabat.id ? pageStyles.selected : ""}`}
                   >
-                    <td>{index + 1}</td>
+                    <td style={{ textAlign: "center" }}>{index + 1}</td>
                     <td>{pejabat.pegawai.nama}</td>
                     <td>{pejabat.pegawai.pangkat}</td>
                     <td>{pejabat.pegawai.nrp_nip_nir}</td>
