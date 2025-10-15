@@ -6,9 +6,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { supabase } from "@/utils/supabaseClient";
 import { FaFolder, FaFile, FaAngleLeft, FaAngleDown, FaSignOutAlt } from "react-icons/fa";
 import { Session, AuthChangeEvent } from '@supabase/supabase-js';
-import { NotificationProvider, useKeuNotification } from '@/lib/useKeuNotification'; 
-
-// 🚨 IMPORT MODULE CSS BARU
+import { NotificationProvider, useKeuNotification } from '@/lib/useKeuNotification';
 import loadingStyles from "@/styles/loading.module.css";
 
 // Definisikan tipe untuk props
@@ -23,8 +21,6 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
   const router = useRouter();
   const pathname = usePathname();
   const { showConfirm, showToast } = useKeuNotification();
-
-  // --- States ---
   const [currentTime, setCurrentTime] = useState<string>("");
   const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(true);
   const [openFolder, setOpenFolder] = useState<string | null>(null);
@@ -180,6 +176,8 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
       setOpenFolder('rekam');
     } else if (pathname.startsWith('/rekening')) {
       setOpenFolder('data');
+    } else if (pathname.startsWith('/pendapatan') || pathname.startsWith('/pengeluaran') || pathname.startsWith('/transaksikhusus')) { // Tambahkan path untuk Jurnal Umum
+      setOpenFolder('jurnalumum'); // Ubah nama folder menjadi tanpa spasi untuk konsistensi
     } else if (pathname.startsWith('/pembayaran')) {
       setOpenFolder('pembayaran');
     } else {
@@ -222,6 +220,8 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
   const handleAdminToggle = () => { setOpenFolder(openFolder === 'administrasi' ? null : 'administrasi'); };
   const handleRekamToggle = () => { setOpenFolder(openFolder === 'rekam' ? null : 'rekam'); };
   const handleDataToggle = () => { setOpenFolder(openFolder === 'data' ? null : 'data'); };
+  // PENTING: Ubah nama folder di sini agar konsisten dengan state dan effect
+  const handleJurnalUmumToggle = () => { setOpenFolder(openFolder === 'jurnalumum' ? null : 'jurnalumum'); }; 
   const handlePembayaranToggle = () => { setOpenFolder(openFolder === 'pembayaran' ? null : 'pembayaran'); };
   const handleSidebarToggle = () => { setIsSidebarVisible(!isSidebarVisible); };
   const handleDashboardClick = () => { router.push("/dashboard"); setOpenFolder(null); };
@@ -233,7 +233,7 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
     color: "#4A5568", 
     textAlign: "left",
     cursor: "pointer",
-    fontSize: "0.8rem",
+    fontSize: "0.875rem",
     padding: "0.2rem 0.5rem 0.2rem 0.5rem",
     margin: "0rem",
     display: "flex",
@@ -269,6 +269,8 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
   const isAdminOpen = openFolder === 'administrasi';
   const isRekamOpen = openFolder === 'rekam';
   const isDataOpen = openFolder === 'data';
+  // PENTING: Gunakan nama folder yang sudah diubah
+  const isJurnalUmumOpen = openFolder === 'jurnalumum'; 
   const isPembayaranOpen = openFolder === 'pembayaran';
   const isActive = (path: string) => pathname === path;
   // ----------------------------------------------------
@@ -441,7 +443,7 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
                 isAdminOpen ? activeStyle : (hoveredItem === 'administrasi' ? hoverStyle : inactiveStyle)
               }
             >
-              <span style={{ fontSize: "0.9rem" }}>
+              <span style={{ fontSize: "0.875rem" }}>
                 <FaFolder color={isAdminOpen ? '#2563eb' : '#4A5568'}/>
               </span> Administrasi
               <span style={{
@@ -478,7 +480,7 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
                     (hoveredItem === 'pejabatkeuangan' ? {...hoverStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"})
                   }
                 >
-                  <span style={{ fontSize: "0.9rem" }}>
+                  <span style={{ fontSize: "0.875rem" }}>
                     <FaFile color={isActive("/pejabatkeuangan") ? '#2563eb' : '#4A5568'} />
                   </span> Pejabat Keuangan
                 </button>
@@ -495,7 +497,7 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
                     (hoveredItem === 'daftarakun' ? {...hoverStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"})
                   }
                 >
-                  <span style={{ fontSize: "0.9rem" }}>
+                  <span style={{ fontSize: "0.875rem" }}>
                     <FaFile color={isActive("/daftarakun") ? '#2563eb' : '#4A5568'} />
                   </span> Daftar Akun
                 </button>
@@ -511,7 +513,7 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
                 isRekamOpen ? activeStyle : (hoveredItem === 'rekam' ? hoverStyle : inactiveStyle)
               }
               >
-              <span style={{ fontSize: "0.9rem" }}>
+              <span style={{ fontSize: "0.875rem" }}>
                 <FaFolder color={isRekamOpen ? '#2563eb' : '#4A5568'}  />
               </span> Rekam
               <span style={{
@@ -548,7 +550,7 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
                     (hoveredItem === 'pegawai' ? {...hoverStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"})
                   }
                 >
-                  <span style={{ fontSize: "0.9rem" }}>
+                  <span style={{ fontSize: "0.875rem" }}>
                     <FaFile color={isActive("/pegawai") ? '#2563eb' : '#4A5568'} />
                   </span> Pegawai
                 </button>
@@ -565,7 +567,7 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
                     (hoveredItem === 'pencatatanpasien' ? {...hoverStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"})
                   }
                 >
-                  <span style={{ fontSize: "0.9rem" }}>
+                  <span style={{ fontSize: "0.875rem" }}>
                     <FaFile color={isActive("/pencatatanpasien") ? '#2563eb' : '#4A5568'} />
                   </span> Pencatatan Pasien
                 </button>
@@ -582,26 +584,9 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
                     (hoveredItem === 'sppr' ? {...hoverStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"})
                   }
                 >
-                  <span style={{ fontSize: "0.9rem" }}>
+                  <span style={{ fontSize: "0.875rem" }}>
                     <FaFile color={isActive("/sppr") ? '#2563eb' : '#4A5568'} />
                   </span> SPPR
-                </button>
-                <button
-                  onClick={() => {
-                    router.push("/jurnalumum");
-                    if (isMobile) setIsSidebarVisible(false); 
-                  }}
-                  onMouseEnter={() => setHoveredItem('jurnalumum')}
-                  onMouseLeave={() => setHoveredItem(null)}
-                  style={
-                    isActive("/jurnalumum") ? 
-                    {...activeStyle, paddingLeft: "1rem"} : 
-                    (hoveredItem === 'jurnalumum' ? {...hoverStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"})
-                  }
-                >
-                  <span style={{ fontSize: "0.9rem" }}>
-                    <FaFile color={isActive("/jurnalumum") ? '#2563eb' : '#4A5568'} />
-                  </span> Pencatatan Transaksi
                 </button>
               </div>
             </div>
@@ -615,7 +600,7 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
                 isDataOpen ? activeStyle : (hoveredItem === 'data' ? hoverStyle : inactiveStyle)
               }
               >
-              <span style={{ fontSize: "0.9rem" }}>
+              <span style={{ fontSize: "0.875rem" }}>
                 <FaFolder color={isDataOpen ? '#2563eb' : '#4A5568'}  />
               </span> Data
               <span style={{
@@ -652,12 +637,106 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
                     (hoveredItem === 'rekening' ? {...hoverStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"})
                   }
                 >
-                  <span style={{ fontSize: "0.9rem" }}>
+                  <span style={{ fontSize: "0.875rem" }}>
                     <FaFile color={isActive("/rekening") ? '#2563eb' : '#4A5568'} />
                   </span> Rekening
                 </button>
               </div>
             </div>
+
+
+            {/* Jurnal Umum (Folder) */}
+            <div
+              onClick={handleJurnalUmumToggle}
+              onMouseEnter={() => setHoveredItem('jurnalumum')}
+              onMouseLeave={() => setHoveredItem(null)}
+              style={
+                isJurnalUmumOpen ? activeStyle : (hoveredItem === 'jurnalumum' ? hoverStyle : inactiveStyle) // PERBAIKAN: Gunakan 'jurnalumum'
+              }
+              >
+              <span style={{ fontSize: "0.875rem" }}>
+                <FaFolder color={isJurnalUmumOpen ? '#2563eb' : '#4A5568'}  />
+              </span> Jurnal Umum
+              <span style={{
+                display: 'inline-block',
+                marginLeft: "auto",
+                width: "1em",
+                height: "1em",
+                transform: isJurnalUmumOpen ? 'rotate(-180deg)' : 'rotate(0deg)',
+                transition: 'transform 0.2s ease-in-out',
+              }}>
+                <FaAngleDown strokeWidth={4} color="#4A5568" />
+              </span>
+            </div>
+
+            {/* Jurnal Umum Sub-menu (Pendapatan, Pengeluaran, Transaksi Khusus) */}
+            <div 
+              style={{
+                maxHeight: isJurnalUmumOpen ? '200px' : '0',
+                overflow: 'hidden',
+                transition: 'max-height 0.2s',
+              }}
+              >
+              <div style={{ display: "flex", flexDirection: "column", gap: "0rem" }}>
+                {/* Pendapatan (Sudah Diperbaiki) */}
+                <button
+                  onClick={() => {
+                    router.push("/jurnalumum/pendapatan");
+                    if (isMobile) setIsSidebarVisible(false); 
+                  }}
+                  onMouseEnter={() => setHoveredItem('pendapatan')}
+                  onMouseLeave={() => setHoveredItem(null)}
+                  style={
+                    isActive("/jurnalumum/pendapatan") ? 
+                    {...activeStyle, paddingLeft: "1rem"} : 
+                    (hoveredItem === 'pendapatan' ? {...hoverStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"})
+                  }
+                >
+                  <span style={{ fontSize: "0.875rem" }}>
+                    <FaFile color={isActive("/jurnalumum/pendapatan") ? '#2563eb' : '#4A5568'} />
+                  </span> Pendapatan
+                </button>
+
+                {/* Pengeluaran (Tambahan) */}
+                <button
+                  onClick={() => {
+                    router.push("/jurnalumum/pengeluaran");
+                    if (isMobile) setIsSidebarVisible(false); 
+                  }}
+                  onMouseEnter={() => setHoveredItem('pengeluaran')}
+                  onMouseLeave={() => setHoveredItem(null)}
+                  style={
+                    isActive("/jurnalumum/pengeluaran") ? 
+                    {...activeStyle, paddingLeft: "1rem"} : 
+                    (hoveredItem === 'pengeluaran' ? {...hoverStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"})
+                  }
+                >
+                  <span style={{ fontSize: "0.875rem" }}>
+                    <FaFile color={isActive("/jurnalumum/pengeluaran") ? '#2563eb' : '#4A5568'} />
+                  </span> Pengeluaran
+                </button>
+                
+                {/* Transaksi Khusus (Tambahan) */}
+                <button
+                  onClick={() => {
+                    router.push("/jurnalumum/transaksikhusus");
+                    if (isMobile) setIsSidebarVisible(false); 
+                  }}
+                  onMouseEnter={() => setHoveredItem('transaksikhusus')}
+                  onMouseLeave={() => setHoveredItem(null)}
+                  style={
+                    isActive("/jurnalumum/transaksikhusus") ? 
+                    {...activeStyle, paddingLeft: "1rem"} : 
+                    (hoveredItem === 'transaksikhusus' ? {...hoverStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"})
+                  }
+                >
+                  <span style={{ fontSize: "0.875rem" }}>
+                    <FaFile color={isActive("/jurnalumum/transaksikhusus") ? '#2563eb' : '#4A5568'} />
+                  </span> Transaksi Khusus
+                </button>
+              </div>
+            </div>
+          
 
             {/* PEMBAYARAN (Folder) - DIBATASI ROLE */}
             {isPembayaranAllowed && (
@@ -670,7 +749,7 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
                     isPembayaranOpen ? activeStyle : (hoveredItem === 'pembayaran' ? hoverStyle : inactiveStyle)
                   }
                   >
-                  <span style={{ fontSize: "0.9rem" }}>
+                  <span style={{ fontSize: "0.875rem" }}>
                     <FaFolder color={isPembayaranOpen ? '#2563eb' : '#4A5568'}  />
                   </span> Pembayaran
                   <span style={{
@@ -707,7 +786,7 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
                         (hoveredItem === 'pembayaran-jasa' ? {...hoverStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"})
                       }
                     >
-                      <span style={{ fontSize: "0.9rem" }}>
+                      <span style={{ fontSize: "0.875rem" }}>
                         <FaFile color={isActive("/pembayaran") ? '#2563eb' : '#4A5568'} />
                       </span> Jasa
                     </button>

@@ -4,10 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/utils/supabaseClient";
 import Paginasi from '@/components/paginasi';
 import pageStyles from "@/styles/komponen.module.css";
-// 👈 Import hook notifikasi kustom
-import { useKeuNotification } from "@/lib/useKeuNotification"; 
-
-// Import types, constants, dan components
+import { useKeuNotification } from "@/lib/useKeuNotification";
 import { FormPegawaiData, PegawaiData } from './types';
 import { golonganByPangkatAsn, golonganByPangkatPolri } from './constants';
 import Modal from './components/Modal';

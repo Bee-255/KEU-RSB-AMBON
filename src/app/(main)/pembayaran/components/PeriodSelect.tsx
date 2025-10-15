@@ -45,10 +45,10 @@ const PeriodSelect: React.FC<PeriodSelectProps> = ({ periods, selectedId, onSele
                 onClick={() => setIsOpen(!isOpen)}
                 style={{
                     width: '60%',
-                    padding: '8px 12px',
+                    padding: '6px 10px',
                     border: '1px solid #cbd5e1',
                     borderRadius: '6px',
-                    fontSize: '11px',
+                    fontSize: '0.875rem',
                     backgroundColor: 'white',
                     cursor: 'pointer',
                     display: 'flex',
@@ -72,7 +72,7 @@ const PeriodSelect: React.FC<PeriodSelectProps> = ({ periods, selectedId, onSele
                 <FaChevronDown 
                     style={{ 
                         marginLeft: '8px', 
-                        fontSize: '11px',
+                        fontSize: '12px',
                         transition: 'transform 0.2s',
                         transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)'
                     }} 
@@ -91,14 +91,14 @@ const PeriodSelect: React.FC<PeriodSelectProps> = ({ periods, selectedId, onSele
                     border: '1px solid #cbd5e1',
                     borderRadius: '6px',
                     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                    marginTop: '4px',
+                    marginTop: '0px',
                     maxHeight: '300px',
                     overflowY: 'auto'
                 }}>
                     {periods.length === 0 ? (
                         <div style={{
                             padding: '12px',
-                            fontSize: '11px',
+                            fontSize: '12px',
                             color: '#6b7280',
                             textAlign: 'center'
                         }}>
@@ -110,8 +110,8 @@ const PeriodSelect: React.FC<PeriodSelectProps> = ({ periods, selectedId, onSele
                                 key={period.id}
                                 onClick={() => handleSelect(period.id)}
                                 style={{
-                                    padding: '6px 10px',
-                                    fontSize: '11px',
+                                    padding: '4px 10px',
+                                    fontSize: '0.875rem',
                                     cursor: 'pointer',
                                     borderBottom: '1px solid #f3f4f6',
                                     backgroundColor: selectedId === period.id ? '#3b82f6' : 'white',
@@ -131,7 +131,7 @@ const PeriodSelect: React.FC<PeriodSelectProps> = ({ periods, selectedId, onSele
                             >
                                 <div style={{ fontWeight: '500' }}>{period.periode}</div>
                                 <div style={{ 
-                                    fontSize: '11px', 
+                                    fontSize: '12px', 
                                     opacity: 0.8,
                                     marginTop: '2px'
                                 }}>

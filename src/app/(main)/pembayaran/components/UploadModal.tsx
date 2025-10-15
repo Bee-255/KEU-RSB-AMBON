@@ -519,7 +519,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onSuccess }) => {
         }
         
         const messageContent = (
-            <div style={{ textAlign: 'left', fontSize: '14px' }}>
+            <div style={{ textAlign: 'left', fontSize: '0.875rem' }}>
                 <p style={{ marginBottom: '1rem', fontWeight: 'bold' }}>{failedHeadline}</p>
                 
                 <div style={{ paddingLeft: '10px' }}>

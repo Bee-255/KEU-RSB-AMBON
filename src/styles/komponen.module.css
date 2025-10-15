@@ -1,4 +1,3 @@
-
 /* BAGIAN HEADER & Container Utama */
 .container {
   padding: 1rem 1rem 0rem 1rem;
@@ -59,7 +58,7 @@
   border-radius: 6px;
   cursor: pointer;
   background-color: white;
-  font-size: 0.8rem;
+  font-size: 1rem;
   color: #69474e;
 }
 
@@ -69,8 +68,10 @@
   background-color: white;
   border-radius: 8px;
   border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 0.875rem rgba(0, 0, 0, 0.05);
   margin-top: 1rem;
+  max-height: 400px; /* Tambahkan max-height untuk container tabel */
+  overflow-y: auto; /* Tambahkan scroll vertikal */
 }
 
 .table {
@@ -79,13 +80,16 @@
 }
 
 .tableHead th {
-  background-color: #f1f5f9;
+  background-color: #ddd;
   color: #475569;
   font-weight: 600;
   text-align: left;
   padding: 4px 4px;
   border-bottom: 2px solid #e2e8f0;
-  font-size: 10px;
+  font-size: 0.875rem;
+  position: sticky; /* Buat header sticky */
+  top: 0; /* Tempel di atas */
+  z-index: 10; /* Pastikan header di atas konten */
 }
 
 .tableBody td {
@@ -94,7 +98,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 11px;
+  font-size: 0.875rem;
 }
 
 .tableRow {
@@ -124,7 +128,7 @@
   background-color: white;
   border-radius: 8px;
   border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 0.875rem rgba(0, 0, 0, 0.05);
   margin-right: 1rem;
   margin-left: 1rem;
   margin-bottom: 1rem;
@@ -143,9 +147,9 @@
 .detailHeader {
   font-size: 1rem;
   font-weight: 600;
-  background-color: #f8fafc;
+  background-color: #ddd;
   color: #1e293b;
-  padding: 1rem;
+  padding: 4px 1rem;
   border-bottom: 1px solid #e2e8f0;
 }
 
@@ -154,7 +158,7 @@
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
   padding: 1rem;
-  font-size: 11px;
+  font-size: 0.875rem;
 }
 
 .detailItem {
@@ -219,19 +223,19 @@
   font-weight: 500;
   color: #334155;
   margin-bottom: 0.2rem;
-  font-size: 11px;
+  font-size: 0.875rem;
 }
 
 .formInput,
 .formSelect,
 .formTextarea {
   width: 100%;
-  padding: 4px 1rem;
+  padding: 6px 1rem;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   background-color: white;
   transition: border-color 0.2s, box-shadow 0.2s;
-  font-size: 11px;
+  font-size: 0.875rem;
   font-family: 'Inter', sans-serif;
   box-sizing: border-box;
 }
@@ -268,7 +272,7 @@
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   background-color: #f8fafc;
-  font-size: 11px;
+  font-size: 0.875rem;
   color: #64748b;
   font-family: 'Inter', sans-serif;
   text-align: justify;
@@ -285,7 +289,7 @@
 .formActions {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
+  gap: 0.875rem;
   margin-top: 1.5rem;
   grid-column: 1 / -1;
 }
@@ -337,7 +341,7 @@
   margin-top: 1rem;
   background-color: white;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  border-radius: 0.875rem;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
   overflow: hidden;
 }
@@ -345,9 +349,9 @@
 .detailHeaderSPPR {
   font-size: 1rem;
   font-weight: 600;
-  background-color: #f8fafc;
+  background-color: #ddd;
   color: #1e293b;
-  padding: 0.5rem 1.5rem;
+  padding: 4px 1rem;
   border-bottom: 1px solid #e2e8f0;
 }
 
@@ -355,8 +359,8 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
-  padding: 1.5rem;
-  font-size: 11px;
+  padding: 1rem;
+  font-size: 0.875rem;
 }
 
 .detailItemSPPR {
@@ -422,4 +426,38 @@
   text-align: left;
   /* Menerapkan font yang sama agar titik tidak terlihat melompat */
   font-family: inherit; 
+}
+
+/* src/styles/form.module.css */
+
+.formGroup {
+  margin-bottom: 1.5rem;
+}
+
+.label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #333;
+}
+
+.input, .select, .textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+  box-sizing: border-box; /* Pastikan padding tidak menambah lebar */
+}
+
+.input:focus, .select:focus, .textarea:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  outline: none;
+}
+
+.required {
+  color: red;
+  margin-left: 0.25rem;
 }

@@ -9,7 +9,7 @@
 .tutupButton,
 .setorButton,
 .disabledButton {
-  padding: 4px 10px;
+  padding: 6px 10px;
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -19,7 +19,7 @@
   gap: 4px;
   text-decoration: none;
   transition: all 0.2s ease-in-out;
-  font-size: 12px;
+  font-size: 1rem;
   font-weight: 500;
 }
 
@@ -34,7 +34,7 @@
 .submitButton:hover {
   background-color: #059669;
   transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 1rem rgba(0, 0, 0, 0.15);
 }
 
 .rekamButton:active,
@@ -52,7 +52,7 @@
 .editButton:hover {
   background-color: #d97706;
   transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 1rem rgba(0, 0, 0, 0.15);
 }
 
 .editButton:active {
@@ -69,7 +69,7 @@
 .hapusButton:hover {
   background-color: #dc2626;
   transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 1rem rgba(0, 0, 0, 0.15);
 }
 
 .hapusButton:active {
@@ -86,7 +86,7 @@
 .downloadButton:hover {
   background-color: #2563eb;
   transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 1rem rgba(0, 0, 0, 0.15);
 }
 
 .downloadButton:active {
@@ -103,7 +103,7 @@
 .tutupButton:hover {
   background-color: #2563eb;
   transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 1rem rgba(0, 0, 0, 0.15);
 }
 
 .tutupButton:active {
@@ -120,7 +120,7 @@
 .setorButton:hover {
   background-color: #2563eb;
   transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 1rem rgba(0, 0, 0, 0.15);
 }
 
 .setorButton:active {

@@ -67,7 +67,7 @@
 }
 
 .toastMessage {
-  font-size: 14px;
+  font-size: 1rem;
 }
 
 .toastDivider {
@@ -140,7 +140,7 @@
     display: flex;
     align-items: center;
     padding: 1rem;
-    font-size: 12px;
+    font-size: 1rem;
     color: rgb(0, 0, 0);
     background-color: #f8fafc;
     border-top-left-radius: 8px;
@@ -161,7 +161,7 @@
 
 .modalBody {
     padding: 1rem;
-    font-size: 14px;
+    font-size: 1rem;
     line-height: 1.4;
     color: #555;
 }
@@ -184,7 +184,7 @@
     cursor: pointer;
     font-weight: 600;
     transition: background-color 0.2s, border-color 0.2s;
-    font-size: 12px;
+    font-size: 1rem;
     border: 1px solid transparent;
     border-radius: 6px;
 }

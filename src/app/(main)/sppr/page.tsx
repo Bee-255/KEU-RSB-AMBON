@@ -7,7 +7,7 @@ import Swal from "sweetalert2";
 import { FaPlus, FaEdit, FaRegTrashAlt } from "react-icons/fa";
 import { FiDownload } from "react-icons/fi";
 import { MdDoneAll } from "react-icons/md";
-import { Toaster, toast } from "react-hot-toast";
+// import { Toaster, toast } from "react-hot-toast"; // Dihapus
 import Paginasi from '@/components/paginasi';
 import styles from "@/styles/button.module.css";
 import pageStyles from "@/styles/komponen.module.css";
@@ -15,6 +15,10 @@ import loadingStyles from "@/styles/loading.module.css";
 import { capitalizeWords, formatAngka, parseAngka, toRoman, formatTanggal } from '@/lib/format';
 import { terbilang } from "@/lib/terbilang";
 import { generateSpprPdf } from "./utils/pdfsppr";
+
+// ASUMSI: Menggunakan import berdasarkan contoh kode Anda
+import { useKeuNotification } from "@/lib/useKeuNotification"; 
+
 
 // Interface untuk data mentah dari Supabase (data_rekening)
 interface RawRekeningData {
@@ -48,9 +52,9 @@ interface SpprType {
   pangkat_pengambil: string;
   jabatan_pengambil: string;
   rekening_penarikan: string;
-  nama_bank: string;           // Kolom baru
-  nama_rekening: string;       // Kolom baru
-  nomor_rekening: string;      // Kolom baru
+  nama_bank: string; 
+  nama_rekening: string;  
+  nomor_rekening: string;   
   jumlah_penarikan: number;
   operator: string;
   status_sppr: string;
@@ -97,6 +101,9 @@ const Modal = ({ children, onClose }: ModalProps) => {
 };
 
 const Sppr = () => {
+  // Inisialisasi useKeuNotification
+  const { showToast, showConfirm } = useKeuNotification();
+
   const [spprList, setSpprList] = useState<SpprType[]>([]);
   const [kpaList, setKpaList] = useState<PersonType[]>([]);
   const [bendaharaList, setBendaharaList] = useState<PersonType[]>([]);
@@ -123,9 +130,9 @@ const Sppr = () => {
     pangkat_pengambil: "", 
     jabatan_pengambil: "", 
     rekening_penarikan: "",
-    nama_bank: "",           // Kolom baru
-    nama_rekening: "",       // Kolom baru
-    nomor_rekening: "",      // Kolom baru
+    nama_bank: "",           
+    nama_rekening: "",      
+    nomor_rekening: "",    
     jumlah_penarikan: 0, 
     operator: "", 
     status_sppr: "BARU",
@@ -139,7 +146,7 @@ const Sppr = () => {
       const { data, error } = await supabase.from("sppr").select("*").order("created_at", { ascending: false });
       if (error) {
         console.error("Gagal mengambil data:", error);
-        Swal.fire("Error", "Gagal mengambil data SPPR.", "error");
+        showToast("Gagal mengambil data SPPR.", "error"); // Mengganti Swal.fire
         setSpprList([]);
         return;
       }
@@ -150,7 +157,7 @@ const Sppr = () => {
     } finally {
       setIsTableLoading(false);
     }
-  }, []);
+  }, [showToast]);
 
   // --- FUNGSI: Ambil Data Rekening Penarikan dengan Sorting ---
   const fetchRekeningOptions = useCallback(async () => {
@@ -208,7 +215,6 @@ const Sppr = () => {
         .select("*, pegawai(nama, pangkat, nrp_nip_nir, tipe_identitas, jabatan_struktural)")
         .eq("jabatan_pengelola_keuangan", "KPA").eq("status", "Aktif");
       
-      // 💡 PERBAIKAN BARIS 194: Tipe eksplisit PejabatKeuanganJoin[]
       const formattedKpa = (kpaData as PejabatKeuanganJoin[])?.map(item => ({
         nama: item.pegawai.nama, pangkat: item.pegawai.pangkat, tipe_identitas: item.pegawai.tipe_identitas,
         nrp_nip_nir: item.pegawai.nrp_nip_nir, jabatan: item.pegawai.jabatan_struktural
@@ -221,7 +227,6 @@ const Sppr = () => {
         .select("*, pegawai(nama, pangkat, nrp_nip_nir, tipe_identitas, jabatan_struktural)")
         .eq("jabatan_pengelola_keuangan", "BPG").eq("status", "Aktif");
         
-      // 💡 PERBAIKAN BARIS 204: Tipe eksplisit PejabatKeuanganJoin[]
       const formattedBendahara = (bendaharaData as PejabatKeuanganJoin[])?.map(item => ({
         nama: item.pegawai.nama, pangkat: item.pegawai.pangkat, tipe_identitas: item.pegawai.tipe_identitas,
         nrp_nip_nir: item.pegawai.nrp_nip_nir, jabatan: item.pegawai.jabatan_struktural
@@ -235,7 +240,6 @@ const Sppr = () => {
         .in("jabatan_struktural", ["BANUM KEU", "STAF KEU"]).eq("status", "Aktif")
         .order("golongan", { ascending: false })
 
-      // 💡 PERBAIKAN BARIS 214: Tipe eksplisit PegawaiMinimal[]
       const formattedPengambil = (pengambilData as PegawaiMinimal[])?.map(item => ({
         nama: item.nama, pangkat: item.pangkat, tipe_identitas: item.tipe_identitas,
         nrp_nip_nir: item.nrp_nip_nir, jabatan: item.jabatan_struktural
@@ -375,7 +379,7 @@ const Sppr = () => {
     e.preventDefault();
     
     if (!formData.rekening_penarikan) {
-      Swal.fire("Peringatan", "Mohon pilih Rekening Penarikan.", "warning");
+      showToast("Mohon pilih Rekening Penarikan.", "warning"); // Mengganti Swal.fire
       return;
     }
     
@@ -384,43 +388,50 @@ const Sppr = () => {
     if (isEditing) {
       const { error } = await supabase.from("sppr").update(dataToSave).eq("id", selectedSppr?.id);
       if (error) {
-        Swal.fire("Gagal!", `Data gagal diupdate: ${error.message}`, "error");
+        showToast(`Gagal mengupdate data: ${error.message}`, "error"); // Mengganti Swal.fire
       } else {
-        Swal.fire("Berhasil!", "Data berhasil diupdate.", "success");
+        showToast("Data berhasil diupdate.", "success"); // Mengganti Swal.fire
         fetchSPPR();
         resetForm();
       }
     } else {
-      const { error } = await supabase.from("sppr").insert([dataToSave]);
+      // Perbaikan: Hapus 'id' saat INSERT agar database Supabase yang mengisi otomatis.
+      const { id, ...dataWithoutId } = dataToSave; 
+
+      const { error } = await supabase.from("sppr").insert([dataWithoutId]);
       if (error) {
-        Swal.fire("Gagal!", `Data gagal disimpan: ${error.message}`, "error");
+        showToast(`Gagal menyimpan data: ${error.message}`, "error"); // Mengganti Swal.fire
       } else {
-        Swal.fire("Berhasil!", "Data berhasil disimpan.", "success");
+        showToast("Data berhasil disimpan.", "success"); // Mengganti Swal.fire
         fetchSPPR();
         resetForm();
       }
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
     if (!selectedSppr) return;
-    const result = await Swal.fire({
-      title: "Apakah Anda yakin?", text: `Anda akan menghapus data SPPR dengan nomor surat ${selectedSppr.nomor_surat}`,
-      icon: "warning", showCancelButton: true, confirmButtonColor: "#dc2626", cancelButtonColor: "#6b7280",
-      confirmButtonText: "Ya, hapus!", cancelButtonText: "Batal",
+
+    // Mengganti Swal.fire konfirmasi dengan showConfirm
+    const isConfirmed = await showConfirm({
+        title: "Konfirmasi Hapus", 
+        message: `Apakah Anda yakin ingin menghapus data SPPR dengan nomor surat ${selectedSppr.nomor_surat}?`,
+        confirmText: "Ya, Hapus",
+        cancelText: "Batal",
     });
-    if (result.isConfirmed) {
+    
+    if (isConfirmed) {
       const { error } = await supabase.from("sppr").delete().eq("id", selectedSppr.id);
       if (error) {
-        Swal.fire("Gagal!", "Data gagal dihapus. Coba lagi.", "error");
+        showToast("Data gagal dihapus. Coba lagi.", "error"); // Mengganti Swal.fire
       } else {
-        Swal.fire("Dihapus!", "Data berhasil dihapus.", "success");
+        showToast("Data berhasil dihapus.", "success"); // Mengganti Swal.fire
         setSelectedSppr(null);
         fetchSPPR();
       }
       resetForm();
     }
-  };
+  }, [selectedSppr, fetchSPPR, showConfirm, showToast]);
 
   const handleEdit = () => {
     if (!selectedSppr) return;
@@ -432,29 +443,24 @@ const Sppr = () => {
   const handleApprove = async () => {
     if (!selectedSppr || selectedSppr.status_sppr !== 'BARU') return;
     
-    const result = await Swal.fire({
-      title: 'Apakah Anda yakin?', 
-      text: `Anda akan menyetujui data SPPR Nomor Surat: ${selectedSppr.nomor_surat}`,
-      icon: 'question', 
-      showCancelButton: true, 
-      confirmButtonColor: '#10B981', 
-      cancelButtonColor: '#6b7280',
-      confirmButtonText: 'Ya, Setujui', 
-      cancelButtonText: 'Batal'
+    // Mengganti Swal.fire konfirmasi dengan showConfirm
+    const isConfirmed = await showConfirm({
+      title: 'Konfirmasi Setuju', 
+      message: `Anda akan menyetujui data SPPR Nomor Surat: ${selectedSppr.nomor_surat}`,
+      confirmText: 'Ya, Setujui', 
+      cancelText: 'Batal'
     });
 
-    if (result.isConfirmed) {
+    if (isConfirmed) {
       const { error } = await supabase.from('sppr').update({ status_sppr: 'DISETUJUI' }).eq('id', selectedSppr.id);
       
       if (error) {
-        Swal.fire('Gagal!', `Gagal menyetujui data: ${error.message}`, 'error');
+        showToast(`Gagal menyetujui data: ${error.message}`, 'error'); // Mengganti Swal.fire
       } else {
-        // Tampilkan toast dan refresh data
-        toast.success("SPPR Berhasil Disetujui!");
+        showToast("SPPR Berhasil Disetujui!", "success"); // Mengganti toast
         
-        // Refresh data setelah toast muncul
+        // Refresh data dan update selectedSppr
         await fetchSPPR();
-        
         setSelectedSppr({ ...selectedSppr, status_sppr: 'DISETUJUI' });
       }
     }
@@ -464,7 +470,7 @@ const Sppr = () => {
     if (selectedSppr) {
       generateSpprPdf(selectedSppr);
     } else {
-      Swal.fire("Peringatan", "Pilih data SPPR yang akan diunduh.", "warning");
+      showToast("Pilih data SPPR yang akan diunduh.", "warning"); // Mengganti Swal.fire
     }
   };
 
@@ -500,7 +506,6 @@ const Sppr = () => {
       setSelectedSppr(null);
     } else {
       setIsDetailLoading(true); // Mulai loading detail
-      // Simulasi loading untuk efek visual (bisa dihapus jika tidak perlu)
       await new Promise(resolve => setTimeout(resolve, 400));
       setSelectedSppr(sppr);
       setIsDetailLoading(false); // Selesai loading detail
@@ -530,30 +535,13 @@ const Sppr = () => {
 
   const isEditingOrDeletingDisabled = !isAllowedToEditOrDelete || !selectedSppr || selectedSppr?.status_sppr === "DISETUJUI";
   const isApprovingDisabled = !isAllowedToApprove || !selectedSppr || selectedSppr?.status_sppr === "DISETUJUI";
-  const isDownloadingDisabled = !isAllowedToDownload || !selectedSppr;
+  // KONDISI DOWNLOAD BARU: Hanya aktif jika status = DISETUJUI
+  const isDownloadingDisabled = !isAllowedToDownload || !selectedSppr || selectedSppr?.status_sppr !== "DISETUJUI";
 
   return (
     <div className={pageStyles.container}>
-      <Toaster 
-        position="top-right"
-        toastOptions={{
-          duration: 3000,
-          style: {
-            background: '#363636',
-            color: '#fff',
-            fontSize: '14px',
-            marginTop: '50px',
-            zIndex: 9999,
-          },
-          success: {
-            duration: 3000,
-            iconTheme: {
-              primary: '#10B981',
-              secondary: '#fff',
-            },
-          },
-        }}
-      />
+      {/* <Toaster ... /> Dihapus karena menggunakan useKeuNotification */}
+      
       <h2 className={pageStyles.header}>Data Surat Perintah Pendebitan Rekening</h2>
       
       {/* Tombol Aksi */}
@@ -594,8 +582,6 @@ const Sppr = () => {
               </div>
             </div>
 
-            <hr style={{ border: "0", height: "1px", backgroundColor: "#e5e7eb", margin: "15px 0" }} />
-            
             {/* Baris 2 & 3: KPA */}
             <div className={pageStyles.modalForm}>
               <div className={pageStyles.formGroup}>
@@ -610,7 +596,6 @@ const Sppr = () => {
                 <input type="text" name="pangkat_kpa" value={formData.pangkat_kpa} readOnly className={`${pageStyles.formInput} ${pageStyles.readOnly}`} />
               </div>
             </div>
-            <hr style={{ border: "0", height: "1px", backgroundColor: "#e5e7eb", margin: "15px 0" }} />
 
             {/* Baris 4 & 5: Bendahara */}
             <div className={pageStyles.modalForm}>
@@ -627,8 +612,6 @@ const Sppr = () => {
               </div>
             </div>
 
-            <hr style={{ border: "0", height: "1px", backgroundColor: "#e5e7eb", margin: "15px 0" }} />
-
             {/* Baris 6 & 7: Pengambil */}
             <div className={pageStyles.modalForm}>
               <div className={pageStyles.formGroup}>
@@ -643,8 +626,6 @@ const Sppr = () => {
                 <input type="text" name="pangkat_pengambil" value={formData.pangkat_pengambil} readOnly className={`${pageStyles.formInput} ${pageStyles.readOnly}`} />
               </div>
             </div>
-
-            <hr style={{ border: "0", height: "1px", backgroundColor: "#e5e7eb", margin: "20px 0" }} />
             
             {/* BARIS BARU: Rekening Penarikan (Kiri) dan Jumlah Penarikan (Kanan) */}
             <div className={pageStyles.modalForm}>
@@ -674,7 +655,7 @@ const Sppr = () => {
             </div>
             
             {/* BARIS BARU: Terbilang (Full Width di Bawah Sekali) */}
-            <div className={pageStyles.modalForm} style={{ marginTop: '10px' }}> 
+            <div className={pageStyles.modalForm}> 
               <div className={pageStyles.formGroupFull}>
                 <label className={pageStyles.formLabel}>Terbilang:</label>
                 <div className={pageStyles.formReadOnly}>{capitalizeWords(terbilang(parseInt(formData.jumlah_penarikan.toString()) || 0))} Rupiah</div>
@@ -741,48 +722,48 @@ const Sppr = () => {
 
       {/* Detail Data SPPR */}
       <div className={pageStyles.detailContainerSPPR}>
-  <div className={pageStyles.detailHeaderSPPR}>Detail Data SPPR</div>
-  {isDetailLoading ? (
-    <div className={pageStyles.detailContentSPPR} style={{ position: 'relative', minHeight: '160px' }}>
-      <div className={pageStyles.tableOverlay} >
-        <div className={loadingStyles.dotContainer}>
-          <div className={`${loadingStyles.dot} ${loadingStyles['dot-1']}`} />
-          <div className={`${loadingStyles.dot} ${loadingStyles['dot-2']}`} />
-          <div className={`${loadingStyles.dot} ${loadingStyles['dot-3']}`} />
-        </div>
+        <div className={pageStyles.detailHeaderSPPR}>Detail Data SPPR</div>
+        {isDetailLoading ? (
+          <div className={pageStyles.detailContentSPPR} style={{ position: 'relative', minHeight: '160px' }}>
+            <div className={pageStyles.tableOverlay} >
+              <div className={loadingStyles.dotContainer}>
+                <div className={`${loadingStyles.dot} ${loadingStyles['dot-1']}`} />
+                <div className={`${loadingStyles.dot} ${loadingStyles['dot-2']}`} />
+                <div className={`${loadingStyles.dot} ${loadingStyles['dot-3']}`} />
+              </div>
+            </div>
+          </div>
+        ) : selectedSppr ? (
+          <div className={pageStyles.detailContentSPPR}>
+            <div className={pageStyles.detailItemSPPR}>
+              <div className={pageStyles.detailLabelSPPR}>Tanggal</div>
+              <div className={pageStyles.detailValueSPPR}>: {formatTanggal(selectedSppr.tanggal)}</div></div>
+            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nomor Surat</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nomor_surat}</div></div>
+            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Status</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.status_sppr}</div></div>
+            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nama KPA</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nama_kpa}</div></div>
+            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Jabatan KPA</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.jabatan_kpa || "N/A"}</div></div>
+            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Pangkat KPA</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.pangkat_kpa}</div></div>
+            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nama Bendahara</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nama_bendahara}</div></div>
+            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Jabatan Bendahara</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.jabatan_bendahara || "N/A"}</div></div>
+            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Pangkat Bendahara</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.pangkat_bendahara}</div></div>
+            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nama Pengambil</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nama_pengambil}</div></div>
+            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Jabatan Pengambil</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.jabatan_pengambil || "N/A"}</div></div>
+            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Pangkat Pengambil</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.pangkat_pengambil}</div></div>
+            
+            {/* TAMBAHAN: 3 Kolom Baru Rekening */}
+            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nama Bank</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nama_bank || "N/A"}</div></div>
+            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nama Rekening</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nama_rekening || "N/A"}</div></div>
+            <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nomor Rekening</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nomor_rekening || "N/A"}</div></div>
+
+            <div className={pageStyles.detailItemFullSPPR}>
+              <div className={pageStyles.detailLabelSPPR}>Jumlah Penarikan</div>
+              <div className={pageStyles.detailValueSPPR}>: {formatAngka(selectedSppr.jumlah_penarikan)} ({capitalizeWords(terbilang(selectedSppr.jumlah_penarikan))} Rupiah)</div>
+            </div>
+          </div>
+        ) : (
+          <div className={pageStyles.tableEmpty}>Data SPPR Belum Dipilih</div>
+        )}
       </div>
-    </div>
-  ) : selectedSppr ? (
-    <div className={pageStyles.detailContentSPPR}>
-      <div className={pageStyles.detailItemSPPR}>
-        <div className={pageStyles.detailLabelSPPR}>Tanggal</div>
-        <div className={pageStyles.detailValueSPPR}>: {formatTanggal(selectedSppr.tanggal)}</div></div>
-      <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nomor Surat</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nomor_surat}</div></div>
-      <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nama KPA</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nama_kpa}</div></div>
-      <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Jabatan KPA</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.jabatan_kpa || "N/A"}</div></div>
-      <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Pangkat KPA</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.pangkat_kpa}</div></div>
-      <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nama Bendahara</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nama_bendahara}</div></div>
-      <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Jabatan Bendahara</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.jabatan_bendahara || "N/A"}</div></div>
-      <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Pangkat Bendahara</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.pangkat_bendahara}</div></div>
-      <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nama Pengambil</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nama_pengambil}</div></div>
-      <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Jabatan Pengambil</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.jabatan_pengambil || "N/A"}</div></div>
-      <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Pangkat Pengambil</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.pangkat_pengambil}</div></div>
-      <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Operator</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.operator || "N/A"}</div></div>
-      
-      {/* TAMBAHAN: 3 Kolom Baru Rekening */}
-      <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nama Bank</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nama_bank || "N/A"}</div></div>
-      <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nama Rekening</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nama_rekening || "N/A"}</div></div>
-      <div className={pageStyles.detailItemSPPR}><div className={pageStyles.detailLabelSPPR}>Nomor Rekening</div><div className={pageStyles.detailValueSPPR}>: {selectedSppr.nomor_rekening || "N/A"}</div></div>
-      
-      <div className={pageStyles.detailItemFullSPPR}>
-        <div className={pageStyles.detailLabelSPPR}>Jumlah Penarikan</div>
-        <div className={pageStyles.detailValueSPPR}>: {formatAngka(selectedSppr.jumlah_penarikan)} ({capitalizeWords(terbilang(selectedSppr.jumlah_penarikan))} Rupiah)</div>
-      </div>
-    </div>
-  ) : (
-    <div className={pageStyles.tableEmpty}>Data SPPR Belum Dipilih</div>
-  )}
-</div>
     </div>
   );
 };
