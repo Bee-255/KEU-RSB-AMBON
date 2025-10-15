@@ -522,15 +522,13 @@ const Sppr = () => {
   const startIndex = (currentPage - 1) * rowsPerPage;
   const endIndex = startIndex + rowsPerPage;
   const paginatedSppr = useMemo(() => spprList.slice(startIndex, endIndex), [spprList, startIndex, endIndex]);
-
   const isAllowedToRekam = userRole === "Owner" || userRole === "Operator";
   const isAllowedToEditOrDelete = userRole === "Owner" || userRole === "Admin" || userRole === "Operator";
   const isAllowedToApprove = userRole === "Owner" || userRole === "Admin";
   const isAllowedToDownload = userRole === "Owner" || userRole === "Admin" || userRole === "Operator";
-
   const isEditingOrDeletingDisabled = !isAllowedToEditOrDelete || !selectedSppr || selectedSppr?.status_sppr === "DISETUJUI";
   const isApprovingDisabled = !isAllowedToApprove || !selectedSppr || selectedSppr?.status_sppr === "DISETUJUI";
-  const isDownloadingDisabled = !isAllowedToDownload || !selectedSppr;
+  const isDownloadingDisabled = !isAllowedToDownload || !selectedSppr || selectedSppr?.status_sppr !== "DISETUJUI";
 
   return (
     <div className={pageStyles.container}>
