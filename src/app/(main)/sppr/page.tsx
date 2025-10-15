@@ -533,12 +533,10 @@ const Sppr = () => {
   const isAllowedToDownload = userRole === "Owner" || userRole === "Admin" || userRole === "Operator";
   const isEditingOrDeletingDisabled = !isAllowedToEditOrDelete || !selectedSppr || selectedSppr?.status_sppr === "DISETUJUI";
   const isApprovingDisabled = !isAllowedToApprove || !selectedSppr || selectedSppr?.status_sppr === "DISETUJUI";
-  const isDownloadingDisabled = !isAllowedToDownload || !selectedSppr;
+  const isDownloadingDisabled = !isAllowedToDownload || !selectedSppr || selectedSppr?.status_sppr === "BARU";
 
   return (
     <div className={pageStyles.container}>
-      {/* <Toaster ... /> Dihapus karena menggunakan useKeuNotification */}
-      
       <h2 className={pageStyles.header}>Data Surat Perintah Pendebitan Rekening</h2>
       
       {/* Tombol Aksi */}
