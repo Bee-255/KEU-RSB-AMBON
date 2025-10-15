@@ -53,6 +53,14 @@ interface Akun {
     created_at: string;
 }
 
+// Interface untuk error
+interface SupabaseError {
+    message: string;
+    code?: string;
+    details?: string;
+    hint?: string;
+}
+
 // === Komponen Utama Daftar Akun ===
 const DaftarAkun: React.FC = () => {
     const [akunList, setAkunList] = useState<Akun[]>([]);
@@ -85,15 +93,18 @@ const DaftarAkun: React.FC = () => {
     const { showToast, showConfirm } = useKeuNotification();
 
     // --- Fungsi Pengambilan Data ---
-    const getLoggedInUser = async () => {
+    const getLoggedInUser = useCallback(async (): Promise<void> => {
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
-                const { data: profile } = await supabase
+                const { data: profile, error } = await supabase
                     .from("profiles")
                     .select("role")
                     .eq("id", user.id)
                     .single();
+                
+                if (error) throw error;
+                
                 if (profile) {
                     setUserRole(profile.role);
                 }
@@ -102,9 +113,9 @@ const DaftarAkun: React.FC = () => {
             console.error("Failed to fetch user role:", error);
             showToast("Gagal mengambil data pengguna", "error");
         }
-    };
+    }, [showToast]);
 
-    const fetchAkun = useCallback(async () => {
+    const fetchAkun = useCallback(async (): Promise<void> => {
         setIsLoading(true);
         try {
             const { data, error } = await supabase
@@ -116,11 +127,12 @@ const DaftarAkun: React.FC = () => {
                 console.error("Gagal mengambil data:", error);
                 showToast("Gagal mengambil data akun", "error");
             } else {
-                setAkunList(data as Akun[]);
-                setFilteredAkunList(data as Akun[]);
+                const akunData = data as Akun[];
+                setAkunList(akunData);
+                setFilteredAkunList(akunData);
                 
                 // Ekstrak kategori unik dan urutkan sesuai urutan yang diinginkan
-                const uniqueKategori = Array.from(new Set(data.map((item: Akun) => item.kategori_akun)))
+                const uniqueKategori = Array.from(new Set(akunData.map((item: Akun) => item.kategori_akun)))
                     .filter(kategori => kategori)
                     .sort((a, b) => {
                         const order = ['Aset', 'Kewajiban', 'Ekuitas', 'Pendapatan', 'Belanja', 'Belanja-LO', 'Beban'];
@@ -153,9 +165,13 @@ const DaftarAkun: React.FC = () => {
 
     // --- Efek Samping (Side Effects) ---
     useEffect(() => {
-        getLoggedInUser();
-        fetchAkun();
-    }, [fetchAkun]);
+        const initializeData = async (): Promise<void> => {
+            await getLoggedInUser();
+            await fetchAkun();
+        };
+        
+        initializeData();
+    }, [getLoggedInUser, fetchAkun]);
 
     useEffect(() => {
         applyFilter();
@@ -185,11 +201,11 @@ const DaftarAkun: React.FC = () => {
         }
     }, []);
     
-    const handleKategoriFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const handleKategoriFilterChange = (e: React.ChangeEvent<HTMLSelectElement>): void => {
         setSelectedKategori(e.target.value);
     };
 
-    const handleSave = async (e: React.FormEvent) => {
+    const handleSave = async (e: React.FormEvent): Promise<void> => {
         e.preventDefault();
         
         const dataToSave = { 
@@ -251,13 +267,14 @@ const DaftarAkun: React.FC = () => {
                 await fetchAkun();
                 resetForm();
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Error saving data:", error);
-            showToast(`Data gagal disimpan: ${error.message}`, "error");
+            const errorMessage = error instanceof Error ? error.message : "Terjadi kesalahan yang tidak diketahui";
+            showToast(`Data gagal disimpan: ${errorMessage}`, "error");
         }
     };
     
-    const handleDelete = async () => {
+    const handleDelete = async (): Promise<void> => {
         if (!selectedAkun) return;
         
         const result = await showConfirm({
@@ -285,15 +302,16 @@ const DaftarAkun: React.FC = () => {
                 showToast("Data berhasil dihapus", "success");
                 setSelectedAkun(null);
                 await fetchAkun();
-            } catch (error: any) {
+            } catch (error: unknown) {
                 console.error("Error deleting data:", error);
-                showToast("Data gagal dihapus", "error");
+                const errorMessage = error instanceof Error ? error.message : "Terjadi kesalahan yang tidak diketahui";
+                showToast(`Data gagal dihapus: ${errorMessage}`, "error");
             }
             resetForm();
         }
     };
     
-    const handleEdit = () => {
+    const handleEdit = (): void => {
         if (!selectedAkun) return;
         setIsEditing(true);
         setFormData({
@@ -306,7 +324,7 @@ const DaftarAkun: React.FC = () => {
         setShowModal(true);
     };
     
-    const resetForm = useCallback(() => {
+    const resetForm = useCallback((): void => {
         setIsEditing(false);
         setSelectedAkun(null);
         setFormData({
@@ -319,7 +337,7 @@ const DaftarAkun: React.FC = () => {
         setShowModal(false);
     }, []);
     
-    const handleRowClick = (akun: Akun) => {
+    const handleRowClick = (akun: Akun): void => {
         if (selectedAkun?.id === akun.id) {
             setSelectedAkun(null);
         } else {
@@ -328,12 +346,12 @@ const DaftarAkun: React.FC = () => {
     };
     
     // --- Logika Paginasi ---
-    const handlePageChange = (pageNumber: number) => {
+    const handlePageChange = (pageNumber: number): void => {
         setCurrentPage(pageNumber);
         setSelectedAkun(null);
     };
     
-    const handleRowsPerPageChange = (items: number) => {
+    const handleRowsPerPageChange = (items: number): void => {
         setRowsPerPage(items);
         setCurrentPage(1);
         setSelectedAkun(null);
