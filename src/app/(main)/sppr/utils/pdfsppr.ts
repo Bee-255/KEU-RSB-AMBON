@@ -352,7 +352,7 @@ export const generateSpprPdf = (sppr: Sppr) => {
     doc.text("Penerima Kuasa", leftColumnCenter, y, { align: "center" });
     doc.text("Bendahara Pengeluaran", rightColumnCenter, y, { align: "center" });
 
-    y += 25;
+    y += 30;
 
     // Nama
     const namaPengambilWidth = doc.getTextWidth(sppr.nama_pengambil);
