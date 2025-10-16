@@ -174,7 +174,7 @@ export const generateSpprPdf = (sppr: Sppr) => {
 
     // Teks nama Bendahara dan garis bawah
     const namaBendaharaWidth = doc.getTextWidth(sppr.nama_bendahara);
-    const xBendahara = pageWidth - margin - 10; // Posisi x untuk align right
+    const xBendahara = pageWidth - margin - 15; // Posisi x untuk align right
     doc.text(sppr.nama_bendahara, xBendahara, namaY, { align: "right" });
     doc.line(xBendahara - namaBendaharaWidth, namaY + 1, xBendahara, namaY + 1);
 
