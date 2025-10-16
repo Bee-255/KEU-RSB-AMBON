@@ -35,7 +35,7 @@
   padding-right: 10px;
   border: 1px solid #cbd5e1;
   border-radius: 6px;
-  font-size: 0.8rem;
+  font-size: 1rem;
   background-color: white;
 }
 
@@ -59,7 +59,7 @@
   cursor: pointer;
   background-color: white;
   font-size: 1rem;
-  color: #69474e;
+  color: #000;
 }
 
 /* TABEL DATA */

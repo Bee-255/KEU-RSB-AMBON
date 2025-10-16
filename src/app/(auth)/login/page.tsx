@@ -2,7 +2,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-// ... (imports lainnya)
 import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
 import { useKeuNotification } from "@/lib/useKeuNotification"; 
 import { supabase } from "@/utils/supabaseClient";
@@ -22,6 +21,8 @@ const containerStyle: React.CSSProperties = {
   width: "100%",
   padding: "1rem",
   boxSizing: "border-box",
+  // Menambahkan minHeight agar konten berada di tengah halaman
+  minHeight: "100vh", 
 };
 
 const cardStyle: React.CSSProperties = {
@@ -35,6 +36,7 @@ const cardStyle: React.CSSProperties = {
   flexDirection: "column",
   alignItems: "center",
   boxSizing: "border-box",
+  marginBottom: "1.5rem", // Tambahkan margin bawah untuk jarak dengan copyright
 };
 
 const iconGroupStyle: React.CSSProperties = {
@@ -54,7 +56,7 @@ const headingStyle: React.CSSProperties = {
 
 const descriptionStyle: React.CSSProperties = {
   fontSize: "1rem",
-  color: TEXT_COLOR, // Deskripsi abu-abu gelap
+  color: TEXT_COLOR,
   marginBottom: "2rem", 
   textAlign: "center",
 };
@@ -91,9 +93,18 @@ const buttonGroupStyle: React.CSSProperties = {
   gap: "10px",
   marginTop: "2rem",
   alignItems: "center",
+  justifyContent: "center", 
+  width: "100%", 
 };
 
-// ... (Logika dan fungsi lainnya tetap sama)
+// --- STYLE BARU UNTUK COPYRIGHT ---
+const copyrightStyle: React.CSSProperties = {
+  fontSize: "0.875rem", 
+  color: TEXT_COLOR, // Warna teks abu-abu
+  opacity: 0.7, // Sedikit transparan
+  textAlign: "center",
+};
+// ----------------------------------
 
 const generateYears = (startYear: number, endYear: number) => {
   const years = [];
@@ -108,12 +119,14 @@ export default function LoginPage() {
   const [password, setPassword] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [selectedYear, setSelectedYear] = useState<string>(String(new Date().getFullYear()));
+  // selectedYear diatur ke tahun saat ini secara default
+  const [selectedYear] = useState<string>(String(new Date().getFullYear()));
   const router = useRouter();
-  const years = generateYears(2020, new Date().getFullYear() + 1);
+  // years tidak lagi digunakan
+  // const years = generateYears(2020, new Date().getFullYear() + 1);
   const { showToast } = useKeuNotification(); 
   
-  // ... (useEffect dan handleAuth tetap sama)
+  // Fungsi handleAuth yang direvisi
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -127,6 +140,7 @@ export default function LoginPage() {
       setLoading(false);
       showToast("Login Gagal. Cek email dan password Anda.", "error"); 
     } else {
+      // Menggunakan selectedYear (yang sudah diset ke tahun saat ini)
       const { error: sessionError } = await supabase.auth.updateUser({
         data: {
           periode_tahun: selectedYear,
@@ -217,20 +231,7 @@ export default function LoginPage() {
           </div>
           
           <div style={buttonGroupStyle}>
-
-            <select
-              name="tahun"
-              id="tahun"
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-              className="login-select"
-            >
-              {years.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
+            {/* Element select (enum tahun) telah dihapus */}
             
             <button
               type="submit"
@@ -238,6 +239,8 @@ export default function LoginPage() {
               className="login-button"
               style={{
                 cursor: loading ? "not-allowed" : "pointer",
+                // Diperlukan penyesuaian CSS agar tombol mengambil lebar penuh form
+                width: "100%", 
               }}
             >
               {loading ? "Memuat..." : "Login"}
@@ -246,6 +249,13 @@ export default function LoginPage() {
           </div>
         </form>
       </div>
+      
+      {/* --- COPYRIGHT TEXT BARU --- */}
+      <p style={copyrightStyle}>
+        &copy; 2025 KEUANGAN RSB AMBON. All Rights Reserved.
+      </p>
+      {/* ----------------------------- */}
+      
     </div>
   );
 }

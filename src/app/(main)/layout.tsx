@@ -1,10 +1,10 @@
 // src/app/(main)/layout.tsx
 'use client';
 
-import { useState, useEffect, ReactNode } from "react";
+import { useState, useEffect, ReactNode, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { supabase } from "@/utils/supabaseClient";
-import { FaFolder, FaFile, FaAngleLeft, FaAngleDown, FaSignOutAlt } from "react-icons/fa";
+import { FaFolder, FaFile, FaAngleLeft, FaAngleDown, FaSignOutAlt, FaRegClock, FaBuilding, FaUser } from "react-icons/fa";
 import { Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { NotificationProvider, useKeuNotification } from '@/lib/useKeuNotification';
 import loadingStyles from "@/styles/loading.module.css";
@@ -30,6 +30,8 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const [isRedirecting, setIsRedirecting] = useState<boolean>(false);
+  const [showUserMenu, setShowUserMenu] = useState<boolean>(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   // --- Konfigurasi Keamanan Rute ---
   const PROTECTED_ROUTES: { [key: string]: string[] } = {
@@ -62,7 +64,21 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
     };
   }, []);
 
-  // 2. Effect untuk otentikasi dan mengambil role pengguna
+  // 2. Effect untuk close dropdown ketika klik di luar
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // 3. Effect untuk otentikasi dan mengambil role pengguna
   useEffect(() => {
     const fetchUserAndRole = async () => {
       setLoading(true);
@@ -113,7 +129,7 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
     };
   }, [router]);
   
-  // 3. Effect PENGAMANAN RUTE (Disesuaikan dengan isRedirecting untuk mengatasi notif ganda) 🚨
+  // 4. Effect PENGAMANAN RUTE (Disesuaikan dengan isRedirecting untuk mengatasi notif ganda) 🚨
   useEffect(() => {
     // Hanya proses jika loading selesai, role didapat, dan belum ada proses redirect
     if (!loading && userRole && !isRedirecting) {
@@ -146,7 +162,7 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
     }
   }, [loading, userRole, pathname, router, showToast, isRedirecting]); 
 
-  // 4. Effect untuk update waktu
+  // 5. Effect untuk update waktu
   useEffect(() => {
     const updateTime = () => {
       const date = new Date();
@@ -168,7 +184,7 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
     return () => clearInterval(timerId);
   }, []);
 
-  // 5. Effect untuk otomatis membuka folder (Menu) berdasarkan path
+  // 6. Effect untuk otomatis membuka folder (Menu) berdasarkan path
   useEffect(() => {
     if (pathname.startsWith('/pejabatkeuangan') || pathname.startsWith('/daftarakun')) {
       setOpenFolder('administrasi');
@@ -204,6 +220,14 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
     }
   };
 
+  const handleProfile = () => {
+    router.push("/profile");
+    setShowUserMenu(false);
+  };
+
+  const toggleUserMenu = () => {
+    setShowUserMenu(!showUserMenu);
+  };
 
   // Logika Akses Menu Pembayaran (Hanya untuk TAMPILAN SIDEBAR)
   const allowedRolesForPembayaran = PROTECTED_ROUTES['/pembayaran']; 
@@ -269,7 +293,6 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
   const isAdminOpen = openFolder === 'administrasi';
   const isRekamOpen = openFolder === 'rekam';
   const isDataOpen = openFolder === 'data';
-  // PENTING: Gunakan nama folder yang sudah diubah
   const isJurnalUmumOpen = openFolder === 'jurnalumum'; 
   const isPembayaranOpen = openFolder === 'pembayaran';
   const isActive = (path: string) => pathname === path;
@@ -302,7 +325,7 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            width: "200px", 
+            width: "220px", 
             flexShrink: 0,
             boxSizing: "border-box",
             cursor: "pointer",
@@ -322,7 +345,7 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
         <div 
             style={{
                 position: "absolute",
-                left: "200px",
+                left: "220px",
                 top: "50%",
                 transform: "translate(-50%, -50%)",
                 backgroundColor: "white",
@@ -371,7 +394,7 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
           style={{
             backgroundColor: "#2563eb",
             color: "white",
-            padding: "0.5rem 1.5rem",
+            padding: "0rem 1.5rem",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
@@ -379,27 +402,108 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
             gap: "2rem",
             boxSizing: "border-box",
           }}>
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <span style={{ fontWeight: "400" }}>Selamat datang, {fullName.toUpperCase()}</span>
-            <span style={{ fontSize: "0.8rem", opacity: 0.8 }}>{currentTime}</span>
+          {/* Bagian kiri - Informasi waktu dan nama rumah sakit */}
+          <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.2rem" }}>
+              <FaRegClock style={{ fontSize: "14px" }} />
+              <span style={{ fontWeight: "600", fontSize: "14px" }}>{currentTime}</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <FaBuilding style={{ fontSize: "12px" }} />
+              <span style={{ fontSize: "12px", fontWeight: "600" }}>RUMKIT BHYANGKARA AMBON</span>
+            </div>
           </div>
-          <button
-            onClick={handleLogout}
-            style={{
-              padding: "8px 16px",
-              background: "#fff",
-              color: "#2563eb",
-              border: "none",
-              borderRadius: "6px",
-              cursor: "pointer",
-              fontWeight: "600",
-              display: "flex",
-              alignItems: "center",
-              gap: "5px",
-            }}
-          >
-            <FaSignOutAlt /> Logout
-          </button>
+
+          {/* Bagian kanan - Informasi user dan menu */}
+          <div style={{ position: "relative" }} ref={userMenuRef}>
+            <div style={{ 
+              display: "flex", 
+              flexDirection: "column", 
+              alignItems: "flex-end",
+              cursor: "pointer"
+            }} 
+            onClick={toggleUserMenu}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <span style={{ fontWeight: "600", fontSize: "14px" }}>{fullName.toUpperCase()}</span>
+                <FaAngleDown style={{ fontSize: "12px" }} />
+              </div>
+              <div style={{ fontSize: "12px", fontWeight: "600", textTransform: "uppercase" }}>
+                ROLE | {userRole}
+              </div>
+            </div>
+            
+            {/* Dropdown menu user */}
+            {showUserMenu && (
+              <div style={{
+                position: "absolute",
+                top: "100%",
+                right: "0",
+                marginTop: "0.5rem",
+                backgroundColor: "white",
+                borderRadius: "6px",
+                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                minWidth: "160px",
+                zIndex: 1001,
+                overflow: "hidden",
+              }}>
+                {/* Profile option */}
+                <button
+                  onClick={handleProfile}
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem 1rem",
+                    background: "none",
+                    border: "none",
+                    textAlign: "left",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    color: "#495057",
+                    fontSize: "0.875rem",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "#f8f9fa";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "transparent";
+                  }}
+                >
+                  <FaUser style={{ fontSize: "0.875rem" }} />
+                  Profile
+                </button>
+                
+                {/* Logout option */}
+                <button
+                  onClick={handleLogout}
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem 1rem",
+                    background: "none",
+                    border: "none",
+                    textAlign: "left",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    color: "#dc3545",
+                    fontSize: "0.875rem",
+                    borderTop: "1px solid #e9ecef",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "#f8f9fa";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "transparent";
+                  }}
+                >
+                  <FaSignOutAlt style={{ fontSize: "0.875rem" }} />
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
       
@@ -409,7 +513,7 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
         {/* --- Sidebar --- */}
         <aside
             style={{
-              width: "200px",
+              width: "220px",
               backgroundColor: "#E1E7EF",
               color: "#000",
               display: "flex",
@@ -421,7 +525,7 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
               position: "fixed",
               top: "50px",
               bottom: "0",
-              left: isSidebarVisible ? "0" : "-200px",
+              left: isSidebarVisible ? "0" : "-220px",
               zIndex: 500,
             }}
         >
@@ -461,7 +565,7 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
             {/* Sub-menu Administrasi */}
             <div 
               style={{
-                maxHeight: isAdminOpen ? '200px' : '0',
+                maxHeight: isAdminOpen ? '220px' : '0',
                 overflow: 'hidden',
                 transition: 'max-height 0.2s',
               }}
@@ -531,7 +635,7 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
             {/* Sub-menu Rekam */}
             <div 
               style={{
-                maxHeight: isRekamOpen ? '200px' : '0',
+                maxHeight: isRekamOpen ? '220px' : '0',
                 overflow: 'hidden',
                 transition: 'max-height 0.2s',
               }}
@@ -618,7 +722,7 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
             {/* Data Sub-menu */}
             <div 
               style={{
-                maxHeight: isDataOpen ? '200px' : '0',
+                maxHeight: isDataOpen ? '220px' : '0',
                 overflow: 'hidden',
                 transition: 'max-height 0.2s',
               }}
@@ -673,7 +777,7 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
                 {/* Pembayaran Sub-menu */}
                 <div 
                   style={{
-                    maxHeight: isPembayaranOpen ? '200px' : '0',
+                    maxHeight: isPembayaranOpen ? '220px' : '0',
                     overflow: 'hidden',
                     transition: 'max-height 0.2s',
                   }}
@@ -724,7 +828,7 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
             flex: 1, 
             backgroundColor: "#F3F4F6",
             overflowY: "auto",
-            marginLeft: isSidebarVisible && !isMobile ? "200px" : "0px",
+            marginLeft: isSidebarVisible && !isMobile ? "220px" : "0px",
             transition: "margin-left 0.3s cubic-bezier(.4,0,.2,1)",
             zIndex: 3,
           }}

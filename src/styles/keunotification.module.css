@@ -57,8 +57,8 @@
   cursor: pointer;
   padding: 0;
   margin-left: 10px;
-  font-size: 14px;
-  line-height: 1;
+  font-size: 16px;
+  line-height: 0;
   opacity: 0.7;
   transition: opacity 0.2s;
 }
@@ -190,7 +190,7 @@
 }
 
 .btnCancel {
-    background-color: #f8f9fa;
+    background-color: #faf8f8;
     color: #495057;
     border: 1px solid #6c757d;
 }
