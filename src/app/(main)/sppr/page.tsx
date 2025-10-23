@@ -3,11 +3,9 @@
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/utils/supabaseClient";
-import Swal from "sweetalert2";
 import { FaPlus, FaEdit, FaRegTrashAlt } from "react-icons/fa";
 import { FiDownload } from "react-icons/fi";
 import { MdDoneAll } from "react-icons/md";
-// import { Toaster, toast } from "react-hot-toast"; // Dihapus
 import Paginasi from '@/components/paginasi';
 import styles from "@/styles/button.module.css";
 import pageStyles from "@/styles/komponen.module.css";

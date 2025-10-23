@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import React from 'react';
 
-// --- DEFINISI WARNA (Kembali Simpel Biru-Putih) ---
+// --- DEFINISI WARNA ---
 const ACCENT_BLUE = "#1D4ED8"; 
 const TEXT_COLOR = "#374151";
 
@@ -21,7 +21,6 @@ const containerStyle: React.CSSProperties = {
   width: "100%",
   padding: "1rem",
   boxSizing: "border-box",
-  // Menambahkan minHeight agar konten berada di tengah halaman
   minHeight: "100vh", 
 };
 
@@ -36,7 +35,7 @@ const cardStyle: React.CSSProperties = {
   flexDirection: "column",
   alignItems: "center",
   boxSizing: "border-box",
-  marginBottom: "1.5rem", // Tambahkan margin bawah untuk jarak dengan copyright
+  marginBottom: "1.5rem",
 };
 
 const iconGroupStyle: React.CSSProperties = {
@@ -49,7 +48,7 @@ const iconGroupStyle: React.CSSProperties = {
 const headingStyle: React.CSSProperties = {
   fontSize: "1.5rem", 
   fontWeight: "700", 
-  color: ACCENT_BLUE, // Judul Biru
+  color: ACCENT_BLUE,
   marginTop: "0.5rem",
   textAlign: "center",
 };
@@ -85,7 +84,7 @@ const passwordToggleStyle: React.CSSProperties = {
   top: "50%",
   transform: "translateY(-50%)",
   cursor: "pointer",
-  color: ACCENT_BLUE, // Ikon mata Biru
+  color: ACCENT_BLUE,
 };
 
 const buttonGroupStyle: React.CSSProperties = {
@@ -97,21 +96,21 @@ const buttonGroupStyle: React.CSSProperties = {
   width: "100%", 
 };
 
-// --- STYLE BARU UNTUK COPYRIGHT ---
 const copyrightStyle: React.CSSProperties = {
   fontSize: "0.875rem", 
-  color: TEXT_COLOR, // Warna teks abu-abu
-  opacity: 0.7, // Sedikit transparan
+  color: TEXT_COLOR,
+  opacity: 0.7,
   textAlign: "center",
 };
-// ----------------------------------
 
-const generateYears = (startYear: number, endYear: number) => {
-  const years = [];
-  for (let i = startYear; i <= endYear; i++) {
-    years.push(i);
-  }
-  return years;
+const selectStyle: React.CSSProperties = {
+  width: "100%",
+  padding: "10px 12px",
+  border: "1px solid #d1d5db",
+  borderRadius: "6px",
+  fontSize: "14px",
+  backgroundColor: "white",
+  boxSizing: "border-box" as const,
 };
 
 export default function LoginPage() {
@@ -119,34 +118,84 @@ export default function LoginPage() {
   const [password, setPassword] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [showPassword, setShowPassword] = useState<boolean>(false);
-  // selectedYear diatur ke tahun saat ini secara default
-  const [selectedYear] = useState<string>(String(new Date().getFullYear()));
+  const [selectedYear, setSelectedYear] = useState<string>("");
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
   const router = useRouter();
-  // years tidak lagi digunakan
-  // const years = generateYears(2020, new Date().getFullYear() + 1);
   const { showToast } = useKeuNotification(); 
   
-  // Fungsi handleAuth yang direvisi
+  // Fetch available years from database
+  useEffect(() => {
+    const fetchAvailableYears = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('bas_periode')
+          .select('tahun')
+          .order('tahun', { ascending: false });
+
+        if (error) {
+          console.error("Error fetching years:", error);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          const uniqueYears = Array.from(new Set(data.map(item => item.tahun))).sort((a, b) => b - a);
+          setAvailableYears(uniqueYears);
+          
+          // Set default to current year
+          const currentYear = new Date().getFullYear();
+          const defaultYear = uniqueYears.includes(currentYear) ? currentYear : uniqueYears[0];
+          setSelectedYear(String(defaultYear));
+        } else {
+          // If no years in database, use current year
+          const currentYear = new Date().getFullYear();
+          setAvailableYears([currentYear]);
+          setSelectedYear(String(currentYear));
+        }
+      } catch (error) {
+        console.error("Error in fetchAvailableYears:", error);
+        const currentYear = new Date().getFullYear();
+        setAvailableYears([currentYear]);
+        setSelectedYear(String(currentYear));
+      }
+    };
+
+    fetchAvailableYears();
+  }, []);
+
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!email || !password || !selectedYear) {
+      showToast("Harap lengkapi semua field", "warning");
+      return;
+    }
+
     setLoading(true);
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (error) {
-      setLoading(false);
-      showToast("Login Gagal. Cek email dan password Anda.", "error"); 
-    } else {
-      // Menggunakan selectedYear (yang sudah diset ke tahun saat ini)
-      const { error: sessionError } = await supabase.auth.updateUser({
+      if (error) {
+        showToast("Login Gagal. Cek email dan password Anda.", "error"); 
+        setLoading(false);
+        return;
+      }
+
+      // Update user metadata dengan tahun yang dipilih
+      const { error: updateError } = await supabase.auth.updateUser({
         data: {
           periode_tahun: selectedYear,
         },
       });
 
+      if (updateError) {
+        console.error("Error updating user metadata:", updateError);
+      }
+
+      // Get user profile
       const { data: profile } = await supabase
         .from("profiles")
         .select("nama_lengkap")
@@ -166,6 +215,10 @@ export default function LoginPage() {
           router.push("/dashboard");
         }, 1500);
       }
+    } catch (error: any) {
+      console.error("Login error:", error);
+      showToast("Terjadi kesalahan saat login", "error");
+      setLoading(false);
     }
   };
 
@@ -205,10 +258,12 @@ export default function LoginPage() {
               placeholder="Masukkan email Anda"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              required
               className="login-input" 
             />
           </div>
-          <div style={{ marginBottom: "1.5rem" }}>
+          
+          <div style={{ marginBottom: "1rem" }}>
             <label htmlFor="password" style={labelStyle}>
               Password
             </label>
@@ -219,6 +274,7 @@ export default function LoginPage() {
                 placeholder="Masukkan password Anda"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                required
                 className="login-input" 
               />
               <span
@@ -229,33 +285,47 @@ export default function LoginPage() {
               </span>
             </div>
           </div>
+
+          {/* Tahun Periode Selection */}
+          <div style={{ marginBottom: "1.5rem" }}>
+            <label htmlFor="tahun" style={labelStyle}>
+              Tahun Periode
+            </label>
+            <select
+              id="tahun"
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              style={selectStyle}
+              required
+            >
+              <option value="">-- Pilih Tahun --</option>
+              {availableYears.map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+          </div>
           
           <div style={buttonGroupStyle}>
-            {/* Element select (enum tahun) telah dihapus */}
-            
             <button
               type="submit"
               disabled={loading}
               className="login-button"
               style={{
                 cursor: loading ? "not-allowed" : "pointer",
-                // Diperlukan penyesuaian CSS agar tombol mengambil lebar penuh form
                 width: "100%", 
               }}
             >
               {loading ? "Memuat..." : "Login"}
             </button>
-            
           </div>
         </form>
       </div>
       
-      {/* --- COPYRIGHT TEXT BARU --- */}
       <p style={copyrightStyle}>
         &copy; 2025 KEUANGAN RSB AMBON. All Rights Reserved.
       </p>
-      {/* ----------------------------- */}
-      
     </div>
   );
 }

@@ -461,3 +461,28 @@
   color: red;
   margin-left: 0.25rem;
 }
+
+.actionButton {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  margin-top: 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  
+  position: relative;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background-color 0.2s;
+}
+
+.actionButton:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.actionButton:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}

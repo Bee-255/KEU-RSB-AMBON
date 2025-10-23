@@ -7,7 +7,7 @@ import { supabase } from "@/utils/supabaseClient";
 import { FaFolder, FaFile, FaAngleLeft, FaAngleDown, FaSignOutAlt, FaRegClock, FaBuilding, FaUser } from "react-icons/fa";
 import { Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { NotificationProvider, useKeuNotification } from '@/lib/useKeuNotification';
-import loadingStyles from "@/styles/loading.module.css";
+import { YearProvider, useYearContext } from '@/contexts/YearContext';
 
 // Definisikan tipe untuk props
 interface MainLayoutProps {
@@ -15,12 +15,14 @@ interface MainLayoutProps {
 }
 
 // ----------------------------------------------------------------------
-// Komponen Pembungkus Logout & Navigasi (untuk menggunakan useKeuNotification)
+// Komponen Pembungkus Logout & Navigasi
 // ----------------------------------------------------------------------
 const LayoutContent = ({ children }: MainLayoutProps) => {
   const router = useRouter();
   const pathname = usePathname();
   const { showConfirm, showToast } = useKeuNotification();
+  const { selectedYear } = useYearContext(); 
+
   const [currentTime, setCurrentTime] = useState<string>("");
   const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(true);
   const [openFolder, setOpenFolder] = useState<string | null>(null);
@@ -35,11 +37,9 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
 
   // --- Konfigurasi Keamanan Rute ---
   const PROTECTED_ROUTES: { [key: string]: string[] } = {
-    // Rute '/pembayaran' hanya boleh diakses oleh Owner, Admin, dan Operator
     '/pembayaran': ['Owner', 'Admin', 'Operator'], 
   };
   const DASHBOARD_PATH = "/dashboard";
-  // ------------------------------------------
 
   // ******* Efek-Efek Utama *******
 
@@ -85,8 +85,6 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
       const { data: { user } } = await supabase.auth.getUser();
 
       if (user) {
-        
-        // Ambil Role dan Nama Lengkap dari tabel 'profiles'
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('role, nama_lengkap') 
@@ -99,7 +97,9 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
             setFullName(user.email || "");
         } else if (profileData) {
             setUserRole(profileData.role);
-            setFullName(profileData.nama_lengkap || user.email || "");
+            // Ambil nama depan saja untuk display
+            const firstName = profileData.nama_lengkap ? profileData.nama_lengkap.split(' ')[0] : '';
+            setFullName(firstName || user.email || "");
         } else {
              setUserRole(null);
              setFullName(user.email || "");
@@ -129,34 +129,23 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
     };
   }, [router]);
   
-  // 4. Effect PENGAMANAN RUTE (Disesuaikan dengan isRedirecting untuk mengatasi notif ganda) 🚨
+  // 4. Effect PENGAMANAN RUTE
   useEffect(() => {
-    // Hanya proses jika loading selesai, role didapat, dan belum ada proses redirect
     if (!loading && userRole && !isRedirecting) {
-      
-      // Cek apakah rute saat ini ada di daftar yang dilindungi
       const currentProtectedPath = Object.keys(PROTECTED_ROUTES).find(route => pathname.startsWith(route));
       
       if (currentProtectedPath) {
         const allowedRoles = PROTECTED_ROUTES[currentProtectedPath];
         
-        // Jika role pengguna TIDAK termasuk dalam daftar yang diizinkan
         if (!allowedRoles.includes(userRole)) {
           console.warn(`Akses ditolak untuk role: ${userRole} pada rute: ${pathname}`);
-          
-          // Set flag ON: mencegah effect berjalan lagi
           setIsRedirecting(true); 
-          
-          // Tampilkan notifikasi
           showToast("Akses Ditolak: Anda tidak memiliki izin untuk halaman ini.", "error");
-          
-          // Redirect
           router.replace(DASHBOARD_PATH); 
         }
       }
     }
 
-    // Set flag OFF jika navigasi sudah selesai ke rute yang aman (setelah redirect)
     if (isRedirecting && pathname.startsWith(DASHBOARD_PATH)) {
         setIsRedirecting(false);
     }
@@ -184,16 +173,16 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
     return () => clearInterval(timerId);
   }, []);
 
-  // 6. Effect untuk otomatis membuka folder (Menu) berdasarkan path
+  // 6. Effect untuk otomatis membuka folder berdasarkan path
   useEffect(() => {
-    if (pathname.startsWith('/pejabatkeuangan') || pathname.startsWith('/daftarakun')) {
+    if (pathname.startsWith('/pejabatkeuangan') || pathname.startsWith('/daftarakun') || pathname.startsWith('/periode')) {
       setOpenFolder('administrasi');
-    } else if (pathname.startsWith('/pegawai') || pathname.startsWith('/pencatatanpasien') || pathname.startsWith('/sppr') || pathname.startsWith('/jurnalumum')) {
+    } else if (pathname.startsWith('/pegawai') || pathname.startsWith('/pencatatanpasien') || pathname.startsWith('/sppr') || pathname.startsWith('/pendapatan') || pathname.startsWith('/jurnalumum')) {
       setOpenFolder('rekam');
     } else if (pathname.startsWith('/rekening')) {
       setOpenFolder('data');
-    } else if (pathname.startsWith('/pendapatan') || pathname.startsWith('/pengeluaran') || pathname.startsWith('/transaksikhusus')) { // Tambahkan path untuk Jurnal Umum
-      setOpenFolder('jurnalumum'); // Ubah nama folder menjadi tanpa spasi untuk konsistensi
+    } else if (pathname.startsWith('/pengeluaran') || pathname.startsWith('/transaksikhusus')) { 
+      setOpenFolder('jurnalumum'); 
     } else if (pathname.startsWith('/pembayaran')) {
       setOpenFolder('pembayaran');
     } else {
@@ -229,28 +218,25 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
     setShowUserMenu(!showUserMenu);
   };
 
-  // Logika Akses Menu Pembayaran (Hanya untuk TAMPILAN SIDEBAR)
+  // Logika Akses Menu Pembayaran
   const allowedRolesForPembayaran = PROTECTED_ROUTES['/pembayaran']; 
   const isPembayaranAllowed = userRole && allowedRolesForPembayaran.includes(userRole);
 
-  // Jika menu pembayaran sedang terbuka, tapi role tidak diizinkan, tutup foldernya
   useEffect(() => {
       if (openFolder === 'pembayaran' && !isPembayaranAllowed) {
           setOpenFolder(null);
       }
   }, [isPembayaranAllowed, openFolder]);
 
-
   const handleAdminToggle = () => { setOpenFolder(openFolder === 'administrasi' ? null : 'administrasi'); };
   const handleRekamToggle = () => { setOpenFolder(openFolder === 'rekam' ? null : 'rekam'); };
   const handleDataToggle = () => { setOpenFolder(openFolder === 'data' ? null : 'data'); };
-  // PENTING: Ubah nama folder di sini agar konsisten dengan state dan effect
   const handleJurnalUmumToggle = () => { setOpenFolder(openFolder === 'jurnalumum' ? null : 'jurnalumum'); }; 
   const handlePembayaranToggle = () => { setOpenFolder(openFolder === 'pembayaran' ? null : 'pembayaran'); };
   const handleSidebarToggle = () => { setIsSidebarVisible(!isSidebarVisible); };
   const handleDashboardClick = () => { router.push("/dashboard"); setOpenFolder(null); };
   
-  // ... (Style Objek dan helper tetap sama) ...
+  // Style definitions
   const baseMenuItemStyle: React.CSSProperties = {
     background: "none",
     border: "none",
@@ -296,10 +282,7 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
   const isJurnalUmumOpen = openFolder === 'jurnalumum'; 
   const isPembayaranOpen = openFolder === 'pembayaran';
   const isActive = (path: string) => pathname === path;
-  // ----------------------------------------------------
 
-
-  // Render komponen layout
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
       {/* -------------------- Header -------------------- */}
@@ -414,100 +397,107 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
             </div>
           </div>
 
-          {/* Bagian kanan - Informasi user dan menu */}
-          <div style={{ position: "relative" }} ref={userMenuRef}>
-            <div style={{ 
-              display: "flex", 
-              flexDirection: "column", 
-              alignItems: "flex-end",
-              cursor: "pointer"
-            }} 
-            onClick={toggleUserMenu}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <span style={{ fontWeight: "600", fontSize: "14px" }}>{fullName.toUpperCase()}</span>
-                <FaAngleDown style={{ fontSize: "12px" }} />
-              </div>
-              <div style={{ fontSize: "12px", fontWeight: "600", textTransform: "uppercase" }}>
-                ROLE | {userRole}
-              </div>
-            </div>
+          {/* Bagian kanan - Informasi user dan Tahun Periode */}
+          <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
             
-            {/* Dropdown menu user */}
-            {showUserMenu && (
-              <div style={{
-                position: "absolute",
-                top: "100%",
-                right: "0",
-                marginTop: "0.5rem",
-                backgroundColor: "white",
-                borderRadius: "6px",
-                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-                minWidth: "160px",
-                zIndex: 1001,
-                overflow: "hidden",
-              }}>
-                {/* Profile option */}
-                <button
-                  onClick={handleProfile}
-                  style={{
-                    width: "100%",
-                    padding: "0.75rem 1rem",
-                    background: "none",
-                    border: "none",
-                    textAlign: "left",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                    color: "#495057",
-                    fontSize: "0.875rem",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = "#f8f9fa";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = "transparent";
-                  }}
-                >
-                  <FaUser style={{ fontSize: "0.875rem" }} />
-                  Profile
-                </button>
-                
-                {/* Logout option */}
-                <button
-                  onClick={handleLogout}
-                  style={{
-                    width: "100%",
-                    padding: "0.75rem 1rem",
-                    background: "none",
-                    border: "none",
-                    textAlign: "left",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                    color: "#dc3545",
-                    fontSize: "0.875rem",
-                    borderTop: "1px solid #e9ecef",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = "#f8f9fa";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = "transparent";
-                  }}
-                >
-                  <FaSignOutAlt style={{ fontSize: "0.875rem" }} />
-                  Logout
-                </button>
+            {/* Informasi User dengan Tahun */}
+            <div style={{ position: "relative" }} ref={userMenuRef}>
+              <div style={{ 
+                display: "flex", 
+                flexDirection: "column", 
+                alignItems: "flex-end",
+                cursor: "pointer",
+                padding: "0.5rem 0.75rem",
+                backgroundColor: "#1D4ED8",
+                borderRadius: "4px",
+              }} 
+              onClick={toggleUserMenu}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <span style={{ fontWeight: "600", fontSize: "14px" }}>
+                    {fullName.toUpperCase()} | {selectedYear ?? '...'}
+                  </span>
+                  <FaAngleDown style={{ fontSize: "12px" }} />
+                </div>
+                <div style={{ fontSize: "12px", fontWeight: "600", textTransform: "uppercase" }}>
+                  ROLE | {userRole}
+                </div>
               </div>
-            )}
+              
+              {/* Dropdown menu user */}
+              {showUserMenu && (
+                <div style={{
+                  position: "absolute",
+                  top: "100%",
+                  right: "0",
+                  marginTop: "0.5rem",
+                  backgroundColor: "white",
+                  borderRadius: "6px",
+                  boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                  minWidth: "160px",
+                  zIndex: 1001,
+                  overflow: "hidden",
+                }}>
+                  <button
+                    onClick={handleProfile}
+                    style={{
+                      width: "100%",
+                      padding: "0.75rem 1rem",
+                      background: "none",
+                      border: "none",
+                      textAlign: "left",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                      color: "#495057",
+                      fontSize: "0.875rem",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "#f8f9fa";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "transparent";
+                    }}
+                  >
+                    <FaUser style={{ fontSize: "0.875rem" }} />
+                    Profile
+                  </button>
+                  
+                  <button
+                    onClick={handleLogout}
+                    style={{
+                      width: "100%",
+                      padding: "0.75rem 1rem",
+                      background: "none",
+                      border: "none",
+                      textAlign: "left",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                      color: "#dc3545",
+                      fontSize: "0.875rem",
+                      borderTop: "1px solid #e9ecef",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "#f8f9fa";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "transparent";
+                    }}
+                  >
+                    <FaSignOutAlt style={{ fontSize: "0.875rem" }} />
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>
       
-      {/* -------------------- Main Content (Sidebar + Main Area) -------------------- */}
+      {/* -------------------- Main Content -------------------- */}
       <div style={{ display: "flex", flexGrow: 1, paddingTop: "50px" }}>
         
         {/* --- Sidebar --- */}
@@ -565,7 +555,7 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
             {/* Sub-menu Administrasi */}
             <div 
               style={{
-                maxHeight: isAdminOpen ? '220px' : '0',
+                maxHeight: isAdminOpen ? '320px' : '0', 
                 overflow: 'hidden',
                 transition: 'max-height 0.2s',
               }}
@@ -605,6 +595,23 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
                     <FaFile color={isActive("/daftarakun") ? '#2563eb' : '#4A5568'} />
                   </span> Daftar Akun
                 </button>
+                <button
+                  onClick={() => {
+                    router.push("/periode");
+                    if (isMobile) setIsSidebarVisible(false); 
+                  }}
+                  onMouseEnter={() => setHoveredItem('periode')}
+                  onMouseLeave={() => setHoveredItem(null)}
+                  style={
+                    isActive("/periode") ? 
+                    {...activeStyle, paddingLeft: "1rem"} : 
+                    (hoveredItem === 'periode' ? {...hoverStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"})
+                  }
+                >
+                  <span style={{ fontSize: "0.875rem" }}>
+                    <FaFile color={isActive("/periode") ? '#2563eb' : '#4A5568'} />
+                  </span> Periode (Tutup Buku)
+                </button>
               </div>
             </div>
             
@@ -635,7 +642,7 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
             {/* Sub-menu Rekam */}
             <div 
               style={{
-                maxHeight: isRekamOpen ? '220px' : '0',
+                maxHeight: isRekamOpen ? '270px' : '0', 
                 overflow: 'hidden',
                 transition: 'max-height 0.2s',
               }}
@@ -674,6 +681,23 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
                   <span style={{ fontSize: "0.875rem" }}>
                     <FaFile color={isActive("/pencatatanpasien") ? '#2563eb' : '#4A5568'} />
                   </span> Pencatatan Pasien
+                </button>
+                <button
+                  onClick={() => {
+                    router.push("/pendapatan");
+                    if (isMobile) setIsSidebarVisible(false); 
+                  }}
+                  onMouseEnter={() => setHoveredItem('pendapatan')}
+                  onMouseLeave={() => setHoveredItem(null)}
+                  style={
+                    isActive("/pendapatan") ? 
+                    {...activeStyle, paddingLeft: "1rem"} : 
+                    (hoveredItem === 'pendapatan' ? {...hoverStyle, paddingLeft: "1rem"} : {...inactiveStyle, paddingLeft: "1rem"})
+                  }
+                >
+                  <span style={{ fontSize: "0.875rem" }}>
+                    <FaFile color={isActive("/pendapatan") ? '#2563eb' : '#4A5568'} />
+                  </span> Pendapatan
                 </button>
                 <button
                   onClick={() => {
@@ -840,15 +864,15 @@ const LayoutContent = ({ children }: MainLayoutProps) => {
   );
 };
 
-
 // ----------------------------------------------------------------------
 // Komponen Utama MainLayout (Wrapper Provider)
 // ----------------------------------------------------------------------
 export default function MainLayout({ children }: MainLayoutProps) {
-    // Memastikan NotificationProvider membungkus LayoutContent
     return (
         <NotificationProvider>
-            <LayoutContent>{children}</LayoutContent>
+            <YearProvider>
+                <LayoutContent>{children}</LayoutContent>
+            </YearProvider>
         </NotificationProvider>
     );
 }
