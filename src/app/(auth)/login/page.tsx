@@ -215,7 +215,7 @@ export default function LoginPage() {
           router.push("/dashboard");
         }, 1500);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Login error:", error);
       showToast("Terjadi kesalahan saat login", "error");
       setLoading(false);

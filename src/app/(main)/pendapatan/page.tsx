@@ -278,7 +278,7 @@ const PendapatanPage = () => {
       console.log('🔍 Mencari rekaman harian untuk tanggal:', tanggalCari);
       
       // 1. Ambil rekaman_harian dengan status BANK
-      let { data: rekamanData, error: rekamanError } = await supabase
+      const { data: rekamanData, error: rekamanError } = await supabase
         .from('rekaman_harian')
         .select('id')
         .eq('tanggal', tanggalCari)
@@ -394,7 +394,7 @@ const PendapatanPage = () => {
         showToast('Tidak ditemukan data unit layanan baru untuk diproses', 'info');
       }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('💥 Error in fetchAndGroupPasienData:', error);
       showToast('Terjadi kesalahan saat mengambil data rekaman', 'error');
     } finally {
@@ -481,9 +481,9 @@ const PendapatanPage = () => {
 
       await fetchPendapatan(selectedYear);
       handleCloseModal();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error saving data:", error);
-      showToast(`Gagal menyimpan data: ${error.message}`, "error");
+      showToast(`Gagal menyimpan data: ${error instanceof Error ? error.message : 'Unknown error'}`, "error");
     } finally {
       setIsLoading(false);
     }
@@ -524,9 +524,9 @@ const PendapatanPage = () => {
       showToast("Data berhasil dihapus", "success");
       await fetchPendapatan(selectedYear);
       setSelectedPendapatan(null);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error deleting data:", error);
-      showToast(`Gagal menghapus: ${error.message}`, "error");
+      showToast(`Gagal menghapus: ${error instanceof Error ? error.message : 'Unknown error'}`, "error");
     } finally {
       setIsLoading(false);
     }

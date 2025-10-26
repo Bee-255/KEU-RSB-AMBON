@@ -89,7 +89,7 @@ const PeriodePage = () => {
   const fetchPeriode = async (tahun: number) => {
     setIsLoading(true);
     
-    let query = supabase
+    const query = supabase
       .from("bas_periode")
       // ✅ Menambahkan nama_bulan_display
       .select("id, tahun, bulan, nama_periode, nama_bulan_display, status_tutup_buku, created_at") 

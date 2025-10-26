@@ -139,7 +139,7 @@
 .modalHeader {
     display: flex;
     align-items: center;
-    padding: 1rem;
+    padding: 0.5rem 1rem;
     font-size: 1rem;
     color: rgb(0, 0, 0);
     background-color: #f8fafc;
@@ -147,10 +147,6 @@
     border-top-right-radius: 8px;
 }
 
-.modalHeaderIcon {
-    margin-right: 10px;
-    font-size: 14px;
-}
 
 /* PERBAIKAN KHUSUS: Hilangkan jarak berlebihan pada judul */
 .modalHeader h2 {
@@ -208,4 +204,22 @@
 .btnConfirm:hover {
     background-color: #1976d2;
     border-color: #1976d2;
+}
+
+.messageContainer {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.warningIcon {
+  flex-shrink: 0;
+  margin: 0.1rem; /* Fine-tuning alignment */
+  font-size: 1.25rem;
+}
+
+.messageContent {
+  flex: 1;
+  line-height: 1.5;
 }

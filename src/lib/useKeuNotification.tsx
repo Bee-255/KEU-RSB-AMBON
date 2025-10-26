@@ -6,6 +6,7 @@ import {
   FaCircleXmark, FaCircleCheck, FaCircleExclamation, FaCircleInfo, FaTriangleExclamation } from 'react-icons/fa6';
 // Import styles dari lokasi yang sudah ditentukan
 import styles from '@/styles/keunotification.module.css'; 
+import { relative } from 'path';
 
 // --- 1. TIPE DATA ---
 
@@ -144,14 +145,19 @@ const ConfirmModal: React.FC<ConfirmModalProps & { isVisible: boolean }> = ({
       <div className={styles.modalBox} role="dialog" aria-modal="true" aria-labelledby="modal-title">
         {/* Header Konfirmasi */}
         <div className={styles.modalHeader}>
-          <FaTriangleExclamation className={styles.modalHeaderIcon} />
+          <div className={styles.modalHeaderIcon} />
           <h2 id="modal-title">{title}</h2>
         </div>
         
         <div className={styles.modalDivider} /> {/* Garis 1px */}
 
         <div className={styles.modalBody}>
-          {message}
+          <div className={styles.messageContainer}>
+            <FaTriangleExclamation className={styles.warningIcon} />
+            <div className={styles.messageContent}>
+              {message}
+            </div>
+          </div>
         </div>
         
         <div className={styles.modalDivider} /> {/* Garis 1px */}
